@@ -310,7 +310,7 @@ fn an_operator_sees_completes_and_runs_a_plugin_command_that_a_guest_cannot() {
         literals,
         [
             "damage", "data", "echo", "execute", "gamemode", "kill", "locate", "shout", "summon",
-            "teleport", "time", "tp"
+            "swing", "teleport", "time", "tp"
         ]
     );
     let (guest, packets) = server.join(GUEST, "Guest");

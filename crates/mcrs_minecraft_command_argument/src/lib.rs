@@ -25,7 +25,9 @@ pub use block_pos_argument::BlockPosArgument;
 pub use column_pos_argument::{ColumnCoordinates, ColumnPosArgument};
 pub use coordinates::Coordinates;
 pub use coordinates_error::CoordinatesError;
-pub use keyword::{EntityAnchorArgument, GameModeArgument, HeightmapArgument, by_name};
+pub use keyword::{
+    EntityAnchorArgument, GameModeArgument, HeightmapArgument, SwingAnimationArgument, by_name,
+};
 pub use keyword_error::KeywordError;
 pub use player_name::PlayerNameArgument;
 pub use resource::{

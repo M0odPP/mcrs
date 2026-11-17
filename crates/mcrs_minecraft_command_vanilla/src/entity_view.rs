@@ -62,6 +62,13 @@ impl EntityView<'_> {
             Self::Mob { view, .. } => view.display_name(),
         }
     }
+
+    pub(crate) fn is_living(&self) -> bool {
+        match self {
+            Self::Player(_) => true,
+            Self::Mob { view, .. } => view.mob.kind.is_living() && view.state.living.is_some(),
+        }
+    }
 }
 
 impl Candidate for EntityView<'_> {

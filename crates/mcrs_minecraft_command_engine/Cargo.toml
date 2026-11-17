@@ -26,6 +26,7 @@ mcrs_minecraft_engine_world.workspace = true
 mcrs_minecraft_network = { workspace = true, features = ["bevy"] }
 mcrs_minecraft_protocol.workspace = true
 mcrs_minecraft_registries = { workspace = true, features = ["bevy"] }
+mcrs_minecraft_swing.workspace = true
 mcrs_minecraft_wire.workspace = true
 mcrs_voxel.workspace = true
 bevy_app.workspace = true

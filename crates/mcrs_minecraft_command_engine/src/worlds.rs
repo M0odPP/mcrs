@@ -4,8 +4,10 @@ use mcrs_minecraft_engine::coordinator::clock::EditClock;
 use mcrs_minecraft_engine::dim_mail::{self, DimMail};
 use mcrs_minecraft_engine::dimension_change::{Arrival, DimensionChangeError};
 use mcrs_minecraft_engine::player_order::{self, OrderedPlayer, PlayerOrder, TeleportOrder};
+use mcrs_minecraft_engine::swing::{self, SwingPlayer};
 use mcrs_minecraft_engine_world::session::PlayerSession;
 use mcrs_minecraft_game_mode::GameMode;
+use mcrs_minecraft_swing::{SpectatorRule, SwingDelivery, SwingSpec};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, thiserror::Error)]
 pub enum PlayerChangeError {
@@ -84,6 +86,36 @@ impl Worlds<'_> {
 
     pub fn edit_clock(&mut self, edit: EditClock) {
         dim_mail::edit_clock(self.world, edit);
+    }
+
+    pub fn swing_player(
+        &mut self,
+        player: PlayerSession,
+        spec: SwingSpec,
+        delivery: SwingDelivery,
+    ) -> Result<(), PlayerChangeError> {
+        let entry = self
+            .targets
+            .player(player)
+            .ok_or(PlayerChangeError::NotOnline)?;
+        match entry.entity {
+            Some(entity) => {
+                swing::swing_player(
+                    self.world,
+                    SwingPlayer {
+                        player: entity,
+                        spec,
+                        delivery,
+                        spectator: SpectatorRule::Allow,
+                    },
+                );
+                Ok(())
+            }
+            None => {
+                send(self.world, player, PlayerOrder::Swing { spec, delivery });
+                Ok(())
+            }
+        }
     }
 }
 

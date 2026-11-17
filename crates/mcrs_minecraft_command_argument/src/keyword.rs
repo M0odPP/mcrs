@@ -4,6 +4,7 @@ use mcrs_minecraft_command::text_matches;
 use mcrs_minecraft_core::LookAnchor;
 use mcrs_minecraft_core::heightmap::HeightmapName;
 use mcrs_minecraft_game_mode::GameMode;
+use mcrs_minecraft_swing::SwingKind;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct GameModeArgument;
@@ -102,6 +103,38 @@ impl<S> Argument<S> for HeightmapArgument {
         let word = reader.read_unquoted();
         by_name(&HEIGHTMAPS, word.text(reader.input())).ok_or(SyntaxError::argument(
             KeywordError::EnumInvalid(word),
+            reader.cursor(),
+        ))
+    }
+}
+
+const SWING_ANIMATIONS: [(&str, SwingKind); 3] = [
+    ("none", SwingKind::None),
+    ("stab", SwingKind::Stab),
+    ("whack", SwingKind::Whack),
+];
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct SwingAnimationArgument;
+
+impl SwingAnimationArgument {
+    pub fn suggest<T>(builder: &mut SuggestionBuilder<'_, '_, T>) {
+        builder.suggest_matching(SWING_ANIMATIONS.map(|(name, _)| name), text_matches);
+    }
+}
+
+impl<S> Argument<S> for SwingAnimationArgument {
+    type Value<'a> = SwingKind;
+    type Error = KeywordError;
+
+    fn parse<'a>(
+        &self,
+        reader: &mut Reader<'a>,
+        _: &S,
+    ) -> Result<SwingKind, SyntaxError<KeywordError>> {
+        let word = reader.read_unquoted();
+        by_name(&SWING_ANIMATIONS, word.text(reader.input())).ok_or(SyntaxError::argument(
+            KeywordError::SwingAnimationInvalid(word),
             reader.cursor(),
         ))
     }

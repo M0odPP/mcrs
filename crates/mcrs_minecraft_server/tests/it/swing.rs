@@ -13,6 +13,7 @@ use mcrs_minecraft_engine::coordinator::clock::WorldClockHostPlugin;
 use mcrs_minecraft_engine::player_state::{Effect, PlayerFileState};
 use mcrs_minecraft_engine::teleport::TeleportState;
 use mcrs_minecraft_engine_item::{ItemCommandsExt, StackCommandsExt};
+use mcrs_minecraft_engine_physics::Mobs;
 use mcrs_minecraft_engine_registries::{install_item_table, test_item_table};
 use mcrs_minecraft_engine_world::entity::physics::Transform;
 use mcrs_minecraft_engine_world::world::storage::column::ColumnPos;
@@ -41,9 +42,10 @@ use mcrs_minecraft_server::{
     VanillaBlockPlacePlugin, VanillaBlocksPlugin, VanillaEntityPhysicsPlugin,
     VanillaItemEntityPlugin, VanillaItemPlugin, VanillaSwingPlugin,
 };
+use mcrs_minecraft_text::TextContent;
 use mcrs_voxel::BlockPos;
 
-use crate::commands::load_stone_column;
+use crate::commands::{chats, load_stone_column};
 use crate::host_app::{self, PlayServer, label_of, replicated, sent_to};
 
 const ALICE: Uuid = Uuid::from_u128(101);
@@ -150,6 +152,17 @@ fn extract_order(packets: &[PacketPayload]) -> Vec<&'static str> {
     out
 }
 
+fn translate_keys(packets: &[PacketPayload]) -> Vec<String> {
+    chats(packets)
+        .into_iter()
+        .filter_map(|text| match &text.content {
+            TextContent::Translate { translate, .. } => Some(translate.to_string()),
+            TextContent::Text { text } => Some(text.to_string()),
+            _ => None,
+        })
+        .collect()
+}
+
 fn action(action: PlayerAction) -> ServerboundPlayerAction {
     ServerboundPlayerAction {
         action,
@@ -209,6 +222,27 @@ fn push_effect(server: &mut PlayServer, player: Entity, id: &str, amplifier: u8,
             show_icon: Some(false),
             hidden_effect: None,
         });
+}
+
+fn suggest_swing(server: &mut PlayServer, anchor: Entity, id: i32, text: &str) -> Vec<String> {
+    let sug = server.send(
+        anchor,
+        &ServerboundCommandSuggestion {
+            id: VarInt(id),
+            text: Bounded(text),
+        },
+    );
+    sug.iter()
+        .find_map(|p| match p {
+            PacketPayload::CommandSuggestions(res) => Some(
+                res.suggestions
+                    .iter()
+                    .map(|m| m.text.clone().into_owned())
+                    .collect(),
+            ),
+            _ => None,
+        })
+        .unwrap()
 }
 
 #[test]
@@ -574,4 +608,182 @@ fn plc_block_place_swing_precedes_block_update_and_ignores_refusal() {
         extract_swings(&pkts[1]).is_empty(),
         "PLC-INT-004: refused block place must emit no swing"
     );
+}
+
+#[test]
+fn cmd_swing_suggestions_mobs_and_cross_dim() {
+    let mut server = start_swing_server(&[
+        ("minecraft:overworld", "minecraft:overworld"),
+        ("minecraft:the_nether", "minecraft:the_nether"),
+    ]);
+    let (alice, bob, _, _) = join_pair(&mut server);
+
+    assert_eq!(
+        suggest_swing(&mut server, alice, 1, "/swing Alice mainhand "),
+        vec!["none", "stab", "whack"]
+    );
+    assert_eq!(
+        suggest_swing(&mut server, alice, 2, "/swing Alice mainhand S"),
+        vec!["stab"]
+    );
+
+    server.queue(
+        alice,
+        &ServerboundChatCommand {
+            command: Bounded("swing"),
+        },
+    );
+    let pkts = step_and_collect(&mut server, &[alice, bob], 1);
+    assert_eq!(
+        translate_keys(&pkts[0]),
+        vec!["commands.swing.success.single"]
+    );
+    assert_eq!(
+        extract_swings(&pkts[0]).len(),
+        1,
+        "/swing must include self"
+    );
+    assert_eq!(
+        extract_swings(&pkts[1]).len(),
+        1,
+        "/swing must reach observers"
+    );
+
+    let _ = advance_ticks(&mut server, 5);
+    server.queue(
+        alice,
+        &ServerboundChatCommand {
+            command: Bounded("summon minecraft:pig 8 64 8"),
+        },
+    );
+    let _ = advance_ticks(&mut server, 3);
+    let pig_id = *server.world().resource::<Mobs>().0.keys().next().unwrap();
+
+    server.queue(
+        alice,
+        &ServerboundChatCommand {
+            command: Bounded("swing @e offhand stab 2s"),
+        },
+    );
+    let pkts = step_and_collect(&mut server, &[alice, bob], 1);
+    assert!(translate_keys(&pkts[0]).contains(&"commands.swing.success.multiple".to_owned()));
+    assert!(
+        extract_swings(&pkts[0])
+            .iter()
+            .any(|s| s.0 == pig_id.0 as i32
+                && s.1 == Hand::Off
+                && s.2 == SwingAnimationKind::Stab
+                && s.3 == 40)
+    );
+
+    let nether = label_of(&server.app, "minecraft:the_nether");
+    let (bob_nether, _) = server.join_in(nether, CHARLIE, "CharlieNether");
+    let _ = advance_ticks(&mut server, 3);
+    server.queue(
+        alice,
+        &ServerboundChatCommand {
+            command: Bounded("swing CharlieNether offhand stab 8"),
+        },
+    );
+    let pkts = step_and_collect(&mut server, &[alice, bob_nether], 2);
+    assert!(translate_keys(&pkts[0]).contains(&"commands.swing.success.single".to_owned()));
+    let nether_swings = extract_swings(&pkts[1]);
+    assert_eq!(
+        (nether_swings[0].1, nether_swings[0].2, nether_swings[0].3),
+        (Hand::Off, SwingAnimationKind::Stab, 8)
+    );
+}
+
+#[test]
+fn cmd_swing_cooldown_spectator_and_errors() {
+    let mut server = start_swing_server(&[("minecraft:overworld", "minecraft:overworld")]);
+    let (alice, bob, _, bob_ent) = join_pair(&mut server);
+
+    let guest_denied = server.send(
+        bob,
+        &ServerboundChatCommand {
+            command: Bounded("swing"),
+        },
+    );
+    assert!(translate_keys(&guest_denied).contains(&"command.unknown.command".to_owned()));
+
+    server.queue(
+        alice,
+        &ServerboundChatCommand {
+            command: Bounded("swing Bob offhand stab 2s"),
+        },
+    );
+    let _ = advance_ticks(&mut server, 1);
+
+    server.world().get_mut::<PlayerGameMode>(bob_ent).unwrap().0 = GameMode::Spectator;
+    server.queue(
+        alice,
+        &ServerboundChatCommand {
+            command: Bounded("swing Bob mainhand whack 10"),
+        },
+    );
+    let pkts = step_and_collect(&mut server, &[alice, bob], 1);
+    assert!(translate_keys(&pkts[0]).contains(&"commands.swing.success.single".to_owned()));
+    assert!(
+        extract_swings(&pkts[1]).is_empty(),
+        "cooldown from previous /swing blocks swing emission"
+    );
+
+    let _ = advance_ticks(&mut server, 22);
+    server.queue(
+        alice,
+        &ServerboundChatCommand {
+            command: Bounded("swing Bob mainhand whack 6"),
+        },
+    );
+    let pkts = step_and_collect(&mut server, &[alice, bob], 2);
+    assert_eq!(
+        extract_swings(&pkts[1]).len(),
+        1,
+        "/swing Bob in Spectator mode must emit swing to spectator"
+    );
+
+    let _ = advance_ticks(&mut server, 5);
+    {
+        let mut state = server.world().get_mut::<PlayerFileState>(bob_ent).unwrap();
+        state.health = 0.0;
+        state.death_time = 20;
+    }
+    server.queue(
+        alice,
+        &ServerboundChatCommand {
+            command: Bounded("swing Bob mainhand whack 6"),
+        },
+    );
+    let pkts = step_and_collect(&mut server, &[alice, bob], 2);
+    assert!(translate_keys(&pkts[0]).contains(&"commands.swing.success.single".to_owned()));
+    assert!(
+        pkts.iter()
+            .all(|packets| extract_swings(packets).is_empty()),
+        "Bob still counts after corpse removal and the command emits no swing"
+    );
+
+    let bad = server.send(
+        alice,
+        &ServerboundChatCommand {
+            command: Bounded("swing Alice mainhand WHACK"),
+        },
+    );
+    assert!(translate_keys(&bad).contains(&"argument.swing_animation.invalid".to_owned()));
+
+    let low = server.send(
+        alice,
+        &ServerboundChatCommand {
+            command: Bounded("swing Alice mainhand whack 0t"),
+        },
+    );
+    assert!(translate_keys(&low).contains(&"argument.time.tick_count_too_low".to_owned()));
+
+    let notfound = server.send(
+        alice,
+        &ServerboundChatCommand {
+            command: Bounded("swing @e[type=cow]"),
+        },
+    );
+    assert!(translate_keys(&notfound).contains(&"argument.entity.notfound.entity".to_owned()));
 }

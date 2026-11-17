@@ -9,6 +9,7 @@ pub enum KeywordError {
     GameModeInvalid(Span),
     AnchorInvalid(Span),
     EnumInvalid(Span),
+    SwingAnimationInvalid(Span),
 }
 
 impl fmt::Display for KeywordError {
@@ -17,6 +18,7 @@ impl fmt::Display for KeywordError {
             KeywordError::GameModeInvalid(_) => "unknown game mode",
             KeywordError::AnchorInvalid(_) => "unknown entity anchor",
             KeywordError::EnumInvalid(_) => "unknown value",
+            KeywordError::SwingAnimationInvalid(_) => "unknown swing animation",
         })
     }
 }
@@ -35,6 +37,10 @@ impl ErrorText for KeywordError {
             KeywordError::EnumInvalid(word) => {
                 Text::translate("argument.enum.invalid", vec![span_text(input, word)])
             }
+            KeywordError::SwingAnimationInvalid(word) => Text::translate(
+                "argument.swing_animation.invalid",
+                vec![span_text(input, word)],
+            ),
         }
     }
 }
