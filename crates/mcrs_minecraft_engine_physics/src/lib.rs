@@ -4,6 +4,7 @@ mod entity_writes;
 mod mob_damage;
 mod mob_life;
 mod mob_spawn_request;
+mod mob_swing;
 mod mobs;
 #[cfg(feature = "testing")]
 mod test_scene;
@@ -24,6 +25,9 @@ pub use mob_life::mob_row;
 pub use mob_spawn_request::MobExtras;
 pub use mob_spawn_request::MobSpawnRequest;
 pub use mob_spawn_request::SpawnSetup;
+pub use mob_swing::MobSwingStates;
+pub use mob_swing::SwungMob;
+pub use mob_swing::swing_mob;
 pub use mobs::Mob;
 pub use mobs::MobUuids;
 pub use mobs::Mobs;

@@ -18,7 +18,7 @@ use mcrs_minecraft_protocol_game::clientbound::{
     ClientboundPlayerAbilities, ClientboundPlayerLookAt, ClientboundPlayerPosition,
     ClientboundRespawn, ClientboundSectionBlocksUpdate, ClientboundSetChunkCacheCenter,
     ClientboundSetCursorItem, ClientboundSetHeldSlot, ClientboundSetTime,
-    ClientboundSystemChatPacket, ClientboundTabList,
+    ClientboundSwingAnimation, ClientboundSystemChatPacket, ClientboundTabList,
 };
 use mcrs_minecraft_resource::ResourceKeyBuf;
 use mcrs_minecraft_text::Text;
@@ -144,6 +144,7 @@ pub enum PacketPayload {
     SetCursorItem(ClientboundSetCursorItem),
     OpenScreen(ClientboundOpenScreen<'static>),
     ContainerClose(ClientboundContainerClose),
+    SwingAnimation(ClientboundSwingAnimation),
 }
 
 impl PacketPayload {

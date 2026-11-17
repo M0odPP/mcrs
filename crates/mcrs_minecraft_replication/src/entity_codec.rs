@@ -28,6 +28,7 @@ use mcrs_minecraft_protocol::{Result, VarInt};
 use mcrs_minecraft_protocol_game::LpVec3;
 use mcrs_minecraft_protocol_game::clientbound::{
     ClientboundAddEntity, ClientboundRemoveEntities, ClientboundSetEntityData,
+    ClientboundSwingAnimation,
 };
 use mcrs_minecraft_protocol_game::entity::Metadata;
 use std::collections::BTreeMap;
@@ -220,6 +221,19 @@ impl EntityCodec {
                         self.delivery.owe(viewer, packet.clone());
                     }
                 }
+                EntityEvent::Data(ReplicationData::Player(PlayerData::Swing {
+                    hand,
+                    animation,
+                    duration,
+                })) => {
+                    let packet = record(&ClientboundSwingAnimation {
+                        entity_id: wire_id(subject),
+                        hand: *hand,
+                        animation: *animation,
+                        duration: VarInt(*duration),
+                    })?;
+                    self.deliver_observers(subject, &packet);
+                }
                 EntityEvent::Enter { .. } => {
                     self.generation = self.generation.wrapping_add(1);
                     entered.push(subject);
@@ -232,6 +246,17 @@ impl EntityCodec {
             self.refresh(subject);
         }
         Ok(())
+    }
+
+    fn deliver_observers(&mut self, subject: EntityId, packet: &Bytes) {
+        let Some(owner) = self.subjects.get(&subject).map(|state| state.viewer) else {
+            return;
+        };
+        for &viewer in self.holds.holders(subject) {
+            if viewer != owner {
+                self.delivery.owe(viewer, packet.clone());
+            }
+        }
     }
 
     fn write_blob(
@@ -691,5 +716,163 @@ mod tests {
         })
         .unwrap();
         assert_eq!(removal, [take, remove], "take_item_entity goes first");
+    }
+
+    fn setup_swing_codec(
+        observer_a: ViewerId,
+        observer_b: ViewerId,
+        subject_viewer: ViewerId,
+        pig: EntityId,
+    ) -> EntityCodec {
+        use crate::delta_base::Pose;
+        use mcrs_minecraft_game_mode::GameMode;
+
+        let mut codec = EntityCodec::default();
+        let pose = Pose {
+            position: DVec3::new(0.5, 64.0, 0.5),
+            look: Default::default(),
+        };
+        let spawn = PlayerSpawn {
+            viewer: subject_viewer,
+            uuid: Uuid::from_u128(99),
+            username: "Alice".to_owned(),
+            properties: Vec::new(),
+            pose,
+            game_mode: GameMode::Survival,
+            attributes: Vec::new(),
+            entries: PlayerEntries::default(),
+        };
+        let player_delta = TileDelta {
+            tile: TileKey::new(0, 0, 0),
+            events: vec![
+                SubjectEvent {
+                    subject: PLAYER,
+                    event: EntityEvent::Spawn(PlayerData::Spawn(spawn).into()),
+                },
+                SubjectEvent {
+                    subject: pig,
+                    event: EntityEvent::Spawn(
+                        MobReport::Spawn(MobSpawn {
+                            kind: &EntityTypeData::PIG,
+                            uuid: Uuid::from_u128(100),
+                            state: MobState {
+                                position: pose.position,
+                                on_ground: true,
+                                ..MobState::default()
+                            },
+                            look: SpawnLook::Mob(Default::default()),
+                        })
+                        .into(),
+                    ),
+                },
+            ],
+        };
+        codec.apply(0, &player_delta);
+        let mut out = Vec::new();
+        for viewer in [observer_a, observer_b, subject_viewer] {
+            for subject in [PLAYER, pig] {
+                codec.hold(
+                    viewer,
+                    Hold::Gain {
+                        subject,
+                        tier: Tier::NEAREST,
+                    },
+                    &mut out,
+                );
+            }
+        }
+        let mut drained = Vec::new();
+        codec.finish_tick(0, &mut drained);
+        codec
+    }
+
+    #[test]
+    fn player_and_mob_swings_reach_current_observers_only_and_never_replay() {
+        use mcrs_minecraft_protocol_game::{Hand, SwingAnimationKind};
+
+        const OBSERVER_A: ViewerId = ViewerId(10);
+        const OBSERVER_B: ViewerId = ViewerId(11);
+        const LATE_VIEWER: ViewerId = ViewerId(12);
+        const SUBJECT_VIEWER: ViewerId = ViewerId(13);
+        const PIG: EntityId = EntityId(4);
+
+        let mut codec = setup_swing_codec(OBSERVER_A, OBSERVER_B, SUBJECT_VIEWER, PIG);
+        let swing_delta = TileDelta {
+            tile: TileKey::new(0, 0, 0),
+            events: vec![
+                SubjectEvent {
+                    subject: PLAYER,
+                    event: EntityEvent::Data(
+                        PlayerData::Swing {
+                            hand: Hand::Off,
+                            animation: SwingAnimationKind::Stab,
+                            duration: 9,
+                        }
+                        .into(),
+                    ),
+                },
+                SubjectEvent {
+                    subject: PIG,
+                    event: EntityEvent::Data(
+                        MobReport::Signal(MobSignal::Swing {
+                            hand: Hand::Main,
+                            animation: SwingAnimationKind::Whack,
+                            duration: 6,
+                        })
+                        .into(),
+                    ),
+                },
+            ],
+        };
+        codec.apply(1, &swing_delta);
+
+        let mut finished = Vec::new();
+        codec.finish_tick(1, &mut finished);
+        let mut packets_by_viewer: BTreeMap<ViewerId, Vec<Bytes>> = BTreeMap::new();
+        for ViewerBytes { viewer, chunks } in finished {
+            packets_by_viewer.entry(viewer).or_default().extend(chunks);
+        }
+        let player_swing = record(&ClientboundSwingAnimation {
+            entity_id: wire_id(PLAYER),
+            hand: Hand::Off,
+            animation: SwingAnimationKind::Stab,
+            duration: VarInt(9),
+        })
+        .unwrap();
+        let mob_swing = record(&ClientboundSwingAnimation {
+            entity_id: wire_id(PIG),
+            hand: Hand::Main,
+            animation: SwingAnimationKind::Whack,
+            duration: VarInt(6),
+        })
+        .unwrap();
+
+        assert_eq!(
+            packets_by_viewer.get(&OBSERVER_A).map(Vec::as_slice),
+            Some(&[player_swing.clone(), mob_swing.clone()][..])
+        );
+        assert_eq!(
+            packets_by_viewer.get(&OBSERVER_B).map(Vec::as_slice),
+            Some(&[player_swing.clone(), mob_swing.clone()][..])
+        );
+        assert_eq!(
+            packets_by_viewer.get(&SUBJECT_VIEWER).map(Vec::as_slice),
+            Some(&[mob_swing][..]),
+            "actor own swing is excluded from observer replication; mob swing still delivers"
+        );
+
+        let mut late_spawn = Vec::new();
+        codec.hold(
+            LATE_VIEWER,
+            Hold::Gain {
+                subject: PLAYER,
+                tier: Tier::NEAREST,
+            },
+            &mut late_spawn,
+        );
+        assert!(
+            !late_spawn.contains(&player_swing),
+            "SWG-DST-002: transient swing never enters spawn backlog"
+        );
     }
 }

@@ -19,12 +19,14 @@ use crate::hot_ticket::{CellCrossing, HotTicket, RemoteTicket, RemoteTickets};
 use crate::persisted_registry::CaptureCause;
 use crate::player_dimension_change;
 use crate::replicated::Replicated;
+use mcrs_minecraft_swing::LoadedClient;
 
 #[derive(Clone, Debug)]
 pub struct Crossing {
     pub(crate) session: PlayerSession,
     pub(crate) carried: CarriedPlayer,
     pub(crate) replicated: Option<Replicated>,
+    pub(crate) loaded: LoadedClient,
     pub(crate) view: SentChunkView,
     pub(crate) ticket: Option<HotTicket>,
 }
@@ -67,6 +69,7 @@ fn cross(world: &mut World, player: Entity) -> Result<Crossing, DimensionChangeE
         }
     };
     let replicated = leaving.take::<Replicated>();
+    let loaded = leaving.take::<LoadedClient>().unwrap_or_default();
     let view = leaving.take::<SentChunkView>().unwrap_or_default();
     let ticket = leaving.take::<HotTicket>();
     world.despawn(player);
@@ -77,6 +80,7 @@ fn cross(world: &mut World, player: Entity) -> Result<Crossing, DimensionChangeE
         session,
         carried,
         replicated,
+        loaded,
         view,
         ticket,
     })
@@ -90,6 +94,7 @@ pub(crate) fn arrive(
         session,
         carried,
         replicated,
+        loaded,
         view,
         ticket,
     } = crossing;
@@ -100,6 +105,7 @@ pub(crate) fn arrive(
     let Some(&InDimension(dimension)) = arrived.get::<InDimension>() else {
         return Err(DimensionChangeError::NoDimension);
     };
+    arrived.insert(loaded);
     if let Some(replicated) = replicated {
         arrived.insert((replicated, CrossedAt(transform)));
     }

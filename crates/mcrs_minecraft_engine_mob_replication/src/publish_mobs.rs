@@ -6,6 +6,7 @@ use bevy_tasks::ComputeTaskPool;
 use mcrs_engine_muxer::EntityEvent;
 use mcrs_engine_muxer::SubjectEvent;
 use mcrs_minecraft_damage::HitOutcome;
+use mcrs_minecraft_engine::swing;
 use mcrs_minecraft_engine::tile_events::TileEvents;
 use mcrs_minecraft_engine_physics::MobChanges;
 use mcrs_minecraft_engine_physics::Mobs;
@@ -59,6 +60,7 @@ pub(crate) fn publish_mobs<M: Send + Sync + 'static>(
         );
     };
     publish_strikes(&changes, &mut events);
+    publish_swings(&rows, &changes, &mut events);
     let mut published: Vec<EntityId> = Vec::new();
     if fresh.is_empty() {
         let touched: FxHashSet<EntityId> = changes.touched().iter().map(|at| at.id).collect();
@@ -162,6 +164,24 @@ fn publish_strikes(changes: &MobChanges, events: &mut TileEvents) {
         if struck.died {
             signal(MobSignal::Died);
         }
+    }
+}
+
+fn publish_swings<M>(rows: &RowStore<M>, changes: &MobChanges, events: &mut TileEvents) {
+    for swung in changes.swings() {
+        let tile = rows.tile_of(swung.at.id).unwrap_or(swung.at.tile);
+        events.push(
+            tile,
+            swung.at.id,
+            EntityEvent::Data(
+                MobReport::Signal(MobSignal::Swing {
+                    hand: swing::to_protocol_hand(swung.spec.hand),
+                    animation: swing::to_protocol_kind(swung.spec.kind),
+                    duration: swung.spec.duration.max(0),
+                })
+                .into(),
+            ),
+        );
     }
 }
 
@@ -335,5 +355,115 @@ mod tests {
             })
             .collect();
         assert_eq!(moves, [(to, now)], "one move, from the row after the pass");
+    }
+
+    fn insert_mob(
+        rows: &mut RowStore<()>,
+        mobs: &mut Mobs,
+        id: u64,
+        kind: &'static EntityTypeData,
+    ) -> EntityId {
+        let entity_id = EntityId(id);
+        let row = mob_row(kind);
+        let state = mob_body(
+            kind,
+            &row,
+            EntityKey(u128::from(id)),
+            DVec3::new(4.5, f64::from(FLOOR), 5.5),
+        );
+        rows.spawn(entity_id, state, row);
+        mobs.0.insert(
+            entity_id,
+            Mob {
+                kind,
+                uuid: u128::from(id),
+                looks: MobLooks::default(),
+                custom_name: None,
+                tags: Vec::new(),
+            },
+        );
+        entity_id
+    }
+
+    #[test]
+    fn a_mob_swing_is_published_as_a_mob_signal_at_the_mobs_tile() {
+        use mcrs_minecraft_engine_physics::{self as physics, MobSwingStates};
+        use mcrs_minecraft_protocol_game::{Hand, SwingAnimationKind};
+        use mcrs_minecraft_swing::{SwingHand, SwingKind, SwingSpec};
+
+        ComputeTaskPool::get_or_init(TaskPool::default);
+        let mut scene = TestScene::<()>::new(2, 0, 0, 1);
+        let mut mobs = Mobs::default();
+        let id = insert_mob(&mut scene.rows, &mut mobs, 3, &EntityTypeData::PIG);
+        let item_id = insert_mob(&mut scene.rows, &mut mobs, 4, &EntityTypeData::ITEM);
+        scene.rows.apply_writes(&mut EntityWrites::default().0);
+        let tile = scene.rows.tile_of(id).expect("spawned tile");
+        let at = Placed { tile, id };
+        let item_at = Placed { tile, id: item_id };
+        let mut swing_states = MobSwingStates::default();
+        let mut changes = MobChanges::default();
+        let spec = SwingSpec {
+            hand: SwingHand::Off,
+            kind: SwingKind::Stab,
+            duration: 8,
+        };
+        assert!(
+            !physics::swing_mob(
+                &scene.rows,
+                &mobs,
+                &mut swing_states,
+                &mut changes,
+                item_at,
+                spec,
+                10
+            ),
+            "CMD-SWG-005: non-living item entities never swing"
+        );
+        assert!(physics::swing_mob(
+            &scene.rows,
+            &mobs,
+            &mut swing_states,
+            &mut changes,
+            at,
+            spec,
+            10
+        ));
+        assert!(!physics::swing_mob(
+            &scene.rows,
+            &mobs,
+            &mut swing_states,
+            &mut changes,
+            at,
+            SwingSpec::DEFAULT_MAIN,
+            10
+        ));
+
+        let mut world = World::new();
+        world.insert_resource(mem::take(&mut scene.rows));
+        world.insert_resource(mobs);
+        world.insert_resource(changes);
+        world.insert_resource(TileEvents::default());
+        world
+            .run_system_once(publish_mobs::<()>)
+            .expect("the publish runs");
+
+        let deltas = world.resource_mut::<TileEvents>().take();
+        let signals: Vec<MobSignal> = deltas
+            .tiles
+            .iter()
+            .flat_map(|delta| delta.events.iter())
+            .filter_map(|event| match &event.event {
+                EntityEvent::Data(ReplicationData::Mob(MobReport::Signal(signal))) => Some(*signal),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(
+            signals,
+            vec![MobSignal::Swing {
+                hand: Hand::Off,
+                animation: SwingAnimationKind::Stab,
+                duration: 8,
+            }]
+        );
     }
 }

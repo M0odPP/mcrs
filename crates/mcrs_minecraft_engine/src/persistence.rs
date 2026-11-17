@@ -59,6 +59,7 @@ const SAVED_ATTRIBUTES_KEYS: &[&str] = &["attributes"];
 const CARRIED_ATTRIBUTES_KEYS: &[&str] = &["mcrs:attributes"];
 const SPRINTING_KEYS: &[&str] = &["mcrs:sprinting"];
 const SHIFT_KEY_KEYS: &[&str] = &["mcrs:shift_key"];
+const SWING_KEYS: &[&str] = &["mcrs:swing"];
 const UUID_KEYS: &[&str] = &["UUID"];
 
 pub struct PlayerPersistencePlugin;
@@ -106,7 +107,8 @@ impl Plugin for PlayerPersistencePlugin {
                 PersistScope::TravelOnly,
             )
             .register_persisted::<PlayerSprinting>(SPRINTING_KEYS, PersistScope::TravelOnly)
-            .register_persisted::<ShiftKey>(SHIFT_KEY_KEYS, PersistScope::TravelOnly);
+            .register_persisted::<ShiftKey>(SHIFT_KEY_KEYS, PersistScope::TravelOnly)
+            .register_persisted::<crate::swing::PlayerSwing>(SWING_KEYS, PersistScope::TravelOnly);
     }
 }
 

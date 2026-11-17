@@ -326,8 +326,38 @@ impl ColumnViews {
             positions,
             acks,
         } = published;
+        self.take_dim_views(dim, views, positions, versions, out);
+        self.take_dim_changes(dim, changes, acks, out);
+    }
+
+    pub(crate) fn take_dim_parts(
+        &mut self,
+        dim: Entity,
+        published: DimColumns,
+        views_out: &mut Vec<OutboundPlayerPacket>,
+        changes_out: &mut Vec<OutboundPlayerPacket>,
+    ) {
+        let DimColumns {
+            views,
+            versions,
+            changes,
+            positions,
+            acks,
+        } = published;
+        self.take_dim_views(dim, views, positions, versions, views_out);
+        self.take_dim_changes(dim, changes, acks, changes_out);
+    }
+
+    fn take_dim_views(
+        &mut self,
+        dim: Entity,
+        views: Vec<PlayerView>,
+        positions: Vec<ViewerPosition>,
+        versions: Vec<ColumnVersion>,
+        views_out: &mut Vec<OutboundPlayerPacket>,
+    ) {
         for view in views {
-            self.apply_view(dim, view, out);
+            self.apply_view(dim, view, views_out);
         }
         for ViewerPosition { session, position } in positions {
             if let Some(player) = self.players.get_mut(&session) {
@@ -337,10 +367,19 @@ impl ColumnViews {
         for version in versions {
             self.take_version(dim, version);
         }
+    }
+
+    fn take_dim_changes(
+        &mut self,
+        dim: Entity,
+        changes: Vec<ColumnChange>,
+        acks: Vec<BlockActionAck>,
+        changes_out: &mut Vec<OutboundPlayerPacket>,
+    ) {
         for change in changes {
-            self.take_change(dim, change, out);
+            self.take_change(dim, change, changes_out);
         }
-        out.extend(acks.into_iter().map(|ack| {
+        changes_out.extend(acks.into_iter().map(|ack| {
             to(
                 ack.session,
                 PacketPayload::BlockChangedAck(ClientboundBlockChangedAck {

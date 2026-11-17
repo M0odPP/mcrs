@@ -48,6 +48,7 @@ use crate::mob_life::PendingSpawns;
 use crate::mob_life::end_mob_changes;
 use crate::mob_life::spawn_mobs;
 use crate::mob_spawn_request::MobSpawnRequest;
+use crate::mob_swing::MobSwingStates;
 use crate::mobs::MobUuids;
 use crate::mobs::Mobs;
 
@@ -116,6 +117,7 @@ impl<M: Send + Sync + 'static> Plugin for EntityPhysicsPlugin<M> {
         app.init_resource::<Mobs>();
         app.init_resource::<MobUuids>();
         app.init_resource::<MobChanges>();
+        app.init_resource::<MobSwingStates>();
         app.init_resource::<CrowdDamageType>();
         app.init_resource::<PendingSpawns>();
         app.add_message::<MobSpawnRequest>();

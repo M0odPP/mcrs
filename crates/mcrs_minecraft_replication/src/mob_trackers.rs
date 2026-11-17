@@ -5,7 +5,8 @@ use mcrs_engine_muxer::{EntityId, ViewerId};
 use mcrs_minecraft_entity::EntityTypeData;
 use mcrs_minecraft_protocol::{Result, VarInt};
 use mcrs_minecraft_protocol_game::clientbound::{
-    ClientboundDamageEvent, ClientboundEntityEvent, ClientboundTakeItemEntity,
+    ClientboundDamageEvent, ClientboundEntityEvent, ClientboundSwingAnimation,
+    ClientboundTakeItemEntity,
 };
 use rustc_hash::FxHashMap;
 use uuid::Uuid;
@@ -134,6 +135,16 @@ impl MobTrackers {
                 item_id: entity_id,
                 player_id: wire_id(collector),
                 amount: VarInt(amount),
+            })?,
+            MobSignal::Swing {
+                hand,
+                animation,
+                duration,
+            } => record(&ClientboundSwingAnimation {
+                entity_id,
+                hand,
+                animation,
+                duration: VarInt(duration),
             })?,
         };
         self.signals.push((subject, packet));

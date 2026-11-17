@@ -38,6 +38,8 @@ use mcrs_minecraft_resource::ResourceLocation;
 
 use crate::mob_spawn_request::MobSpawnRequest;
 use crate::mob_spawn_request::SpawnSetup;
+use crate::mob_swing::MobSwingStates;
+use crate::mob_swing::SwungMob;
 use crate::mobs::Mob;
 use crate::mobs::MobUuids;
 use crate::mobs::Mobs;
@@ -52,6 +54,7 @@ pub struct MobChanges {
     pub(crate) spawned: Vec<Spawned>,
     pub(crate) touched: Vec<Placed>,
     pub(crate) strikes: Vec<Struck>,
+    pub(crate) swings: Vec<SwungMob>,
 }
 
 impl MobChanges {
@@ -68,6 +71,11 @@ impl MobChanges {
     #[must_use]
     pub fn strikes(&self) -> &[Struck] {
         &self.strikes
+    }
+
+    #[must_use]
+    pub fn swings(&self) -> &[SwungMob] {
+        &self.swings
     }
 }
 
@@ -185,15 +193,20 @@ pub(crate) fn end_mob_changes<M: Send + Sync + 'static>(
     mut mobs: ResMut<Mobs>,
     mut uuids: ResMut<MobUuids>,
     mut changes: ResMut<MobChanges>,
+    mut swing_states: Option<ResMut<MobSwingStates>>,
 ) {
     for removed in rows.changes().removed() {
         if let Some(mob) = mobs.0.remove(&removed.id) {
             uuids.0.remove(&mob.uuid);
         }
+        if let Some(swing_states) = swing_states.as_deref_mut() {
+            swing_states.0.remove(&removed.id);
+        }
     }
     changes.spawned.clear();
     changes.touched.clear();
     changes.strikes.clear();
+    changes.swings.clear();
 }
 
 fn first_looks(

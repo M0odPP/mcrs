@@ -10,16 +10,22 @@ use mcrs_minecraft_engine_world::session::{DimPlayerIndex, Owner, PlayerSession}
 use mcrs_minecraft_engine_world::world::dimension::Dimension;
 use mcrs_minecraft_game_mode::{GameMode, PlayerGameMode};
 use mcrs_minecraft_resource::ResourceKeyBuf;
+use mcrs_minecraft_swing::{SpectatorRule, SwingDelivery, SwingSpec};
 
 use crate::bus::{self, PacketPayload};
 use crate::coordinator::clock::GameTime;
 use crate::dimension_change::{Arrival, DimensionChangeError};
+use crate::swing::{self, SwingPlayer};
 use crate::teleport::TeleportState;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum PlayerOrder {
     Teleport(TeleportOrder),
     SetGameMode(GameMode),
+    Swing {
+        spec: SwingSpec,
+        delivery: SwingDelivery,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -73,6 +79,18 @@ pub fn obey(
     match order {
         PlayerOrder::Teleport(order) => teleport(world, player, order),
         PlayerOrder::SetGameMode(mode) => set_game_mode(world, player, mode),
+        PlayerOrder::Swing { spec, delivery } => {
+            swing::swing_player(
+                world,
+                SwingPlayer {
+                    player,
+                    spec,
+                    delivery,
+                    spectator: SpectatorRule::Allow,
+                },
+            );
+            Ok(())
+        }
     }
 }
 
