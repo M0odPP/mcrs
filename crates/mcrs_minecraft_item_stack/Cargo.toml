@@ -17,6 +17,7 @@ mcrs_minecraft_nbt.workspace = true
 mcrs_minecraft_profile.workspace = true
 mcrs_minecraft_resource.workspace = true
 mcrs_minecraft_snbt.workspace = true
+mcrs_minecraft_swing = { workspace = true, features = ["serde"] }
 mcrs_minecraft_text.workspace = true
 mcrs_minecraft_wire = { workspace = true, features = ["resource", "voxel"] }
 mcrs_voxel.workspace = true

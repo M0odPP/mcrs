@@ -41,6 +41,9 @@ macro_rules! for_each_builtin {
             Container => "container",
             Bees => "bees",
             ContainerLoot => "container_loot",
+            PiercingWeapon => "piercing_weapon",
+            AttackAnimation => "attack_animation",
+            InteractAnimation => "interact_animation",
         }
     };
 }

@@ -3,6 +3,7 @@ use std::num::NonZeroU8;
 
 use mcrs_minecraft_entity_attribute::ModifierOperation;
 use mcrs_minecraft_fixtures::fixture;
+use mcrs_minecraft_item_stack::AttackAnimation;
 use mcrs_minecraft_item_stack::AttributeId;
 use mcrs_minecraft_item_stack::AttributeModifier;
 use mcrs_minecraft_item_stack::AttributeModifiers;
@@ -36,6 +37,8 @@ use mcrs_minecraft_item_stack::Rarity;
 use mcrs_minecraft_item_stack::RepairCost;
 use mcrs_minecraft_item_stack::SavedError;
 use mcrs_minecraft_item_stack::SlotGroup;
+use mcrs_minecraft_item_stack::SwingAnimation;
+use mcrs_minecraft_item_stack::SwingKind;
 use mcrs_minecraft_item_stack::Tool;
 use mcrs_minecraft_item_stack::ToolRule;
 use mcrs_minecraft_item_stack::TooltipDisplay;
@@ -578,13 +581,15 @@ struct PlainValue {
     wire: Option<String>,
 }
 
-const DECODED_PLAIN: [&str; 28] = [
+const DECODED_PLAIN: [&str; 30] = [
     "max_stack_size",
     "max_damage",
     "damage",
     "unbreakable",
     "repair_cost",
     "rarity",
+    "attack_animation",
+    "interact_animation",
     "map_id",
     "map_decorations",
     "profile",
@@ -696,7 +701,7 @@ fn the_wire_components_that_the_game_wrote_read_to_the_saved_value_and_write_bac
         assert_same_component(&value.kind, &wire(read.as_ref()), &bare, header.len());
         decoded += 1;
     }
-    assert_eq!((decoded, kept), (89, 46));
+    assert_eq!((decoded, kept), (109, 26));
 }
 
 #[derive(Deserialize)]
@@ -1089,4 +1094,51 @@ fn one_wire_stack_shares_one_nbt_budget_with_the_stacks_inside_it() {
             assert_eq!(read, Err(NbtQuotaExceeded), "{index}");
         }
     }
+}
+
+#[test]
+fn piercing_weapon_holders_goldens_round_trip_wire_and_saved() {
+    let cases = [
+        ("0a00", "01000000"),
+        (
+            "0a0a00096869745f736f756e64080008736f756e645f696400086d6372733a68697405000572616e67654080000000080005736f756e64001b6d696e6563726166743a656e746974792e6974656d2e627265616b01000f6465616c735f6b6e6f636b6261636b000100096469736d6f756e74730100",
+            "0001018e050100086d6372733a6869740140800000",
+        ),
+    ];
+    for (nbt_hex, wire_hex) in cases {
+        let nbt = NbtTag::deserialize(&mut NbtReadHelper::new(Cursor::new(unhex(nbt_hex))))
+            .expect("golden NBT");
+        let bare = with_one_component("piercing_weapon", wire_hex);
+        let read = read_all(&bare, read_wire).expect("golden wire");
+        assert_eq!(hex(&wire(read.as_ref())), hex(&bare), "{wire_hex}");
+
+        let mut patch = NbtCompound::new();
+        patch.put("minecraft:piercing_weapon", nbt);
+        let mut stone = saved(r#"{id:"minecraft:stone"}"#);
+        stone.put("components", NbtTag::Compound(patch.clone()));
+        let from_saved = read_saved(&stone, &Names).expect("golden saved");
+        assert_eq!(read, Some(from_saved.clone()), "{wire_hex}");
+
+        let written = write_saved(&from_saved, &Names).expect("write saved");
+        assert!(
+            written
+                .get("components")
+                .is_some_and(|written| same(written, &NbtTag::Compound(patch))),
+            "{wire_hex}"
+        );
+    }
+
+    let negative_wire = with_one_component("attack_animation", "01ffffffff0f");
+    assert_eq!(
+        read_all(&negative_wire, read_wire),
+        Err(WireError::OutOfRange(BuiltinKey::AttackAnimation))
+    );
+    let negative_stack = stack(STONE, 1).set(AttackAnimation(SwingAnimation {
+        kind: SwingKind::Whack,
+        duration: -1,
+    }));
+    assert_eq!(
+        write_wire(Some(&negative_stack), &Names, &mut Vec::new()),
+        Err(WireError::OutOfRange(BuiltinKey::AttackAnimation))
+    );
 }

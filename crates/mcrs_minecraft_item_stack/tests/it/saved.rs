@@ -3,6 +3,7 @@ use std::num::NonZeroU8;
 
 use mcrs_minecraft_entity_attribute::ModifierOperation;
 use mcrs_minecraft_fixtures::fixture;
+use mcrs_minecraft_item_stack::AttackAnimation;
 use mcrs_minecraft_item_stack::AttributeId;
 use mcrs_minecraft_item_stack::AttributeModifier;
 use mcrs_minecraft_item_stack::AttributeModifiers;
@@ -23,6 +24,7 @@ use mcrs_minecraft_item_stack::Equippable;
 use mcrs_minecraft_item_stack::EquippableSlot;
 use mcrs_minecraft_item_stack::Food;
 use mcrs_minecraft_item_stack::InlineSoundEvent;
+use mcrs_minecraft_item_stack::InteractAnimation;
 use mcrs_minecraft_item_stack::ItemModel;
 use mcrs_minecraft_item_stack::ItemStack;
 use mcrs_minecraft_item_stack::LodestoneTracker;
@@ -32,12 +34,15 @@ use mcrs_minecraft_item_stack::ModifierDisplay;
 use mcrs_minecraft_item_stack::NameLookup;
 use mcrs_minecraft_item_stack::NameTable;
 use mcrs_minecraft_item_stack::PatchEntry;
+use mcrs_minecraft_item_stack::PiercingWeapon;
 use mcrs_minecraft_item_stack::Rarity;
 use mcrs_minecraft_item_stack::RepairCost;
 use mcrs_minecraft_item_stack::SavedError;
 use mcrs_minecraft_item_stack::SlotGroup;
 use mcrs_minecraft_item_stack::SlotStack;
 use mcrs_minecraft_item_stack::SoundEventRef;
+use mcrs_minecraft_item_stack::SwingAnimation;
+use mcrs_minecraft_item_stack::SwingKind;
 use mcrs_minecraft_item_stack::Tool;
 use mcrs_minecraft_item_stack::ToolRule;
 use mcrs_minecraft_item_stack::TooltipDisplay;
@@ -339,6 +344,107 @@ fn an_equippable_takes_its_defaults_and_keeps_an_empty_entity_list_apart_from_no
         assert_same(&written, &canonical, input);
     }
     assert_ne!(body, nobody, "STK-SHP-031: no list is not the empty list");
+}
+
+#[test]
+fn attack_interact_animation_and_piercing_weapon_omit_defaults_and_validate() {
+    use mcrs_minecraft_item_stack::SoundEventId;
+
+    let cases = [
+        ("{}", SwingAnimation::DEFAULT, "{}"),
+        (
+            r#"{type:"whack",duration:6}"#,
+            SwingAnimation::DEFAULT,
+            "{}",
+        ),
+        (
+            r#"{type:"stab",duration:10}"#,
+            SwingAnimation {
+                kind: SwingKind::Stab,
+                duration: 10,
+            },
+            r#"{type:"stab",duration:10}"#,
+        ),
+        (
+            r#"{type:"none"}"#,
+            SwingAnimation {
+                kind: SwingKind::None,
+                duration: 6,
+            },
+            r#"{type:"none"}"#,
+        ),
+        (
+            r#"{duration:0}"#,
+            SwingAnimation {
+                kind: SwingKind::Whack,
+                duration: 0,
+            },
+            r#"{duration:0}"#,
+        ),
+    ];
+    for (input, expected, canonical) in cases {
+        let read = read_saved(
+            &with_components(&format!(r#""minecraft:attack_animation":{input}"#)),
+            &Names,
+        )
+        .expect(input);
+        assert_eq!(read, stack(STONE, 1).set(AttackAnimation(expected)));
+        let written = write_saved(&read, &Names).expect(input);
+        let canonical = saved(&format!(
+            r#"{{id:"minecraft:stone",count:1,components:{{"minecraft:attack_animation":{canonical}}}}}"#
+        ));
+        assert_same(&written, &canonical, input);
+
+        let interact_read = read_saved(
+            &with_components(&format!(r#""minecraft:interact_animation":{input}"#)),
+            &Names,
+        )
+        .expect(input);
+        assert_eq!(
+            interact_read,
+            stack(STONE, 1).set(InteractAnimation(expected))
+        );
+    }
+
+    assert_eq!(
+        read_saved(
+            &with_components(r#""minecraft:attack_animation":{duration:-1}"#),
+            &Names
+        ),
+        Err(SavedError::OutOfRange(BuiltinKey::AttackAnimation))
+    );
+    assert_eq!(
+        read_saved(
+            &with_components(r#""minecraft:interact_animation":{type:"spin"}"#),
+            &Names
+        ),
+        Err(SavedError::BadValue(BuiltinKey::InteractAnimation))
+    );
+
+    let default_weapon = PiercingWeapon::new();
+    let mut hit_sound = InlineSoundEvent::new(ResourceLocationBuf::new("mcrs", "hit").unwrap());
+    hit_sound.range = Some(4.0);
+    let custom_weapon = PiercingWeapon {
+        deals_knockback: false,
+        dismounts: true,
+        sound: Some(SoundEventRef::Reference(SoundEventId(0))),
+        hit_sound: Some(SoundEventRef::Inline(hit_sound)),
+    };
+    assert_eq!(
+        read_saved(
+            &with_components(r#""minecraft:piercing_weapon":{}"#),
+            &Names
+        ),
+        Ok(stack(STONE, 1).set(default_weapon.clone()))
+    );
+    let custom_read = read_saved(
+        &with_components(
+            r#""minecraft:piercing_weapon":{deals_knockback:false,dismounts:true,sound:"minecraft:item.armor.equip_iron",hit_sound:{sound_id:"mcrs:hit",range:4.0f}}"#,
+        ),
+        &Names,
+    )
+    .expect("custom piercing weapon");
+    assert_eq!(custom_read, stack(STONE, 1).set(custom_weapon));
 }
 
 #[test]
