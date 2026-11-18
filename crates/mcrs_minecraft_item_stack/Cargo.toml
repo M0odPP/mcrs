@@ -26,7 +26,7 @@ serde.workspace = true
 [dev-dependencies]
 mcrs_minecraft_fixtures.workspace = true
 mcrs_test_alloc.workspace = true
-serde_json.workspace = true
+serde_json = { workspace = true, features = ["unbounded_depth"] }
 
 [features]
 default = []

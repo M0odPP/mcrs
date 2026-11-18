@@ -65,6 +65,7 @@ impl Names {
             NameTable::EntityType => &[(103, "pig"), (156, "zombie")],
             NameTable::Instrument => &[(4, "ponder_goat_horn")],
             NameTable::Potion => &[(13, "swiftness")],
+            NameTable::PaintingVariant => &[(0, "alban"), (1, "aztec"), (24, "kebab")],
             _ => &[],
         };
         let indexed: &'static [&'static str] = match table {
@@ -122,7 +123,7 @@ struct PlainValue {
     hash: Option<i32>,
 }
 
-const PLAIN_KINDS: [&str; 22] = [
+const PLAIN_KINDS: [&str; 24] = [
     "max_stack_size",
     "max_damage",
     "damage",
@@ -145,6 +146,8 @@ const PLAIN_KINDS: [&str; 22] = [
     "suspicious_stew_effects",
     "ominous_bottle_amplifier",
     "instrument",
+    "stored_enchantments",
+    "painting/variant",
 ];
 
 const LOW_BITS_ON_THE_WIRE: &str = r#"{"target":{"dimension":"mcrs:custom","pos":[0,4096,-1]}}"#;
