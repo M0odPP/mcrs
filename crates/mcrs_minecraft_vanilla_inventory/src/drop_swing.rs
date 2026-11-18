@@ -6,8 +6,8 @@ use mcrs_minecraft_engine_item::RequestDrop;
 use mcrs_minecraft_engine_world::session::Owner;
 use mcrs_minecraft_swing::{SpectatorRule, SwingDelivery, SwingSpec};
 
+use crate::RequestPurpose;
 use crate::VanillaInventoryRequests;
-use crate::request_ids::HAND_DROP_REQUEST;
 
 pub(crate) fn swing_on_hand_drop(
     mut drops: MessageReader<RequestDrop>,
@@ -19,7 +19,8 @@ pub(crate) fn swing_on_hand_drop(
         return;
     };
     for drop in drops.read() {
-        if drop.id.source != requests.source || drop.id.serial != HAND_DROP_REQUEST {
+        if drop.id.source != requests.source || drop.id.serial != RequestPurpose::HandDrop.serial()
+        {
             continue;
         }
         let Ok((owner, parent)) = holders.get(drop.holder) else {

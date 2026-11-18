@@ -32,8 +32,8 @@ use mcrs_minecraft_protocol_game::clientbound::ClientboundSwingAnimation;
 use mcrs_minecraft_protocol_game::player::PlayerAction;
 use mcrs_minecraft_protocol_game::serverbound::{
     ServerboundAcceptTeleportation, ServerboundChatCommand, ServerboundChunkBatchReceived,
-    ServerboundClientInformation, ServerboundCommandSuggestion, ServerboundPlayerAction,
-    ServerboundPlayerLoaded, ServerboundPunch, ServerboundSetCarriedItem, ServerboundUseItemOn,
+    ServerboundClientInformation, ServerboundPlayerAction, ServerboundPlayerLoaded,
+    ServerboundPunch, ServerboundSetCarriedItem, ServerboundUseItemOn,
 };
 use mcrs_minecraft_protocol_game::{Direction, Hand, SwingAnimationKind};
 use mcrs_minecraft_server::operator_broadcast::OperatorBroadcastPlugin;
