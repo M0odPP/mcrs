@@ -133,11 +133,12 @@ holds a **usable item** that meets `USE-STR-002`:
 3. Empty hands and instant-use items (`minecraft:snowball`, empty `minecraft:map`,
    `minecraft:fishing_rod`) start no **active use** (`arm-swing.md`, `SWG-SRC-005`).
 
-Provenance: `black_box_confirmed`. Kind: `semantic`. Confidence: `high`.
-Experiment: `USE-E1`, `USE-E3`; `assets/mcrs/item_definition/shield.json`, `stick.json`;
-`tools/mcrs_minecraft_probe/traces/item_use.json` (`start_use_main_shield`, `use_offhand_shield`,
-`try_use_stick_inert`, `use_shield_adventure`); `tools/mcrs_minecraft_probe/traces/arm_swing.json`
-(`use_item_snowball_offhand`, `use_item_empty_map_observers_only`, `use_item_empty_no_swing`).
+Provenance: items 1 and 2 `black_box_confirmed` (`USE-E1`; `assets/mcrs/item_definition/shield.json`,
+`stick.json`; `tools/mcrs_minecraft_probe/traces/item_use.json`: `start_use_main_shield`,
+`use_offhand_shield`, `try_use_stick_inert`, `use_shield_adventure`).
+Item 3 is `documentation` and `design` (`arm-swing.md`, `SWG-SRC-005`; `USE-E3` in `arm_swing.json`
+observes only `swing_animation` (`animate`), not `entity_data` index `8`; see `USE-U5`). Kind:
+`semantic`. Confidence: `high` (items 1, 2), `medium` (item 3).
 
 ### USE-STR-002: consumable gate and **use duration**
 
@@ -149,7 +150,7 @@ When **hand** holds an item with `minecraft:consumable`:
    (`minecraft:golden_apple`), `use_item` starts at food level `20`.
 3. For `minecraft:consumable`, **use duration** (`use_duration_ticks`) equals
    `trunc(consume_seconds * 20)` (`32` ticks at default `1.6`).
-4. When `use_duration_ticks` equals `0`, the consume finishes at start with zero **active use**
+4. When `use_duration_ticks` equals `0`, the consumption finishes at start with zero **active use**
    (`hunger.md`, `HNG-EAT-003`).
 5. When `food < 20` or the item lacks `minecraft:food`, a `minecraft:consumable` item starts
    (`hunger.md`, `HNG-EAT-002`).
@@ -176,8 +177,12 @@ Experiment: `USE-E1`, `USE-E3`; `tools/mcrs_minecraft_probe/traces/item_use.json
 
 ### USE-STR-004: client load, life, `spectator`, and re-trigger gate
 
-The server must ignore `use_item` when **actor** is not a **loaded client**, is dead, is in
-`spectator` mode, or already holds an **active use**.
+The server must ignore `use_item` when **actor** meets any condition below:
+
+- **actor** is not a **loaded client**;
+- **actor** is dead;
+- **actor** is in `spectator` mode;
+- **actor** already holds an **active use**.
 
 Provenance: `design` (matches `block-placing.md` `PLC-REQ-005` and `arm-swing.md` `SWG-SRC-001`;
 see `USE-U2`). Kind: `semantic`. Confidence: `high`.
@@ -199,7 +204,8 @@ Experiment: `USE-E1`; `tools/mcrs_minecraft_probe/traces/item_use.json` (`hold_3
 ### USE-TCK-002: movement speed multiplier (`0.2`)
 
 On foot with `minecraft:bow` in **active use**, the movement step multiplies forward and sideways
-input by `0.2` and stops sprint starts (`entity-physics.md`, `PHY-INP-001`).
+input by `0.2`.
+It does not let **actor** start a sprint (`entity-physics.md`, `PHY-INP-001`).
 For general items on a non-passenger **actor**, the movement step reads `speed_multiplier` and
 `can_sprint` from `minecraft:use_effects` (defaults `0.2` and `false`; `PHY-INP-019`).
 
@@ -219,7 +225,7 @@ When **ticks in use** for `minecraft:golden_apple` (`1.6` s default) reaches **u
 3. The server reduces stack count by `1`. It sends `container_set_slot` to **actor** and
    `set_equipment` to **viewers**.
 4. The server applies `on_consume_effects` (`regeneration` and `absorption`). It updates metadata
-   index `10` effect particles and index `17` float `4.0`.
+   index `10` with effect particles and index `17` with float `4.0`.
 5. The server clears bit `0` of **living flags** (`0` for `main`) and sends `set_entity_data` to
    **actor** and **viewers**.
 
@@ -236,7 +242,7 @@ Experiment: `USE-E1`; `assets/mcrs/item_definition/golden_apple.json`;
 
 When **actor** sends `player_action` with status `release_use_item` (`6`) while in **active use**,
 the server must clear **active use**.
-It clears bit `0` of **living flags** while bit `1` stays at the **hand** bit (`0` for `main`, `2`
+It clears bit `0` of **living flags** while bit `1` keeps the **hand** bit (byte value `0` for `main`, `2`
 for `off`).
 The server sends only `set_entity_data` to **actor** and each **viewer** with zero `sound` packets.
 
@@ -365,9 +371,11 @@ None.
   3. Send `release_use_item`.
   - Result: horizontal speed stays scaled by `0.2` without sprint until `release_use_item`.
 - **USE-E3** (`tools/mcrs_minecraft_probe/traces/arm_swing.json`):
-  1. Send `use_item` for `apple`, `bow`, `shield`, `snowball` (`off`), and empty hand.
-  - Result: continuous start and release emit zero `swing_animation` packets. Empty hand starts
-    nothing; instant uses swing without **active use**.
+  1. Send `use_item` for `apple`, `bow`, `shield`, `snowball` (`off`), empty `map`, `fishing_rod`, and
+     empty hand.
+  - Result: continuous start steps emit zero `swing_animation` (`animate`) packets.
+  - Result: `arm_swing.json` observes only `swing_animation` (`animate`) and omits `entity_data` index
+    `8`.
 
 ---
 
@@ -382,3 +390,6 @@ None.
 - **USE-U4** (tracker range, dimension, and `spectator` viewer metadata):
   Experiment: verify `set_entity_data` index `8` delivery to `spectator`, distant, and nether
   viewers.
+- **USE-U5** (empty hand and instant-use `entity_data` index `8`):
+  Experiment: probe `use_item` for empty hand, `snowball`, empty `map`, and `fishing_rod` with
+  `entity_data` checks.
