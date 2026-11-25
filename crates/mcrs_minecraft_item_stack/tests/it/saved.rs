@@ -910,3 +910,27 @@ fn an_inline_instrument_with_a_negative_zero_use_duration_is_out_of_range() {
         Err(SavedError::OutOfRange(BuiltinKey::Instrument))
     );
 }
+
+#[test]
+fn weapon_round_trips_and_validates_saved_form() {
+    let mut weapon = NbtCompound::new();
+    weapon.put("item_damage_per_attack", NbtTag::Int(2));
+    weapon.put("disable_blocking_for_seconds", NbtTag::Float(5.0));
+    let nbt = with_component("weapon", NbtTag::Compound(weapon));
+    let decoded = read_saved(&nbt, &Names).expect("valid weapon saved form");
+    assert_eq!(
+        decoded,
+        stack(STONE, 1).set(mcrs_minecraft_item_stack::Weapon {
+            item_damage_per_attack: 2,
+            disable_blocking_for_seconds: 5.0,
+        })
+    );
+
+    let mut neg_zero = NbtCompound::new();
+    neg_zero.put("disable_blocking_for_seconds", NbtTag::Float(-0.0));
+    let bad = with_component("weapon", NbtTag::Compound(neg_zero));
+    assert_eq!(
+        read_saved(&bad, &Names),
+        Err(SavedError::OutOfRange(BuiltinKey::Weapon))
+    );
+}

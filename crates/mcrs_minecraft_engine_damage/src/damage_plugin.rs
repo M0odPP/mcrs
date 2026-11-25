@@ -13,6 +13,7 @@ use crate::DamageSet;
 use crate::DamageTypeIds;
 use crate::Damaged;
 use crate::Died;
+use crate::MeleeAttackHit;
 use crate::PendingHits;
 use crate::RespawnRequest;
 use crate::apply_hits::ApplyOrder;
@@ -36,6 +37,7 @@ impl Plugin for DamagePlugin {
         app.add_observer(track_inserted_vitals);
         app.add_message::<Damaged>();
         app.add_message::<Died>();
+        app.add_message::<MeleeAttackHit>();
         app.add_message::<RespawnRequest>();
         app.configure_sets(
             FixedUpdate,

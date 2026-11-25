@@ -113,6 +113,7 @@ use crate::TrimMaterialId;
 use crate::TrimPatternId;
 use crate::Unbreakable;
 use crate::UndecodedValue;
+use crate::Weapon;
 use crate::builtin_key::NAMESPACE;
 use crate::check_saved_form::NOT_NEGATIVE;
 use crate::check_saved_form::OMINOUS_AMPLIFIER;
@@ -442,6 +443,7 @@ fn read_flat_value<L: NameLookup>(
         BuiltinKey::InteractAnimation => {
             Builtin::InteractAnimation(InteractAnimation(reader.swing_animation(tag)?))
         }
+        BuiltinKey::Weapon => Builtin::Weapon(reader.weapon(tag)?),
         BuiltinKey::CustomName => Builtin::CustomName(CustomName(read_text(tag, component)?)),
         BuiltinKey::ItemName => Builtin::ItemName(ItemName(read_text(tag, component)?)),
         BuiltinKey::Lore => Builtin::Lore(read_lore(tag)?),
@@ -1162,6 +1164,28 @@ impl<L: NameLookup> Reader<'_, L> {
             None => SwingAnimation::DEFAULT_DURATION,
         };
         Ok(SwingAnimation { kind, duration })
+    }
+
+    fn weapon(&self, tag: &NbtTag) -> Result<Weapon, SavedError> {
+        let map = self.map(tag)?;
+        let item_damage_per_attack = match map.get("item_damage_per_attack") {
+            Some(tag) => self.int(tag, NOT_NEGATIVE)?,
+            None => Weapon::DEFAULT_ITEM_DAMAGE_PER_ATTACK,
+        };
+        let disable_blocking_for_seconds = match map.get("disable_blocking_for_seconds") {
+            Some(tag) => {
+                let seconds = self.float(tag)?;
+                if !is_use_duration(seconds) {
+                    return Err(SavedError::OutOfRange(self.component));
+                }
+                seconds
+            }
+            None => Weapon::DEFAULT_DISABLE_BLOCKING_FOR_SECONDS,
+        };
+        Ok(Weapon {
+            item_damage_per_attack,
+            disable_blocking_for_seconds,
+        })
     }
 }
 

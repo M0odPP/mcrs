@@ -37,6 +37,7 @@ use crate::SuspiciousStewEffects;
 use crate::Tool;
 use crate::Trim;
 use crate::Unbreakable;
+use crate::Weapon;
 
 pub(crate) trait EntityForm: Clone + 'static {
     const NEUTRAL: Option<&'static Self> = None;
@@ -148,3 +149,5 @@ impl EntityForm for AttributeModifiers {
 impl EntityForm for AttackAnimation {}
 
 impl EntityForm for InteractAnimation {}
+
+impl EntityForm for Weapon {}

@@ -1,11 +1,13 @@
 use bytes::Bytes;
 use mcrs_engine_muxer::EntityId;
-use mcrs_minecraft_protocol::{Result, VarInt};
-use mcrs_minecraft_protocol_game::clientbound::{
-    ClientboundDamageEvent, ClientboundEntityEvent, ClientboundSwingAnimation,
-    ClientboundTakeItemEntity,
-};
-use mcrs_minecraft_protocol_game::{Hand, SwingAnimationKind};
+use mcrs_minecraft_protocol::Result;
+use mcrs_minecraft_protocol::VarInt;
+use mcrs_minecraft_protocol_game::Hand;
+use mcrs_minecraft_protocol_game::SwingAnimationKind;
+use mcrs_minecraft_protocol_game::clientbound::ClientboundDamageEvent;
+use mcrs_minecraft_protocol_game::clientbound::ClientboundEntityEvent;
+use mcrs_minecraft_protocol_game::clientbound::ClientboundSwingAnimation;
+use mcrs_minecraft_protocol_game::clientbound::ClientboundTakeItemEntity;
 
 use crate::encode::record;
 use crate::wire_id::wire_id;
@@ -18,6 +20,9 @@ pub enum MobSignal {
     },
     Died,
     Removed,
+    EntityEvent {
+        status: i8,
+    },
     Taken {
         collector: EntityId,
         amount: i32,
@@ -54,6 +59,7 @@ impl MobSignal {
             }
             Self::Died => event(ClientboundEntityEvent::DIED)?,
             Self::Removed => event(ClientboundEntityEvent::REMOVED)?,
+            Self::EntityEvent { status } => event(status)?,
             Self::Taken { collector, amount } => record(&ClientboundTakeItemEntity {
                 item_id: entity_id,
                 player_id: wire_id(collector),

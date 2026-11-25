@@ -43,6 +43,7 @@ use mcrs_minecraft_item_stack::Tool;
 use mcrs_minecraft_item_stack::TooltipDisplay;
 use mcrs_minecraft_item_stack::Trim;
 use mcrs_minecraft_item_stack::Unbreakable;
+use mcrs_minecraft_item_stack::Weapon;
 use mcrs_minecraft_item_table::ItemTable;
 
 use mcrs_minecraft_item::data_component_type_keys::DataComponentType;
@@ -120,6 +121,7 @@ impl<'a> ComponentHolder<'a> {
             DataComponentType::PiercingWeapon => self.effective::<PiercingWeapon>().is_some(),
             DataComponentType::AttackAnimation => self.effective::<AttackAnimation>().is_some(),
             DataComponentType::InteractAnimation => self.effective::<InteractAnimation>().is_some(),
+            DataComponentType::Weapon => self.effective::<Weapon>().is_some(),
             _ => false,
         }
     }
@@ -168,6 +170,7 @@ impl<'a> ComponentHolder<'a> {
             Builtin::PiercingWeapon(value) => self.effective() == Some(value),
             Builtin::AttackAnimation(value) => self.effective() == Some(value),
             Builtin::InteractAnimation(value) => self.effective() == Some(value),
+            Builtin::Weapon(value) => self.effective() == Some(value),
             _ => false,
         }
     }

@@ -1,0 +1,20 @@
+[package]
+name = "mcrs_minecraft_durability"
+description = "Pure item durability math, unbreaking rolls, armour bypass and slot break events without Bevy"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+test = false
+doctest = false
+
+[lints]
+workspace = true
+
+[dependencies]
+libm.workspace = true
+mcrs_minecraft_entity_key.workspace = true
+
+[dev-dependencies]
+mcrs_test_alloc.workspace = true

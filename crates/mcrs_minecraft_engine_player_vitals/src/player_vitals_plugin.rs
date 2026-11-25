@@ -1,10 +1,12 @@
+use crate::DeathMessage;
+use crate::PlayerDeathSet;
+use crate::PlayerVitalsSet;
 use crate::hide_dead_players::hide_dead_players;
 use crate::player_invulnerability::{fill_player_invulnerability, invulnerable};
 use crate::respawn_players::{HiddenForRespawn, respawn_players, show_respawned_players};
 use crate::send_health::send_health;
 use crate::send_kill::send_kill;
 use crate::signal_hits::signal_player_hits;
-use crate::{DeathMessage, PlayerDeathSet};
 use bevy_app::{App, FixedUpdate, Plugin};
 use bevy_ecs::lifecycle::Add;
 use bevy_ecs::observer::On;
@@ -38,6 +40,7 @@ impl Plugin for PlayerVitalsPlugin {
             FixedUpdate,
             send_health
                 .in_set(TickSet::Project)
+                .in_set(PlayerVitalsSet::Health)
                 .after(DamageSet::Report)
                 .after(OwnAttributesSet),
         );
@@ -46,6 +49,7 @@ impl Plugin for PlayerVitalsPlugin {
             signal_player_hits
                 .run_if(on_message::<Damaged>)
                 .in_set(TickSet::Project)
+                .in_set(PlayerVitalsSet::SignalHits)
                 .after(DamageSet::Report)
                 .after(PoseSystems::Publish)
                 .after(send_health),

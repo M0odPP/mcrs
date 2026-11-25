@@ -796,9 +796,9 @@ mod tests {
     use mcrs_engine_muxer::TileKey;
     use mcrs_minecraft_entity::EntityTypeData;
     use mcrs_minecraft_protocol_game::ProtoStack;
-    use mcrs_minecraft_protocol_game::clientbound::{
-        ClientboundSetEntityData, ClientboundTakeItemEntity,
-    };
+    use mcrs_minecraft_protocol_game::clientbound::ClientboundEntityEvent;
+    use mcrs_minecraft_protocol_game::clientbound::ClientboundSetEntityData;
+    use mcrs_minecraft_protocol_game::clientbound::ClientboundTakeItemEntity;
     use mcrs_minecraft_protocol_game::entity::{MetaDataValue, Metadata, MetadataEntry};
     use mcrs_minecraft_registries::Wire;
     use mcrs_minecraft_wire::Decode;
@@ -1406,6 +1406,61 @@ mod tests {
             spawn_of(LATE_VIEWER),
             spawn_of(OBSERVER_A),
             "a viewer gained in the tick of the hide gets the same spawn"
+        );
+    }
+
+    #[test]
+    fn entity_event_signal_encodes_and_delivers_to_observers_only() {
+        let mut codec = setup_swing_codec();
+        let data = PlayerData::Signal(MobSignal::EntityEvent { status: 47 }).into();
+        let delta = TileDelta {
+            tile: TileKey::new(0, 0, 0),
+            events: vec![SubjectEvent {
+                subject: PLAYER,
+                event: EntityEvent::Data(data),
+            }],
+        };
+        codec.apply(1, &delta);
+        let by_viewer = finish_by_viewer(&mut codec, 1);
+        let pkt = ClientboundEntityEvent {
+            entity_id: wire_id(PLAYER).0,
+            entity_status: 47,
+        };
+        let expected = record(&pkt).unwrap();
+
+        let (a, b) = (
+            by_viewer.get(&OBSERVER_A).unwrap(),
+            by_viewer.get(&OBSERVER_B).unwrap(),
+        );
+        assert_eq!(
+            a.as_slice(),
+            std::slice::from_ref(&expected),
+            "observer A gets EntityEvent"
+        );
+        assert_eq!(
+            b.as_slice(),
+            std::slice::from_ref(&expected),
+            "observer B gets EntityEvent"
+        );
+        assert_eq!(
+            a[0].as_ptr(),
+            b[0].as_ptr(),
+            "observers share encoded Bytes"
+        );
+        assert!(
+            !by_viewer.contains_key(&SUBJECT_VIEWER),
+            "EntityEvent skips owning viewer"
+        );
+
+        let mut late = Vec::new();
+        let hold = Hold::Gain {
+            subject: PLAYER,
+            tier: Tier::NEAREST,
+        };
+        codec.hold(LATE_VIEWER, hold, &mut late);
+        assert!(
+            !late.contains(&expected),
+            "transient EntityEvent never enters spawn backlog"
         );
     }
 }

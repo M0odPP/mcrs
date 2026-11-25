@@ -101,6 +101,7 @@ fn apply(vitals: &mut Vitals, defence: &Defence, tags: DamageTags, damage: f32) 
     }
     HitReport {
         outcome: HitOutcome::Full,
+        raw_amount: damage,
         armor: damage - applied,
         absorption: absorbed,
         health: lost,
@@ -493,5 +494,35 @@ mod tests {
                 "{first:?} and {second:?} on {start:?}"
             );
         }
+    }
+
+    #[test]
+    fn hit_report_raw_amount_tracks_full_partial_and_rejected() {
+        let mut vitals = Vitals::new(20.0);
+        let mut record = HitRecord::default();
+        let defence = Defence::default();
+
+        let full = strike(&mut vitals, &mut record, &defence, hit(6.0, GENERIC));
+        assert_eq!(full.outcome, HitOutcome::Full, "first hit is Full");
+        assert_eq!(full.raw_amount, 6.0, "Full raw_amount matches hit amount");
+
+        let partial = strike(&mut vitals, &mut record, &defence, hit(10.0, GENERIC));
+        assert_eq!(
+            partial.outcome,
+            HitOutcome::Partial,
+            "larger hit during cooldown is Partial"
+        );
+        assert_eq!(
+            partial.raw_amount, 4.0,
+            "Partial raw_amount must equal a - L (10.0 - 6.0)"
+        );
+
+        let rejected = strike(&mut vitals, &mut record, &defence, hit(5.0, GENERIC));
+        assert_eq!(
+            rejected.outcome,
+            HitOutcome::Rejected,
+            "weaker hit during cooldown is Rejected"
+        );
+        assert_eq!(rejected.raw_amount, 0.0, "Rejected raw_amount must be 0.0");
     }
 }

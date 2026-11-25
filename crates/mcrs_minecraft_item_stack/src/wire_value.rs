@@ -104,6 +104,7 @@ use crate::Trim;
 use crate::TrimMaterialId;
 use crate::TrimPatternId;
 use crate::Unbreakable;
+use crate::Weapon;
 use crate::WireError;
 use crate::lore::MAX_LINES;
 use crate::nbt_depth::LIST_TEMPLATE_LEVELS;
@@ -230,6 +231,10 @@ fn read_flat_value<L: NameLookup>(
         BuiltinKey::InteractAnimation => {
             Builtin::InteractAnimation(InteractAnimation(reader.swing_animation(input)?))
         }
+        BuiltinKey::Weapon => Builtin::Weapon(Weapon {
+            item_damage_per_attack: reader.var_int(input)?,
+            disable_blocking_for_seconds: f32::from_be_bytes(reader.bytes(input)?),
+        }),
         BuiltinKey::CustomName => Builtin::CustomName(CustomName(read_text(input, component)?)),
         BuiltinKey::ItemName => Builtin::ItemName(ItemName(read_text(input, component)?)),
         BuiltinKey::Lore => Builtin::Lore(reader.lore(input)?),
@@ -871,6 +876,10 @@ pub(crate) fn write_value<L: NameLookup>(
         Builtin::AttackAnimation(AttackAnimation(swing))
         | Builtin::InteractAnimation(InteractAnimation(swing)) => {
             writer.swing_animation(swing, output)?;
+        }
+        Builtin::Weapon(weapon) => {
+            put_var_int(output, weapon.item_damage_per_attack);
+            output.extend_from_slice(&weapon.disable_blocking_for_seconds.to_be_bytes());
         }
         Builtin::MapDecorations(_) => writer.saved_form_as_nbt(value, output)?,
         Builtin::Profile(profile) => profile

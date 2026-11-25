@@ -67,6 +67,7 @@ use crate::ToolRule;
 use crate::TooltipDisplay;
 use crate::Trim;
 use crate::Unbreakable;
+use crate::Weapon;
 use crate::WireError;
 use crate::check_saved_form::NOT_NEGATIVE;
 use crate::check_saved_form::OMINOUS_AMPLIFIER;
@@ -212,6 +213,7 @@ fn flat_saved_form<S: SavedSink, L: NameLookup>(
         Builtin::PiercingWeapon(weapon) => walk.piercing_weapon(sink, weapon),
         Builtin::AttackAnimation(AttackAnimation(swing))
         | Builtin::InteractAnimation(InteractAnimation(swing)) => walk.swing_animation(sink, swing),
+        Builtin::Weapon(weapon) => walk.weapon(sink, weapon),
         Builtin::CustomName(CustomName(text)) | Builtin::ItemName(ItemName(text)) => {
             walk.text(sink, text)
         }
@@ -876,6 +878,25 @@ impl<L: NameLookup> Walk<'_, L> {
         Ok(sink.fields([
             Field::optional("type", kind),
             Field::optional("duration", duration),
+        ]))
+    }
+
+    fn weapon<S: SavedSink>(&self, sink: &mut S, weapon: &Weapon) -> Result<S::Node, Fault> {
+        let item_damage_per_attack = (weapon.item_damage_per_attack
+            != Weapon::DEFAULT_ITEM_DAMAGE_PER_ATTACK)
+            .then(|| self.int(sink, weapon.item_damage_per_attack, NOT_NEGATIVE))
+            .transpose()?;
+        if !NOT_NEGATIVE.contains(&weapon.item_damage_per_attack)
+            || !is_use_duration(weapon.disable_blocking_for_seconds)
+        {
+            return Err(Fault::OutOfRange(self.component));
+        }
+        let disable_blocking_for_seconds = (weapon.disable_blocking_for_seconds.to_bits()
+            != Weapon::DEFAULT_DISABLE_BLOCKING_FOR_SECONDS.to_bits())
+        .then(|| sink.leaf(Leaf::Float(weapon.disable_blocking_for_seconds)));
+        Ok(sink.fields([
+            Field::optional("item_damage_per_attack", item_damage_per_attack),
+            Field::optional("disable_blocking_for_seconds", disable_blocking_for_seconds),
         ]))
     }
 }
