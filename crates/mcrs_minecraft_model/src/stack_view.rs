@@ -5,12 +5,10 @@ use mcrs_minecraft_item_stack::Builtin;
 use mcrs_minecraft_item_stack::BuiltinKey;
 use mcrs_minecraft_item_stack::BundleContents;
 use mcrs_minecraft_item_stack::ChargedProjectiles;
-use mcrs_minecraft_item_stack::Damage;
 use mcrs_minecraft_item_stack::EnchantmentGlintOverride;
 use mcrs_minecraft_item_stack::Enchantments;
 use mcrs_minecraft_item_stack::ItemComponent;
 use mcrs_minecraft_item_stack::ItemStack;
-use mcrs_minecraft_item_stack::MaxDamage;
 use mcrs_minecraft_item_stack::MaxStackSize;
 use mcrs_minecraft_item_stack::NameLookup;
 use mcrs_minecraft_item_stack::NameTable;
@@ -108,30 +106,23 @@ impl<'a> StackView<'a> {
         self.get::<MaxStackSize>().map_or(1.0, |max| max.0 as f32)
     }
 
-    fn is_damageable(&self) -> bool {
-        self.has(DataComponentType::MaxDamage)
-            && self.has(DataComponentType::Damage)
-            && !self.has(DataComponentType::Unbreakable)
-    }
-
     #[must_use]
     pub fn max_damage(&self) -> i32 {
-        self.get::<MaxDamage>().map_or(0, |max| max.0)
+        self.stack.max_damage(self.table)
     }
 
     #[must_use]
     pub fn damage_value(&self) -> i32 {
-        let damage = self.get::<Damage>().map_or(0, |damage| damage.0);
-        damage.min(self.max_damage()).max(0)
+        self.stack.damage_value(self.table)
     }
 
     #[must_use]
     pub fn is_damaged(&self) -> bool {
-        self.is_damageable() && self.damage_value() > 0
+        self.stack.is_damaged(self.table)
     }
 
     pub(crate) fn next_damage_will_break(&self) -> bool {
-        self.is_damageable() && self.damage_value() >= self.max_damage().saturating_sub(1)
+        self.stack.next_damage_will_break(self.table)
     }
 
     #[must_use]

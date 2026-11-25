@@ -20,6 +20,7 @@ use mcrs_minecraft_engine::client_on_ground::ClientOnGround;
 use mcrs_minecraft_engine::network_id::player_network_id;
 use mcrs_minecraft_engine::player_sprinting::PlayerSprinting;
 use mcrs_minecraft_engine_damage::Damaged;
+use mcrs_minecraft_engine_damage::MeleeAttackHit;
 use mcrs_minecraft_engine_entity_motion::MotionState;
 use mcrs_minecraft_engine_physics::EntityWrite;
 use mcrs_minecraft_engine_physics::EntityWrites;
@@ -135,6 +136,7 @@ pub(crate) fn knock_back(
     mobs: Query<(&MotionState, &Mob)>,
     mut writes: Option<ResMut<EntityWrites>>,
     mut packets: MessageWriter<OutboundPlayerPacket>,
+    mut melee_hits: MessageWriter<MeleeAttackHit>,
     mut composed: Local<Vec<Composed>>,
 ) {
     let tick = birth_tick(clock.as_deref());
@@ -147,6 +149,10 @@ pub(crate) fn knock_back(
         let Some(attack) = take(&mut knockbacks, hit) else {
             continue;
         };
+        melee_hits.write(MeleeAttackHit {
+            attacker: attack.attacker,
+            target: hit.target,
+        });
         let full = hit.report.outcome == HitOutcome::Full
             && rules.as_deref().is_none_or(|rules| {
                 !rules
@@ -230,9 +236,15 @@ pub(crate) fn knock_back(
 
 #[cfg(test)]
 mod tests {
+    use bevy_app::App;
+    use bevy_app::FixedUpdate;
     use bevy_ecs::change_detection::Tick;
+    use bevy_ecs::message::Messages;
+    use mcrs_minecraft_damage::DamageSource;
+    use mcrs_minecraft_damage::HitReport;
 
     use super::*;
+    use crate::PlayerAttackPlugin;
 
     #[test]
     fn the_extra_knockback_moves_the_target_along_the_look_direction() {
@@ -257,5 +269,75 @@ mod tests {
                 "yaw {yaw}: {pushed} != {expected}"
             );
         }
+    }
+
+    #[test]
+    fn melee_attack_hit_emitted_on_accepted_hits_only() {
+        let mut app = App::new();
+        app.add_plugins(PlayerAttackPlugin);
+        app.finish();
+        app.cleanup();
+
+        let (attacker, t_full, t_part, t_rej) = (
+            app.world_mut().spawn_empty().id(),
+            app.world_mut().spawn_empty().id(),
+            app.world_mut().spawn_empty().id(),
+            app.world_mut().spawn_empty().id(),
+        );
+        let uuid = EntityUuid::from_u128(99);
+        let kb = |target| AttackKnockback {
+            attacker,
+            attacker_uuid: uuid,
+            target,
+            strength: 0.0,
+            yaw: 0.0,
+            position: DVec3::ZERO,
+            sprint_changed: Tick::new(0),
+        };
+        app.world_mut()
+            .resource_mut::<AttackKnockbacks>()
+            .0
+            .extend([kb(t_full), kb(t_part), kb(t_rej)]);
+
+        let mut source = DamageSource::of(0);
+        source.cause.direct = Some(uuid);
+        let base = HitReport {
+            outcome: HitOutcome::Full,
+            raw_amount: 4.0,
+            armor: 0.0,
+            absorption: 0.0,
+            health: 4.0,
+            died: false,
+        };
+        let msg = |target, outcome| Damaged {
+            target,
+            source,
+            report: HitReport { outcome, ..base },
+        };
+        app.world_mut()
+            .resource_mut::<Messages<Damaged>>()
+            .write_batch([
+                msg(t_full, HitOutcome::Full),
+                msg(t_part, HitOutcome::Partial),
+                msg(t_rej, HitOutcome::Rejected),
+            ]);
+        app.world_mut().run_schedule(FixedUpdate);
+
+        let msgs = app.world().resource::<Messages<MeleeAttackHit>>();
+        let hits: Vec<_> = msgs.get_cursor().read(msgs).copied().collect();
+        assert_eq!(
+            hits,
+            vec![
+                MeleeAttackHit {
+                    attacker,
+                    target: t_full
+                },
+                MeleeAttackHit {
+                    attacker,
+                    target: t_part
+                },
+            ],
+            "emit only for accepted Full/Partial hits"
+        );
     }
 }

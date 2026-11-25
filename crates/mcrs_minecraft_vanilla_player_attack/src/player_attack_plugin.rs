@@ -7,6 +7,7 @@ use bevy_ecs::schedule::common_conditions::on_message;
 use mcrs_minecraft_engine::bus::OutboundPlayerPacket;
 use mcrs_minecraft_engine_damage::DamageSet;
 use mcrs_minecraft_engine_damage::Damaged;
+use mcrs_minecraft_engine_damage::MeleeAttackHit;
 use mcrs_minecraft_engine_damage::PendingHits;
 use mcrs_minecraft_engine_world::entity::player::Player;
 
@@ -29,6 +30,7 @@ impl Plugin for PlayerAttackPlugin {
             .init_resource::<AttackKnockbacks>()
             .add_message::<OutboundPlayerPacket>()
             .add_message::<Damaged>()
+            .add_message::<MeleeAttackHit>()
             .add_observer(on_attack)
             .add_observer(reset_on_punch)
             .add_systems(

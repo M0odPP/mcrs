@@ -1,16 +1,22 @@
 use mcrs_minecraft_item_stack::BeeOccupant;
 use mcrs_minecraft_item_stack::Bees;
+use mcrs_minecraft_item_stack::BreakBehavior;
+use mcrs_minecraft_item_stack::Builtin;
 use mcrs_minecraft_item_stack::Count;
 use mcrs_minecraft_item_stack::CustomComponent;
 use mcrs_minecraft_item_stack::CustomData;
 use mcrs_minecraft_item_stack::Damage;
+use mcrs_minecraft_item_stack::DamageOutcome;
 use mcrs_minecraft_item_stack::EntityData;
 use mcrs_minecraft_item_stack::EntityTypeId;
+use mcrs_minecraft_item_stack::ItemDefaults;
 use mcrs_minecraft_item_stack::ItemStack;
 use mcrs_minecraft_item_stack::Kind;
+use mcrs_minecraft_item_stack::MaxDamage;
 use mcrs_minecraft_item_stack::Rarity;
 use mcrs_minecraft_item_stack::RepairCost;
 use mcrs_minecraft_item_stack::Unbreakable;
+use mcrs_minecraft_item_stack::Weapon;
 use mcrs_minecraft_nbt::compound::NbtCompound;
 use mcrs_minecraft_nbt::tag::NbtTag;
 
@@ -200,4 +206,108 @@ fn stacks_are_mergeable_when_item_and_patch_are_equal() {
     for (name, left, right, mergeable) in cases {
         assert_eq!(left.mergeable(&right), mergeable, "{name}");
     }
+}
+
+struct ProtoDefaults<'a>(&'a [Builtin]);
+
+impl ItemDefaults for ProtoDefaults<'_> {
+    fn default_components(&self, _kind: Kind) -> &[Builtin] {
+        self.0
+    }
+}
+
+fn tool_defaults() -> ProtoDefaults<'static> {
+    ProtoDefaults(&[
+        Builtin::MaxDamage(MaxDamage(32)),
+        Builtin::Damage(Damage(0)),
+    ])
+}
+
+#[test]
+fn durability_predicates_and_defaults() {
+    let d = tool_defaults();
+    let fresh = stack(7, 1);
+    let unbrk = fresh.clone().set(Unbreakable);
+    let no_dmg = fresh.clone().unset::<Damage>();
+    let no_max = fresh.clone().unset::<MaxDamage>();
+    assert!(fresh.is_damageable(&d), "fresh tool is damageable");
+    assert_eq!(fresh.max_damage(&d), 32, "max_damage default");
+    assert_eq!(fresh.damage_value(&d), 0, "initial damage_value");
+    assert!(!fresh.is_damaged(&d), "fresh stack is not damaged");
+    assert!(!fresh.is_broken(&d), "fresh stack is not broken");
+    assert!(!fresh.next_damage_will_break(&d), "fresh will not break");
+    assert!(!unbrk.is_damageable(&d), "unbreakable not damageable");
+    assert!(!no_dmg.is_damageable(&d), "no Damage not damageable");
+    assert!(!no_max.is_damageable(&d), "no MaxDamage not damageable");
+    assert!(!no_dmg.is_damaged(&d), "no Damage not damaged");
+}
+
+#[test]
+fn durability_damage_lifecycle_and_normalization() {
+    use BreakBehavior::{BreakAtMax, ClampBelowMax};
+    use DamageOutcome::{Broken, Damaged, Unchanged};
+
+    let d = tool_defaults();
+    let fresh = stack(7, 1);
+
+    let (damaged, out) = fresh.clone().apply_damage(10, BreakAtMax, &d);
+    let damaged = damaged.expect("survives below max");
+    assert_eq!(out, Damaged(10), "damaged outcome");
+    assert!(damaged.is_damaged(&d), "damaged stack reports is_damaged");
+    assert_eq!(damaged.damage_value(&d), 10, "updated damage_value");
+
+    let (repaired, out) = damaged.apply_damage(-20, BreakAtMax, &d);
+    let repaired = repaired.expect("repair returns to zero");
+    assert_eq!(out, Damaged(0), "repaired outcome");
+    assert!(repaired.patch().is_empty(), "repair normalizes Damage(0)");
+
+    let (clamped, out) = fresh.clone().apply_damage(99, ClampBelowMax, &d);
+    let clamped = clamped.expect("clamp keeps alive");
+    assert_eq!(out, Damaged(31), "clamped to max - 1");
+    assert!(clamped.next_damage_will_break(&d), "max - 1 breaks next");
+    assert!(!clamped.is_broken(&d), "max - 1 is not broken");
+
+    let (same, out) = clamped.clone().apply_damage(5, ClampBelowMax, &d);
+    assert_eq!(out, Unchanged, "clamp at ceiling is Unchanged");
+    assert_eq!(same.map(|s| s.damage_value(&d)), Some(31), "stays 31");
+
+    let (broken, out) = clamped.apply_damage(1, BreakAtMax, &d);
+    assert_eq!(broken, None, "single stack breaks at max");
+    assert_eq!(out, Broken(Kind(7)), "broken outcome");
+
+    let (rem, out) = stack(7, 3).set(Damage(31)).apply_damage(1, BreakAtMax, &d);
+    let rem = rem.expect("stacked decrements");
+    assert_eq!((rem.count.get(), rem.damage_value(&d)), (2, 32), "count=2");
+    assert_eq!(out, Broken(Kind(7)), "stacked break outcome");
+
+    let unbrk = fresh.set(Unbreakable);
+    let (same, out) = unbrk.clone().apply_damage(5, BreakAtMax, &d);
+    assert_eq!(out, Unchanged, "unbreakable Unchanged");
+    assert_eq!(same, Some(unbrk), "unbreakable stack untouched");
+
+    let at_max = stack(7, 1).set(Damage(32));
+    assert!(at_max.is_broken(&d), "Damage(max) is broken");
+    for b in [BreakAtMax, ClampBelowMax] {
+        let (same, out) = at_max.clone().apply_damage(0, b, &d);
+        assert_eq!(out, Unchanged, "STK-DMG-005 0-dmg Unchanged ({b:?})");
+        assert_eq!(
+            same.as_ref(),
+            Some(&at_max),
+            "STK-DMG-005 keeps max ({b:?})"
+        );
+    }
+}
+
+#[test]
+fn weapon_equality_distinguishes_signed_zero() {
+    let pos = Weapon {
+        item_damage_per_attack: 1,
+        disable_blocking_for_seconds: 0.0,
+    };
+    let neg = Weapon {
+        item_damage_per_attack: 1,
+        disable_blocking_for_seconds: -0.0,
+    };
+    assert_ne!(pos, neg, "Weapon equality must distinguish signed zero");
+    assert_eq!(Weapon::new(), pos, "Weapon::new defaults match 1 / 0.0");
 }

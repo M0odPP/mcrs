@@ -1613,3 +1613,30 @@ fn swing_animation_rejects_invalid_kind_and_negative_duration_on_wire() {
         Err(WireError::OutOfRange(BuiltinKey::AttackAnimation))
     );
 }
+
+#[test]
+fn weapon_wire_round_trips_and_rejects_out_of_range() {
+    let custom = stack(STONE, 1).set(mcrs_minecraft_item_stack::Weapon {
+        item_damage_per_attack: 2,
+        disable_blocking_for_seconds: 5.0,
+    });
+    let mut encoded = Vec::new();
+    write_wire(Some(&custom), &Names, &mut encoded).expect("weapon wire write");
+    let decoded = read_all(&encoded, read_wire).expect("weapon wire read");
+    assert_eq!(decoded, Some(custom));
+
+    let invalid_stack = stack(STONE, 1).set(mcrs_minecraft_item_stack::Weapon {
+        item_damage_per_attack: -1,
+        disable_blocking_for_seconds: 0.0,
+    });
+    assert_eq!(
+        write_wire(Some(&invalid_stack), &Names, &mut Vec::new()),
+        Err(WireError::OutOfRange(BuiltinKey::Weapon))
+    );
+
+    let negative_wire = with_one_component("weapon", "ffffffff0f00000000");
+    assert_eq!(
+        read_all(&negative_wire, read_wire),
+        Err(WireError::OutOfRange(BuiltinKey::Weapon))
+    );
+}

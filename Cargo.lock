@@ -5087,6 +5087,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "mcrs_minecraft_durability"
+version = "0.5.8"
+dependencies = [
+ "libm",
+ "mcrs_minecraft_entity_key",
+ "mcrs_test_alloc",
+]
+
+[[package]]
 name = "mcrs_minecraft_enchantment"
 version = "0.5.8"
 dependencies = [

@@ -3,6 +3,7 @@ use alloc::vec::Vec;
 
 use mcrs_minecraft_item_stack::Builtin;
 use mcrs_minecraft_item_stack::ItemComponent;
+use mcrs_minecraft_item_stack::ItemDefaults;
 use mcrs_minecraft_item_stack::ItemStack;
 use mcrs_minecraft_item_stack::Kind;
 use mcrs_minecraft_item_stack::NameLookup;
@@ -63,6 +64,12 @@ impl ItemTable {
             ) => None,
             None => self.prototype(stack.kind)?.get().or_else(T::neutral),
         }
+    }
+}
+
+impl ItemDefaults for ItemTable {
+    fn default_components(&self, kind: Kind) -> &[Builtin] {
+        self.prototype(kind).map_or(&[], Prototype::components)
     }
 }
 

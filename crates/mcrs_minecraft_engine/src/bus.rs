@@ -128,6 +128,7 @@ pub enum PacketPayload {
     EntityPosSync(ClientboundEntityPositionSync),
     PlayerLogin(ClientboundLogin),
     Respawn(ClientboundRespawn),
+    EntityEvent(ClientboundEntityEvent),
     OpLevelEntityEvent(ClientboundEntityEvent),
     SetChunkCacheCenter(ClientboundSetChunkCacheCenter),
     SetChunkCacheRadius(ClientboundChunkCacheRadius),

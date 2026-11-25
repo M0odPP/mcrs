@@ -46,6 +46,7 @@ macro_rules! for_each_builtin {
             PiercingWeapon => "piercing_weapon",
             AttackAnimation => "attack_animation",
             InteractAnimation => "interact_animation",
+            Weapon => "weapon",
         }
     };
 }

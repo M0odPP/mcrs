@@ -108,10 +108,7 @@ pub(crate) fn skip_value(
         }
         DamageResistant | Repairable | ProvidesBannerPatterns => skip.holder_set(input),
         Tool => value(BuiltinKey::Tool, input),
-        Weapon => {
-            skip.var_int(input)?;
-            skip.bytes(input, F32)
-        }
+        Weapon => value(BuiltinKey::Weapon, input),
         AttackRange => skip.bytes(input, 6 * F32),
         Equippable => value(BuiltinKey::Equippable, input),
         DeathProtection => skip.list(input, consume_effect),

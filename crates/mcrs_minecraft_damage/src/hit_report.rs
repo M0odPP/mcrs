@@ -3,6 +3,7 @@ use crate::HitOutcome;
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct HitReport {
     pub outcome: HitOutcome,
+    pub raw_amount: f32,
     pub armor: f32,
     pub absorption: f32,
     pub health: f32,
@@ -12,6 +13,7 @@ pub struct HitReport {
 impl HitReport {
     pub(crate) const REJECTED: Self = Self {
         outcome: HitOutcome::Rejected,
+        raw_amount: 0.0,
         armor: 0.0,
         absorption: 0.0,
         health: 0.0,

@@ -239,6 +239,7 @@ Use the crate that owns the item. Do not write a second copy.
 - `mcrs_minecraft_damage`: The hit procedure of a living entity without Bevy: the damage cooldown, the reductions, the absorption, the health change, the start of the death and the hit record
 - `mcrs_minecraft_datapack`: The data pack stack: pack selection, pack.mcmeta, overlays, filters and the files each pack contributes
 - `mcrs_minecraft_decorated_pot_pattern`: The decorated pot pattern registry value and its keys
+- `mcrs_minecraft_durability`: Pure item durability math, unbreaking rolls, armour bypass and slot break events without Bevy
 - `mcrs_minecraft_enchantment`: The enchantment file and the keys of the enchantment registries
 - `mcrs_minecraft_environment`: Environment attributes, timelines and world clocks
 - `mcrs_minecraft_falling_block`: The rules of a falling block: which blocks fall, the start, the tick and the landing
