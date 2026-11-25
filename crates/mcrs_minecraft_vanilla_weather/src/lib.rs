@@ -1,5 +1,7 @@
 mod dimension_plugin;
 mod host_plugin;
+mod lightning;
+mod weather_baked;
 
 #[cfg(test)]
 mod tests;

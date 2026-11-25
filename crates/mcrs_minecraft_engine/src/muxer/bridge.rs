@@ -600,6 +600,7 @@ fn write_payload<W: WritePacket>(sink: &mut W, data: PacketPayload) -> anyhow::R
             sink.write_packet_fallible(&ClientboundDisconnect { reason })
         }
         PacketPayload::ChunkUnload(p) => sink.write_packet_fallible(&p),
+        PacketPayload::AddEntity(p) => sink.write_packet_fallible(&p),
         PacketPayload::EntityPosSync(p) => sink.write_packet_fallible(&p),
         PacketPayload::GameEvent(p) => sink.write_packet_fallible(&p),
         PacketPayload::PlayerLookAt(p) => sink.write_packet_fallible(&p),

@@ -139,6 +139,7 @@ pub use persistence::{
 pub use player_dimension_change::{check_departure, is_own_dimension};
 pub use player_dimensions::{PlayerBody, PlayerBodyItem, player_dimensions, player_scale};
 pub use player_lived_ticks::PlayerLivedTicks;
+pub use player_roster::ForeignPlayers;
 pub use pose_systems::PoseSystems;
 pub use publish_player_tiles::HiddenPlayer;
 pub use respawn_packet::{KeptPlayerData, respawn_packet};
