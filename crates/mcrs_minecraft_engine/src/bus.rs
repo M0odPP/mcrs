@@ -19,8 +19,9 @@ use mcrs_minecraft_protocol_game::clientbound::{
     ClientboundOpenScreen, ClientboundPlayerAbilities, ClientboundPlayerCombatKill,
     ClientboundPlayerLookAt, ClientboundPlayerPosition, ClientboundRespawn,
     ClientboundSectionBlocksUpdate, ClientboundSetChunkCacheCenter, ClientboundSetCursorItem,
-    ClientboundSetHealth, ClientboundSetHeldSlot, ClientboundSetTime, ClientboundSystemChatPacket,
-    ClientboundTabList, ClientboundTickingState, ClientboundTickingStep,
+    ClientboundSetHealth, ClientboundSetHeldSlot, ClientboundSetTime, ClientboundSound,
+    ClientboundSystemChatPacket, ClientboundTabList, ClientboundTickingState,
+    ClientboundTickingStep,
 };
 use mcrs_minecraft_resource::ResourceKeyBuf;
 use mcrs_minecraft_text::Text;
@@ -154,6 +155,14 @@ pub enum PacketPayload {
     SetCursorItem(ClientboundSetCursorItem),
     OpenScreen(ClientboundOpenScreen<'static>),
     ContainerClose(ClientboundContainerClose),
+    Sound(ClientboundSound),
+}
+
+impl OutboundPlayerPacket {
+    #[must_use]
+    pub fn sound(target: PacketTarget, sound: ClientboundSound) -> Self {
+        to_target(target, PacketPayload::Sound(sound))
+    }
 }
 
 impl PacketPayload {

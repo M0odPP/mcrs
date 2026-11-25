@@ -71,6 +71,9 @@ pub struct BlockActionRequest {
 #[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct BlockBreakSet;
 
+#[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct BlockBreakAckSet;
+
 impl Plugin for BlockBreakPlugin {
     fn build(&self, app: &mut App) {
         app.add_message::<BlockActionRequest>();
@@ -98,6 +101,7 @@ impl Plugin for BlockBreakPlugin {
         app.add_systems(
             FixedPostUpdate,
             send_acks
+                .in_set(BlockBreakAckSet)
                 .after(VoxelUpdateSet::NetworkSync)
                 .run_if(on_message::<BlockActionRequest>.or_eager(on_message::<UseItemOnRequest>)),
         );

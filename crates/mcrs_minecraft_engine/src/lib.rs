@@ -71,6 +71,7 @@ mod movement;
 pub mod muxer;
 pub mod network_id;
 mod op_level;
+mod own_equipment;
 pub mod persisted_registry;
 mod persistence;
 mod player_bundle;
@@ -102,6 +103,7 @@ pub mod tile_events;
 pub mod to_coordinator;
 pub mod to_muxer;
 pub mod use_item_on_request;
+mod use_item_request;
 pub mod view_radius;
 mod wanted_column;
 pub mod whitelist;
@@ -122,11 +124,14 @@ impl Plugin for EnginePlugin {
     }
 }
 
-pub use block_break::{BlockBreakSet, eye_position, in_reach, reach};
+pub use block_break::{BlockBreakAckSet, BlockBreakSet, eye_position, in_reach, reach};
 pub use consume_inbound_player_spawn::InboundPlayerSpawnSet;
 pub use held_joins::HeldJoins;
 pub use max_health::max_health;
 pub use movement::PlayerMoved;
+pub use own_equipment::{
+    OwnEquipment, PlayerEquipmentDelta, PlayerEquipmentSyncSet, PublishPlayerTilesSet,
+};
 pub use persistence::{
     AutosaveCadence, AutosavePlugin, PlayerPersistencePlugin, UnreadablePlayerDat,
     apply_join_snapshot, load_player, save_player, write_player,
@@ -140,6 +145,7 @@ pub use respawn_packet::{KeptPlayerData, respawn_packet};
 pub use send_own_attributes::OwnAttributesSet;
 pub use server_difficulty::ServerDifficulty;
 pub use shift_key::ShiftKey;
+pub use use_item_request::UseItemRequest;
 pub use world_state::{
     SavedSpawn, WorldStatePlugin, WorldStateSources, WorldStateWrite, WorldStateWriter,
 };
