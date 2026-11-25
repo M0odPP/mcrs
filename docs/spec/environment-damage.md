@@ -75,27 +75,26 @@ confidence, for example `(source_suggested, semantic, confidence: medium)`. The 
 - `entity-physics.md`: PHY-GRV-014 (the contact test), PHY-RCH-007 (the blocks with an inside
   action), PHY-INP-021 (the blocks that cause suffocation) and PHY-ORD-001, PHY-ORD-002 (the tick).
 - `command-weather.md`: the rain strength.
-- `assets/mcrs/reports/names.json`: the network ids of the damage types (`cactus` 2, `campfire` 3,
-  `drown` 6, `fall` 10, `freeze` 17, `hot_floor` 20, `in_fire` 21, `in_wall` 22, `lava` 24,
-  `on_fire` 31, `out_of_world` 32, `outside_border` 33, `sweet_berry_bush` 43).
+- `assets/mcrs/reports/names.json`: the damage type ids (`in_fire` 21, `lava` 24, `on_fire` 31,
+  `drown` 6, `freeze` 17, `fall` 10). It also lists `cactus` 2, `campfire` 3, `hot_floor` 20,
+  `in_wall` 22, `out_of_world` 32, `outside_border` 33, and `sweet_berry_bush` 43.
 - `attributes.md` (`A1`, vanilla fixture `attributes.json`): the full-freeze modifier
   `minecraft:powder_snow` on `movement_speed`.
 - `tools/mcrs_minecraft_probe/scenarios/environment_damage.json` and
   `tools/mcrs_minecraft_probe/traces/environment_damage.json`: the vanilla probe run (`E1` to
   `E6`).
 
-### 0.5 Wave-1 player scope
+### 0.5 Scope
 
-Wave 1 covers player hazards: fire, lava, and water or powder snow extinguish (`ENV-FIR-001` to
-`ENV-FIR-009`), air supply and drowning (`ENV-AIR-001` to `ENV-AIR-005`), freezing in powder snow
-(`ENV-FRZ-001` to `ENV-FRZ-006`), block contact (`ENV-CTC-001` to `ENV-CTC-004`), suffocation
-(`ENV-WAL-001`), the void (`ENV-VOID-001`), the world border (`ENV-BRD-001`, `ENV-BRD-002`), and
-wire packets (`ENV-NET-001`, `ENV-NET-002`). `ENV-FIR-010` records the post-tick deviation
-(`DMG-DEV-003`), and `U9` tracks its unprobed intra-tick order. Non-Wave-1 items stay out of
-Wave-1 player scope: fish, squid, tadpole, axolotl, nautilus, and dolphin air rules (`ENV-AIR-006`),
-underwater dismount (`ENV-AIR-007`), `pointed_dripstone` and `icicle` (`DMG-FALL-004`), crowd damage
-(`DMG-CRW-001` to `DMG-CRW-003`), and mob-only hazard tags (`immune_to_freezing`,
-`freeze_hurts_extra_types`, fire-immune types).
+This specification defines server-side player hazards for fire, lava, and water or `powder_snow`
+extinguish (`ENV-FIR-001` to `ENV-FIR-009`). It also defines air supply and drowning (`ENV-AIR-001`
+to `ENV-AIR-005`) and freezing in `powder_snow` (`ENV-FRZ-001` to `ENV-FRZ-006`). It covers block
+contact (`ENV-CTC-001` to `ENV-CTC-004`), suffocation (`ENV-WAL-001`), the void (`ENV-VOID-001`),
+and the world border (`ENV-BRD-001`, `ENV-BRD-002`). It also defines wire packets (`ENV-NET-001`,
+`ENV-NET-002`). `ENV-FIR-010` records the post-tick deviation (`DMG-DEV-003`), and `U9` tracks its
+unprobed intra-tick order. Mob and vehicle rules stay out of server player scope (section 10).
+Those rules cover aquatic mob air (`ENV-AIR-006`), underwater dismount (`ENV-AIR-007`), dripstone
+(`DMG-FALL-004`), crowd damage (`DMG-CRW-001` to `DMG-CRW-003`), and mob-only hazard tags.
 
 ## 1. The sources and their data
 
@@ -104,17 +103,16 @@ this document is a hit (DMG-HIT-001 to DMG-HIT-005). The source has no causing e
 entity and no source position. Thus the damage type decides the tags, and the cooldown
 (DMG-HIT-003) applies to each hit. Two hits of different types in one tick share one cooldown.
 `E2` to `E6` in `tools/mcrs_minecraft_probe/traces/environment_damage.json` show `damage_event`
-type ids without a source entity or source position, and 10-tick cooldown cadence; multi-type
-hits in one tick follow `DMG-HIT-003`.
+type ids without a source entity or source position. They also show the 10-tick cooldown cadence,
+and multi-type hits follow `DMG-HIT-003`.
 
 **ENV-SRC-002** (`source_suggested_black_box_confirmed`, semantic, confidence: high). The sources have
 these damage types and amounts. The amount is the f32 value before the reductions of
-`entity-damage.md`, section 4. `E2` to `E6` in
-`tools/mcrs_minecraft_probe/traces/environment_damage.json` and `assets/mcrs/reports/names.json`
-confirm player rows `on_fire` (`31`), `in_fire` (`21`), `lava` (`24`), `campfire` (`3`), `drown`
-(`6`), `freeze` (`17`), `cactus` (`2`), `sweet_berry_bush` (`43`), `in_wall` (`22`), `out_of_world`
-(`32`), and `outside_border` (`33`); `soul_fire`, `soul_campfire`, `freeze` 1.5/5.0, and non-Wave-1
-mob rows have no run in `E1` to `E6`.
+`entity-damage.md`, section 4. `E2` to `E6` and `assets/mcrs/reports/names.json` confirm fire, drown,
+and freeze rows (`on_fire` `31`, `in_fire` `21`, `lava` `24`, `drown` `6`, `freeze` `17`). They
+also confirm `campfire` `3`, `cactus` `2`, `sweet_berry_bush` `43`, `in_wall` `22`, `out_of_world`
+`32`, and `outside_border` `33`. `soul_fire`, `soul_campfire`, `freeze` 1.5/5.0, and mob-only rows
+have no run in `E1` to `E6`.
 
 | Source | Damage type | Amount | Rule |
 |--------|-------------|--------|------|
@@ -138,8 +136,8 @@ mob rows have no run in `E1` to `E6`.
 these damage tags to the types. Only the tags that a rule of this document or of `entity-damage.md`
 reads are in the table. `E2` to `E4` in `tools/mcrs_minecraft_probe/traces/environment_damage.json`
 confirm `fire_damage` (`is_fire`), `drowning_damage` (`is_drowning`), and `freeze_damage`
-(`is_freezing`); the other tag checks (`no_knockback`, `bypasses_armor`,
-`bypasses_invulnerability`, `bypasses_shield`) have no direct run in `E1` to `E6`.
+(`is_freezing`). The other tag checks (`no_knockback`, `bypasses_armor`,
+`bypasses_invulnerability`, `bypasses_shield`) have no probe run in `E1` to `E6`.
 
 | Damage type | Tags |
 |-------------|------|
@@ -164,7 +162,7 @@ The armor reduction (DMG-RED-001) applies to `in_fire`, `lava`, `campfire`, `dry
 **ENV-SRC-004** (`source_suggested_black_box_confirmed`, semantic, confidence: high). The corpus has
 these entity type tags that this document reads. A type outside the tag has no immunity that the
 tag gives. `E4` in `tools/mcrs_minecraft_probe/traces/environment_damage.json` confirms
-`leather_boots` (`freeze_immune_wearables`); the entity type tags belong to non-Wave-1 mob scope.
+`leather_boots` (`freeze_immune_wearables`). The entity type tags belong to mob rules in section 10.
 
 | Tag | Members of this version | Rule |
 |-----|-------------------------|------|
@@ -191,26 +189,24 @@ player that is not burning. The entity data entry 0 (serializer 0, byte) carries
 the burning flag. The flag follows the fire ticks in the base entity tick, as ENV-FIR-002 states. A
 fire-immune entity never has the flag set and never has fire ticks more than 0 after its next base
 entity tick. `E3` in `tools/mcrs_minecraft_probe/traces/environment_damage.json` confirms `Fire`
-`165s` while burning, `-20s` when not burning, and entry 0 bit `0x01`; fire-immune mob types are
-non-Wave-1.
+values while burning and at grace `-20`, plus entry 0 bit `0x01`. Fire-immune mob types belong to
+mob rules in section 10.
 
 **ENV-FIR-002** (`source_suggested_black_box_confirmed`, semantic, confidence: high). In each base
 entity tick of an entity, in this order:
 
 1. If the fire ticks are more than 0 and the entity is fire-immune, set them to 0.
-2. Else, if the fire ticks are more than 0:
-   - when the fire ticks are a multiple of 20 and the entity is not in lava, do a hit. The hit has
-     the type `on_fire` and the amount 1.0;
-   - then decrease the fire ticks by 1.
+2. Else, if the fire ticks are more than 0, check the fire damage timer.
+   When fire ticks are a multiple of 20 and the entity is not in lava, do an `on_fire` hit
+   (amount 1.0). Then decrease the fire ticks by 1.
 3. Set the burning flag to true when the fire ticks are more than 0. Else set it to false.
 
 The hit of step 2 uses the fire ticks before the decrease. Thus an entity can ignite for 160
 ticks in the block effects step of tick `T`. It takes a hit in the ticks `T + 1`, `T + 21` and so on.
 It takes eight hits in all. It burns out after 160 base entity ticks. A burning entity in lava
 takes no `on_fire` hit, but it takes the hit of ENV-FIR-006. The tick of step 3 sees the fire ticks
-that step 2 left. Thus a client sees the flag one tick after an ignition. `E3` in
-`tools/mcrs_minecraft_probe/traces/environment_damage.json` confirms `on_fire` (`31`, 1.0) and
-entry 0 bit `0x01` while burning, cleared to `0` on extinguish.
+that step 2 left. Thus a client sees the flag one tick after an ignition. `E3` confirms `on_fire`
+(`31`, 1.0) hits and entry 0 bit `0x01` while burning, cleared to `0` on extinguish.
 
 **ENV-FIR-003** (`source_suggested_black_box_confirmed`, semantic, confidence: high). To ignite an
 entity for `n` ticks:
@@ -219,9 +215,8 @@ entity for `n` ticks:
 2. Set the frozen ticks to 0 (ENV-FRZ-006).
 
 Step 2 occurs also when step 1 changes nothing. A fire-immune entity is not ignited by ENV-FIR-004
-and ENV-FIR-006. Ignite for `s` seconds means ignite for `floor(s × 20)` ticks. `E3` and `E4` in
-`tools/mcrs_minecraft_probe/traces/environment_damage.json` confirm ignition to `Fire` `165s` on
-`fire` and `300s` on `lava`, and frozen-tick clear (`68 -> 0`) on `fire`.
+and ENV-FIR-006. Ignite for `s` seconds means ignite for `floor(s × 20)` ticks. `E3` and `E4`
+confirm fire and lava ignition durations in `Fire`, plus frozen-tick clear on fire contact.
 
 **ENV-FIR-005** (`source_suggested_black_box_confirmed`, semantic, confidence: high). The block
 effects step ends with this test. If the entity is not burning, and no ignition raised the fire
@@ -233,8 +228,7 @@ The result is visible for a player only. The fire block of ENV-FIR-004 gives a p
 cell one fire tick for each tick. A player ignites when the fire ticks reach 0, that is, in the
 20th tick of an unbroken stay in a fire cell. A short walk through fire damages the player (the
 hit of ENV-FIR-004) and does not ignite it. Each other entity ignites in the first tick of
-contact. `E3` in `tools/mcrs_minecraft_probe/traces/environment_damage.json` confirms `Fire`
-`-20s` for a non-burning player.
+contact. `E3` confirms `Fire` grace `-20` for a non-burning player.
 
 ### 2.2 Fire blocks, lava and the contact order
 
@@ -243,18 +237,14 @@ action of `fire` and `soul_fire` acts on each entity that passes the contact tes
 effects, in this order:
 
 1. Set the frozen ticks to 0.
-2. Ignite the entity, unless it is fire-immune:
-   - if the fire ticks are less than 0, increase them by 1;
-   - else, if the entity is a player, increase them by a random integer from 1 to 2;
-   - then, if the fire ticks are now 0 or more, ignite the entity for 8 seconds.
+2. Ignite the entity unless it is fire-immune. If fire ticks are negative, add 1; else for a
+   player add a random integer from 1 to 2. Then ignite for 8 seconds if fire ticks are 0 or more.
 3. Do a hit of the type `in_fire` with the amount 1.0 for `fire` and 2.0 for `soul_fire`. A
    fire-immune entity does this step too, and the hit is rejected (DMG-HIT-001 step 3).
 
 The ignition of step 2 sets the fire ticks to at least 160. Thus the random increase is visible
-only when the fire ticks were 160 or more before. `E3` and `E4` in
-`tools/mcrs_minecraft_probe/traces/environment_damage.json` confirm `fire` `in_fire` (`21`, 1.0)
-hits, ignition (`165s` in `E3`, `163s` in `E4`), and frozen-tick clear (`68 -> 0`); `soul_fire`
-has no run.
+only when the fire ticks were 160 or more before. `E3` and `E4` confirm `fire` `in_fire` (`21`,
+1.0) hits, player ignition, and frozen-tick clear. `soul_fire` has no run in `E1` to `E6`.
 
 **ENV-FIR-006** (`source_suggested_black_box_confirmed`, semantic, confidence: high). The inside
 action of lava and of `lava_cauldron` acts on each entity that has fluid contact with lava. It also
@@ -266,9 +256,8 @@ this order:
 3. Unless the entity is fire-immune, do a hit of the type `lava` with the amount 4.0.
 
 A hit that the entity takes (not a rejected hit) plays the sound of ENV-NET-002. A lava contact
-ignites the entity at once for each entity type, with no grace. `E3` in
-`tools/mcrs_minecraft_probe/traces/environment_damage.json` confirms `lava` (`24`, 4.0) hits,
-ignition to `Fire` `300s`, and `entity.generic.burn`; `lava_cauldron` has no run.
+ignites the entity at once for each entity type, with no grace. `E3` confirms `lava` (`24`, 4.0)
+hits, immediate ignition, and `entity.generic.burn`. `lava_cauldron` has no run in `E1` to `E6`.
 
 **ENV-FIR-010** In the block effects step, the effects of the blocks run in this fixed order of
 types. The hit of a type runs right after its effect, and a removed or dead entity stops the
@@ -287,7 +276,7 @@ where their block comes in the walk of the box. Section 12 records the walk as U
 Provenance: `source_suggested`. Kind: deviation (`entity-damage.md`, DMG-DEV-003). Confidence:
 medium.
 
-### 2.3 Extinguishing
+### 2.3 Extinguish
 
 **ENV-FIR-007** (`source_suggested_black_box_confirmed`, semantic, confidence: medium). The fire
 ticks change to the smaller of 0 and the fire ticks (the "clear") in these cases:
@@ -298,29 +287,27 @@ ticks change to the smaller of 0 and the fire ticks (the "clear") in these cases
    position. Or rain is at the block that has the x and z of that block and the y of the top of
    its box.
 
-Rain at a block means all these conditions:
+Rain at a block requires all four conditions:
 
-- the dimension has weather, and its rain strength is more than 0.2 (`command-weather.md`);
-- the block can see the sky;
-- no block with the property "blocks motion" is above the block;
-- the biome gives rain, and not snow, at that position.
+- The dimension has weather, and its rain strength is more than 0.2 (`command-weather.md`).
+- The block can see the sky.
+- No block with the property "blocks motion" is above the block.
+- The biome gives rain, and not snow, at that position.
 
 A negative value stays unchanged, so the clear does not remove the grace of ENV-FIR-005. When the
 clear of step 1 or 2 changes a burning entity to not burning, the server plays the sound of
-ENV-NET-002. A `water_cauldron` or a `powder_snow_cauldron` loses one level when a burning entity passes
-the contact test. At level 0 it becomes `cauldron`. A `powder_snow_cauldron` becomes a
-`water_cauldron` with one level less. `E3` and `E4` in
-`tools/mcrs_minecraft_probe/traces/environment_damage.json` confirm water and `powder_snow`
-extinguish of step 1 (entry 0 cleared to `0`, `Fire` `-20s`, and `entity.generic.extinguish_fire`);
-rain and cauldrons have no run.
+ENV-NET-002. A `water_cauldron` or a `powder_snow_cauldron` loses one level when a burning entity
+passes the contact test. At level 0 it becomes `cauldron`. A `powder_snow_cauldron` becomes a
+`water_cauldron` with one level less. `E3` and `E4` confirm water and `powder_snow` extinguish
+(entry 0 cleared to `0`, `Fire` reset to `-20`, and `entity.generic.extinguish_fire`). Rain and
+cauldrons have no run in `E1` to `E6`.
 
 **ENV-FIR-009** (`source_suggested_black_box_confirmed`, semantic, confidence: medium). A burning
 entity that passes the contact test for `powder_snow` destroys that block, with no drops, before
 the clear of ENV-FIR-007. This happens when the game rule `mob_griefing` is true or the entity is
 a player, and the entity can change that position. U8 records the rule of spawn protection for a
-player. `E4` in `tools/mcrs_minecraft_probe/traces/environment_damage.json` confirms burning Alice
-(`Fire` `163s`) clears `powder_snow` to `air` with `Fire` `-20s` and `entity.generic.extinguish_fire`;
-`mob_griefing` is non-Wave-1.
+player. `E4` confirms that a burning player clears `powder_snow` to `air`, resets `Fire` to `-20`,
+and plays `entity.generic.extinguish_fire`. `mob_griefing` belongs to mob rules in section 10.
 
 ### 2.4 Fire resistance and immunities
 
@@ -333,9 +320,8 @@ and fire immunity act at the hit. They do not act at the ignition.
   burning flag and can be extinguished. Each hit with the tag `is_fire` is rejected
   (DMG-HIT-001 step 7). Thus it takes no `on_fire`, `in_fire`, `lava` or `campfire` damage.
 - A player takes no hit with the tag `is_fire` when the game rule `fire_damage` is false
-  (DMG-PLR-001). The player still burns. `E3` in
-  `tools/mcrs_minecraft_probe/traces/environment_damage.json` confirms `fire_damage false` keeps
-  `Health` at `8.0f` while Alice burns in `lava`; `fire_resistance` and fire-immune mobs have no run.
+  (DMG-PLR-001). The player still burns. `E3` confirms that `fire_damage false` rejects `is_fire`
+  hits while the player still burns. `fire_resistance` and fire-immune mobs have no run.
 
 ## 3. The air supply and drowning
 
@@ -352,9 +338,8 @@ A new entity has the maximum. A save keeps the value in `Air`, and a load withou
 maximum. The server sends the changed value in `set_entity_data` (DMG-NET-002 states the
 mechanism). A change of the value in a tick is therefore visible to the client in that tick. The
 value that a client sees is the value after the base entity tick. A value below 0 is valid. It is
-in the range from -19 to 0 while an entity drowns. `E2` in
-`tools/mcrs_minecraft_probe/traces/environment_damage.json` confirms entry 1 values `299..0..-19`
-and `Air` `300s` on dry land; `dolphin` and `axolotl` are non-Wave-1.
+in the range from -19 to 0 while an entity drowns. `E2` confirms entry 1 values `299..0..-19`
+and `Air` `300` on dry land. `dolphin` and `axolotl` belong to mob rules in section 10.
 
 **ENV-AIR-002** (`source_suggested_black_box_confirmed`, semantic, confidence: high). ENV-AIR-005
 states whether a living entity that is alive drowns. The decision applies in the base entity tick.
@@ -386,14 +371,14 @@ and then shows 0. `E2` in `tools/mcrs_minecraft_probe/traces/environment_damage.
 the smaller of the air supply plus 4 and the maximum. Thus an entity that surfaces from 0 refills
 in 75 ticks for the maximum 300. The type `dolphin` is an exception: it refills to its maximum in
 one tick. `E2` in `tools/mcrs_minecraft_probe/traces/environment_damage.json` confirms `+4` per
-tick from `-16` to `300`; `dolphin` is non-Wave-1.
+tick from `-13` to `300`. `dolphin` belongs to mob rules in section 10.
 
 **ENV-AIR-005** (`source_suggested_black_box_confirmed`, semantic, confidence: high). A living entity
 cannot drown in water in these cases:
 
-- its type is in the tag `can_breathe_under_water`;
-- it has one of the effects `water_breathing`, `conduit_power` or `breath_of_the_nautilus`;
-- it is a player with the invulnerable ability (creative mode and spectator mode).
+- Its type is in the tag `can_breathe_under_water`.
+- It has `water_breathing`, `conduit_power`, or `breath_of_the_nautilus`.
+- It is a player with the invulnerable ability (creative mode or spectator mode).
 
 The refill of ENV-AIR-002 does not run for an entity with the effect `breath_of_the_nautilus` and
 with neither `water_breathing` nor `conduit_power`. The type `iron_golem` never decreases its air
@@ -405,9 +390,9 @@ air supply of the player still changes, and the client still sees it. `E2` in
 `tools/mcrs_minecraft_probe/traces/environment_damage.json` confirms `drowning_damage false`
 rejects `drown` hits while entry 1 still cycles `0..-19 -> 0` and emits `entity_event`.
 
-**ENV-AIR-006** (`source_suggested`, semantic, confidence: medium; non-Wave-1 mob scope). Some types
-have an own air rule. It applies in the same tick as the base entity tick, after the rules above.
-It replaces the value of the air supply in that tick.
+**ENV-AIR-006** (`source_suggested`, semantic, confidence: medium; mob scope in section 10). Some
+types have an own air rule. It applies in the same tick as the base entity tick, after the rules
+above. It replaces the value of the air supply in that tick.
 
 | Types | In their fluid | Not in their fluid |
 |-------|----------------|--------------------|
@@ -424,27 +409,27 @@ The hit is the same, so a dry fish dies in 320 ticks and takes one hit in each 2
 that. The axolotl takes its first hit in the 6020th tick out of water. The dolphin uses ENV-AIR-002 and
 ENV-AIR-003 with its maximum of 4800, and its refill is ENV-AIR-004.
 
-**ENV-AIR-007** (`source_suggested`, semantic, confidence: medium; non-Wave-1 vehicle and mob scope).
-In the same tick as ENV-AIR-002, an entity dismounts when two conditions are true. Its eye is in
-water and the block at the eye is not `bubble_column`. It rides a vehicle with a type in the tag
-`dismounts_underwater`. This happens whether the entity drowns or not.
+**ENV-AIR-007** (`source_suggested`, semantic, confidence: medium; vehicle and mob scope in
+section 10). In the same tick as ENV-AIR-002, an entity dismounts when two conditions are true. Its
+eye is in water and the block at the eye is not `bubble_column`. It rides a vehicle with a type in
+the tag `dismounts_underwater`. This happens whether the entity drowns or not.
 
-## 4. Freezing in powder snow
+## 4. Freeze in powder snow
 
-**ENV-FRZ-001** (`black_box_confirmed`, wire, confidence: high). An entity has frozen ticks. The
-entity data entry 7 (serializer 1, VarInt) carries them, and the save keeps them in the int
-`TicksFrozen` when they are more than 0. The value that makes the entity fully frozen is 140.
-The client shows the freeze overlay in proportion to `min(frozen, 140) / 140`. `E4` in
-`tools/mcrs_minecraft_probe/traces/environment_damage.json` confirms entry 7 `1..140` and
-`TicksFrozen` `140` (absent when `0`).
+**ENV-FRZ-001** (`black_box_confirmed` for entry 7, `TicksFrozen`, and cap `140`; `documentation`
+for the client overlay, wire, confidence: high). An entity has frozen ticks. The entity data entry 7
+(serializer 1, VarInt) carries them, and the save keeps them in the int `TicksFrozen` when they are
+more than 0. The value that makes the entity fully frozen is 140. A client shows the freeze overlay
+in proportion to `min(frozen, 140) / 140`. `E4` confirms entry 7 values `1..140` and `TicksFrozen`
+(absent at `0`).
 
 **ENV-FRZ-002** (`source_suggested_black_box_confirmed`, semantic, confidence: high). The entity
-"can freeze" when all these are true:
+"can freeze" when all these conditions are true:
 
-- its type is not in the tag `immune_to_freezing`;
-- it is not burning;
-- it is not a spectator;
-- no armor slot holds an item of the item tag `freeze_immune_wearables`.
+- Its type is not in the tag `immune_to_freezing`.
+- It is not burning.
+- It is not a spectator.
+- No armor slot holds an item of the item tag `freeze_immune_wearables`.
 
 In the block effects step, the inside action of `powder_snow` marks the entity "in powder snow"
 for this tick. When the entity can freeze, the action also adds 1 to its frozen ticks, up to 140.
@@ -452,9 +437,8 @@ The mark is false at the start of each base entity tick. Then the freezing step 
 block effects of a living entity on the server. In this step the frozen ticks decrease by 2, to a
 minimum of 0, when the entity cannot freeze. They decrease in the same way when the entity is not
 marked and has no effect `freezing`. Thus an entity that stays in
-powder snow needs 140 ticks to freeze fully and 70 ticks to thaw fully. `E4` in
-`tools/mcrs_minecraft_probe/traces/environment_damage.json` confirms `+1` per tick to `140`,
-`leather_boots` thaw `-2` per tick from `140` to `26`, and re-freeze to `68`.
+powder snow needs 140 ticks to freeze fully and 70 ticks to thaw fully. `E4` confirms `+1` per tick
+to `140`, `leather_boots` thaw `-2` per tick, and re-freeze upon removal.
 
 **ENV-FRZ-003** (`source_suggested_black_box_confirmed`, semantic, confidence: medium). The server
 does a hit of the type `freeze` in the freezing step. It does the hit when all these conditions are
@@ -465,14 +449,12 @@ true:
 - the entity can freeze. The amount is 1.0, or 1.5 when the entity has
 the effect `freezing`. The amount changes before the cooldown: it is multiplied by 5 when the
 type of the entity is in the tag `freeze_hurts_extra_types`. The phase of the 40 ticks starts at
-the age 0 of each load, so it is not saved. `E4` in
-`tools/mcrs_minecraft_probe/traces/environment_damage.json` confirms `freeze` (`17`, 1.0) hits at
-`TicksFrozen` `140`; `freezing` 1.5 and `freeze_hurts_extra_types` 5.0 have no run.
+the age 0 of each load, so it is not saved. `E4` confirms `freeze` (`17`, 1.0) hits at `TicksFrozen`
+`140`. `freezing` 1.5 and `freeze_hurts_extra_types` 5.0 have no run in `E1` to `E6`.
 
 **ENV-FRZ-004** (`black_box_confirmed`, semantic, confidence: high). A player takes no `freeze` hit
-when the game rule `freeze_damage` is false (DMG-PLR-001). The frozen ticks still change. `E4` in
-`tools/mcrs_minecraft_probe/traces/environment_damage.json` confirms `freeze_damage false` keeps
-`Health` at `18.0f` with no `damage_event` `17`.
+when the game rule `freeze_damage` is false (DMG-PLR-001). The frozen ticks still change. `E4`
+confirms that `freeze_damage false` suppresses `damage_event` `17` while frozen ticks still change.
 
 **ENV-FRZ-005** (`source_suggested_black_box_confirmed`, client agreement, confidence: medium). A
 living entity with the attribute `movement_speed` has a transient modifier of the id
@@ -486,10 +468,9 @@ confirms the full-freeze modifier `-0.05000000074505806`; `E4` does not observe 
 
 **ENV-FRZ-006** (`source_suggested_black_box_confirmed`, semantic, confidence: high). These events
 set the frozen ticks to 0: ignition (ENV-FIR-003), the contact of `fire`, `soul_fire`, lava and
-`lava_cauldron` (ENV-FIR-010 step 2). `E4` in
-`tools/mcrs_minecraft_probe/traces/environment_damage.json` confirms `fire` clears `TicksFrozen`
-from `68` to `0` (`entity.generic.extinguish_fire`); `lava`, `soul_fire`, and `lava_cauldron` have
-no freeze-clear run.
+`lava_cauldron` (ENV-FIR-010 step 2). `E4` confirms that `fire` clears `TicksFrozen` to `0` and
+plays `entity.generic.extinguish_fire`. `lava`, `soul_fire`, and `lava_cauldron` have no
+freeze-clear run.
 
 ## 5. Contact damage of blocks
 
@@ -512,8 +493,8 @@ state has `lit` true. The hit has the type `campfire` and the amount 1.0 for `ca
 a `bee`. The block sets the stuck multiplier of PHY-GRV-014. Then it does a hit of the type
 `sweet_berry_bush` with the amount 1.0, when both conditions are true:
 
-- the property `age` of the block is not 0;
-- in the last tick the entity moved by 0.003 or more along the x axis or the z axis.
+- The property `age` of the block is not 0.
+- In the last tick the entity moved by 0.003 or more along the x axis or the z axis.
 
 An entity that does not move in a bush takes no hit. A bush with `age` 0 never hits. `E6` in
 `tools/mcrs_minecraft_probe/traces/environment_damage.json` confirms three `sweet_berry_bush` (`43`,
@@ -522,12 +503,10 @@ An entity that does not move in a bush takes no hit. A bush with `age` 0 never h
 **ENV-CTC-004** (`black_box_confirmed`, semantic, confidence: high). These contact damages exist in
 other documents or do not apply:
 
-- `magma_block`: DMG-HOT-001 (`E5` in `tools/mcrs_minecraft_probe/traces/environment_damage.json`
-  confirms `hot_floor` `20` and sneak immunity);
-- a fall onto a pointed tip: DMG-FALL-001 with the type `stalagmite` (`D12` in `entity-damage.md`,
-  non-Wave-1);
-- `fire`, `soul_fire`, lava and `lava_cauldron`: ENV-FIR-004 and ENV-FIR-006;
-- `wither_rose` gives an effect and no damage, and section 12 lists it.
+- `magma_block`: DMG-HOT-001 (`E5` confirms `hot_floor` `20` and sneak immunity).
+- A fall onto a pointed tip: DMG-FALL-001 with `stalagmite` (`D12` in `entity-damage.md`).
+- `fire`, `soul_fire`, lava and `lava_cauldron`: ENV-FIR-004 and ENV-FIR-006.
+- `wither_rose`: gives an effect and no damage (section 10).
 
 ## 6. Suffocation inside a block
 
@@ -535,17 +514,17 @@ other documents or do not apply:
 entity tick of a living entity that is alive, the entity is "inside a wall" when all these are
 true:
 
-- it does not sleep and it has physics (a spectator has none);
-- let `w = 0.8 × width` as f32, where `width` is the width of its box. Let `E` be the box of the
-  width `w` and `w`, of the height 1.0E-6, at the eye position. A block cell that `E` touches
-  has a block state that causes suffocation (PHY-INP-021);
-- the collision shape of that state, moved to the cell, overlaps `E` with a volume more than 0.
+- It does not sleep and it has physics (a spectator has none).
+- Let `w = 0.8 × width` as f32, where `width` is the box width.
+  Let `E` be the box of width `w` and height 1.0E-6 at the eye position.
+- A block cell that `E` touches has a state that causes suffocation (PHY-INP-021).
+- The collision shape of that state, moved to the cell, overlaps `E` with positive volume.
 
 The result is one hit of the type `in_wall` with the amount 1.0 in each such tick. When the
 hit is accepted, the cooldown makes one full hit in each 10 ticks. A player that is inside a wall
 takes no border damage (ENV-BRD-001) in that tick. `E5` in
 `tools/mcrs_minecraft_probe/traces/environment_damage.json` confirms `in_wall` (`22`, 1.0) with
-stone at `(0, -59, 6)`.
+stone.
 
 ## 7. The void
 
@@ -616,9 +595,8 @@ entity that is not a player, the damage of this document occurs at the steps of 
 A hit of step 1 occurs before the cooldown decrease of the same tick. A player runs these steps in
 its own tick in the same order, and its cooldown decrease is in its server part (DMG-PLR-002).
 The order decides the damage type that a client sees when two hits meet in one cooldown
-(DMG-ORD-003). `E2` to `E6` in `tools/mcrs_minecraft_probe/traces/environment_damage.json` confirm
-the packet sequence `damage_event` -> `[sound]` -> `set_health` -> `set_entity_data`, and
-`entity_event` -> `damage_event` -> `set_health` -> `set_entity_data` on drowning.
+(DMG-ORD-003). `E2` to `E6` confirm the order `damage_event`, optional `sound`, `set_health`, and
+`set_entity_data`. On drowning, `entity_event` arrives before `damage_event`.
 
 **ENV-NET-001** (`source_suggested_black_box_confirmed`, wire, confidence: high). The packets of
 this document are:
@@ -637,19 +615,17 @@ goes to the same viewers. A partial hit and a rejected hit send no `damage_event
 
 **ENV-NET-002** (`source_suggested_black_box_confirmed`, semantic, confidence: high). The server
 plays two sounds as `sound` packets at the position of the entity, with the source of the entity
-type. `E3` and `E4` in `tools/mcrs_minecraft_probe/traces/environment_damage.json` confirm
-`minecraft:entity.generic.burn` (source `7`, volume `0.4`, pitch `2.033965`, `2.3262026`,
-`2.2562242`) on `lava` and `minecraft:entity.generic.extinguish_fire` (source `7`, volume `0.7`) on
-water extinguish, `fire` freeze-clear, and `powder_snow` extinguish.
+type. `E3` and `E4` confirm `minecraft:entity.generic.burn` (`volume` `0.4`) on `lava`. They also
+confirm `minecraft:entity.generic.extinguish_fire` (`volume` `0.7`) on water extinguish, freeze
+clear, and `powder_snow` extinguish at source `7`.
 
 | Sound | When | Volume | Pitch |
 |-------|------|--------|-------|
 | `entity.generic.burn` | a hit of the type `lava` is accepted, and the entity is not silent | 0.4 | `2.0 + r × 0.4`, `r` random in `[0, 1)` |
 | `entity.generic.extinguish_fire` | a burning entity or a freezing entity stops (ENV-FIR-007), and no such sound played in the last 20 ticks | 0.7 | `1.6 + (r1 - r2) × 0.4` |
 
-The pitch is random, so a test compares only the event, the source and the position. A freezing
-entity stops when the effects of the block effects step change its frozen ticks from more than 0
-to 0.
+The pitch is random, so a test compares only the event, the source and the position. An entity
+stops the freeze effect when the block effects step sets its frozen ticks from above 0 to 0.
 
 ## 10. Out of scope
 
@@ -659,6 +635,8 @@ to 0.
 | the sources of ignition from a mob, a projectile, an enchantment, a lightning bolt and the sun | each belongs to its document, and ENV-FIR-003 states the operation |
 | the effects as a system: `fire_resistance`, `water_breathing`, `conduit_power`, `breath_of_the_nautilus`, `freezing`, `resistance` | each rule reads only the existence of the effect |
 | the attribute modifiers of enchantments: `oxygen_bonus` from respiration, protection against fire | items are out of scope (DMG-RED-003) |
+| mob and vehicle hazard rules: `ENV-AIR-006`, `ENV-AIR-007`, `mob_griefing`, and mob-only entity tags | mob and vehicle documents |
+| client freeze overlay (`min(frozen, 140) / 140` visual proportion) | client visual display |
 | the effect `wither` of `wither_rose`, the poison, the starvation | not an environmental hit of this document |
 | the world border size, its movement, its warning screen and its collision | not damage |
 | the death of a player and its message | `entity-damage.md`, section 12 |
@@ -691,11 +669,11 @@ ENV-FIR-010.
   its Appendix A.
 - **U7.** The age that sets the phase of ENV-FRZ-003 resets at a load. It is not known whether a
   player, a respawn or a change of dimension also resets it.
-- **U8.** The rule of spawn protection can stop a player from clearing `powder_snow` in
-  ENV-FIR-009. No specification states that rule.
-- **U9.** `ENV-FIR-010` intra-tick simultaneous multi-block order (such as `fire` and `water` in
-  one tick), rain extinguish, cauldrons, `soul_fire`, `soul_campfire`, `bubble_column`,
-  `fire_resistance`, and `ENV-FRZ-005` attribute packets have no probe run in `E1` to `E6`.
+- **U8.** Spawn protection can block `powder_snow` destruction in `ENV-FIR-009`. No specification
+  states that rule.
+- **U9.** `ENV-FIR-010` intra-tick multi-block order (`fire` with `water` in one tick) has no probe
+  run. Rain, cauldrons, `soul_fire`, `soul_campfire`, `bubble_column`, `fire_resistance`, and
+  attribute packets also have no run in `E1` to `E6`.
 
 ## 13. Experiments
 
@@ -705,8 +683,8 @@ produced `tools/mcrs_minecraft_probe/traces/environment_damage.json`.
 | Id | Sequence and steps | Observed result | Rules |
 |----|--------------------|-----------------|-------|
 | `E1` | `seq_fall_norm`, `seq_fall_spoof`, `seq_fall_rule_false`, `seq_fall_hay`, `seq_fall_slime`, `seq_fall_water` | `seq_fall_norm` emits `fall` (`10`) and sets `Health` `13.0f`; `seq_fall_spoof` (`on_ground` true) and `seq_fall_rule_false` (`fall_damage false`) emit 0 hits (`20.0f`); `seq_fall_hay`, `seq_fall_slime`, and `seq_fall_water` leave `Health` `20.0f` (`DMG-FALL-004` hay and slime rows are confirmed by D1 and D12 in `entity-damage.md`). | `DMG-FALL-002`, `DMG-PLR-001`, `PHY-FALL-003`, `ENV-NET-001` |
-| `E2` | `seq_drowning` | Entry `1` counts `299..0..-19` then resets to `0` with `entity_event` `67`, `drown` (`6`), and 2.0 damage every 20 ticks (`20.0 -> 18.0 -> 16.0 -> 14.0 -> 12.0`); `drowning_damage false` keeps `Health` `12.0f` while entry `1` cycles and emits `entity_event` `67`; dry land refills `+4` per tick to `Air` `300s`. | `ENV-SRC-001` to `ENV-SRC-003`, `ENV-AIR-001` to `ENV-AIR-005`, `ENV-ORD-001`, `ENV-NET-001` |
-| `E3` | `seq_fire_lava` | `fire` gives two `in_fire` (`21`, 1.0) hits (`20.0 -> 19.0 -> 18.0`), ignites Alice (`Fire` `165s`, entry `0` = `1`), and emits `on_fire` (`31`, 1.0 -> `17.0`); `water` clears entry `0` to `0`, leaves `Fire` `-20s`, and plays `entity.generic.extinguish_fire` (`0.7`); isolated `lava` emits three `lava` (`24`, 4.0) hits (`16.0 -> 12.0 -> 8.0`), three `entity.generic.burn` (`0.4`) sounds, and `Fire` `300s`; `fire_damage false` keeps `Health` `8.0f` while burning; final `water` clears `Fire` `-20s` with `entity.generic.extinguish_fire`. | `ENV-SRC-001` to `ENV-SRC-003`, `ENV-FIR-001` to `ENV-FIR-008`, `ENV-ORD-001`, `ENV-NET-001`, `ENV-NET-002` |
+| `E2` | `seq_drowning` | Entry `1` counts `299..0..-19` then resets to `0` with `entity_event` `67`, `drown` (`6`), and 2.0 damage every 20 ticks (`20.0 -> 18.0 -> 16.0 -> 14.0 -> 12.0`); `drowning_damage false` keeps `Health` `12.0f` while entry `1` cycles and emits `entity_event` `67`; dry land refills `+4` per tick from `-13` to `300` (`Air` `300s`). | `ENV-SRC-001` to `ENV-SRC-003`, `ENV-AIR-001` to `ENV-AIR-005`, `ENV-ORD-001`, `ENV-NET-001` |
+| `E3` | `seq_fire_lava` | `fire` gives two `in_fire` (`21`, 1.0) hits (`20.0 -> 19.0 -> 18.0`), ignites Alice (`Fire` `165s`, entry `0` = `1`), and emits `on_fire` (`31`, 1.0 -> `17.0`); `water` clears entry `0` to `0`, leaves `Fire` `-20s`, and plays `entity.generic.extinguish_fire` (`0.7`, pitch `1.733772`); isolated `lava` emits three `lava` (`24`, 4.0) hits (`16.0 -> 12.0 -> 8.0`), three `entity.generic.burn` (`0.4`, pitches `2.033965`, `2.3262026`, `2.2562242`), and `Fire` `300s`; `fire_damage false` keeps `Health` `8.0f` while burning; final `water` clears `Fire` `-20s` with `entity.generic.extinguish_fire`. | `ENV-SRC-001` to `ENV-SRC-003`, `ENV-FIR-001` to `ENV-FIR-008`, `ENV-ORD-001`, `ENV-NET-001`, `ENV-NET-002` |
 | `E4` | `seq_freezing` | `powder_snow` increases entry `7` (`1..140`, `TicksFrozen` `140`) and emits two `freeze` (`17`, 1.0) hits (`20.0 -> 19.0 -> 18.0`); `freeze_damage false` keeps `Health` `18.0f`; `leather_boots` stops freeze and thaws entry `7` (`-2` per tick, `140 -> 26`), and removal re-freezes entry `7` to `68`; `fire` clears `TicksFrozen` to `0` (`entity.generic.extinguish_fire`), ignites (`163s`), and hits (`21`, `21`, `31` -> `15.0`); burning Alice in `powder_snow` destroys the block (`air`), clears `Fire` `-20s`, and plays `entity.generic.extinguish_fire`. | `ENV-SRC-001` to `ENV-SRC-004`, `ENV-FIR-003`, `ENV-FIR-004`, `ENV-FIR-007`, `ENV-FIR-009`, `ENV-FRZ-001` to `ENV-FRZ-004`, `ENV-FRZ-006`, `ENV-NET-001`, `ENV-NET-002` |
 | `E5` | `seq_suffocation_cactus_campfire_magma` | Stone at `(0, -59, 6)` emits `in_wall` (`22`, 1.0 -> `19.0`); `cactus` emits three `cactus` (`2`, 1.0 -> `17.0`); lit `campfire` emits three `campfire` (`3`, 1.0 -> `17.0`); `magma_block` emits three `hot_floor` (`20`, 1.0 -> `17.0`) and `0` hits while crouched (`index 0 = 2`, pose `crouching`). | `ENV-SRC-001`, `ENV-SRC-002`, `ENV-CTC-001`, `ENV-CTC-002`, `ENV-CTC-004`, `ENV-WAL-001`, `ENV-NET-001` |
 | `E6` | `seq_berry_void_border` | Movement in `sweet_berry_bush[age=2]` emits three `sweet_berry_bush` (`43`, 1.0 -> `17.0`); `y = -129` emits four `out_of_world` (`32`, 4.0: `20.0 -> 16.0 -> 12.0 -> 8.0`); border size `20`, buffer `5`, damage `0.2` at `x = 20.5` emits four `outside_border` (`33`, 1.0: `20.0 -> 19.0 -> 18.0 -> 17.0 -> 16.0`). | `ENV-SRC-001`, `ENV-SRC-002`, `ENV-CTC-003`, `ENV-VOID-001`, `ENV-BRD-001`, `ENV-BRD-002`, `ENV-NET-001` |
