@@ -26,6 +26,7 @@ use mcrs_minecraft_nbt::compound::NbtCompound;
 use mcrs_minecraft_particle::ParticleOptions;
 use mcrs_minecraft_protocol::{Bounded, Result, VarInt, VarLong};
 use mcrs_minecraft_registries::Wire;
+use mcrs_minecraft_sound::Sound;
 
 use mcrs_minecraft_wire::{Decode, Encode};
 use mcrs_voxel::BlockPos;
@@ -155,7 +156,29 @@ pub struct ClientboundEntityEvent {
 
 impl ClientboundEntityEvent {
     pub const DIED: i8 = 3;
+    pub const SWAP_HANDS: i8 = 55;
     pub const REMOVED: i8 = 60;
+}
+
+#[derive(Clone, Debug, PartialEq, Encode, Decode)]
+pub struct ClientboundSound {
+    pub sound_event: Sound<Wire>,
+    pub source: VarInt,
+    pub x: i32,
+    pub y: i32,
+    pub z: i32,
+    pub volume: f32,
+    pub pitch: f32,
+    pub seed: i64,
+}
+
+impl ClientboundSound {
+    pub const SOURCE_PLAYERS: VarInt = VarInt(7);
+
+    #[must_use]
+    pub fn eighths(coord: f64) -> i32 {
+        (coord * 8.0).floor() as i32
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Encode, Decode)]

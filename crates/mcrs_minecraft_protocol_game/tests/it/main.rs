@@ -20,6 +20,7 @@ mod column_pos_wire;
 mod decoder_advances_reader;
 mod entity_movement_codecs;
 mod entity_packets;
+mod equipment_sound_packets;
 mod inventory_packets;
 mod item;
 mod join_packets;
