@@ -2,9 +2,9 @@ name: checks
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, server-main]
   push:
-    branches: [main]
+    branches: [main, server-main]
   workflow_dispatch:
 
 permissions:
@@ -95,7 +95,7 @@ jobs:
 
   self-hosted:
     needs: changes
-    if: needs.changes.outputs.code == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    if: needs.changes.outputs.code == 'true' && github.repository == 'andreypfau/mcrs' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: [self-hosted, mcrs]
     timeout-minutes: 45
     steps:
@@ -133,7 +133,7 @@ jobs:
 
   clippy:
     needs: changes
-    if: needs.changes.outputs.code == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository)
+    if: needs.changes.outputs.code == 'true' && (github.repository != 'andreypfau/mcrs' || github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository)
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
@@ -150,7 +150,7 @@ jobs:
 
   test:
     needs: changes
-    if: needs.changes.outputs.code == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository)
+    if: needs.changes.outputs.code == 'true' && (github.repository != 'andreypfau/mcrs' || github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository)
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
@@ -187,7 +187,7 @@ jobs:
 
   portability:
     needs: changes
-    if: needs.changes.outputs.code == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository)
+    if: needs.changes.outputs.code == 'true' && (github.repository != 'andreypfau/mcrs' || github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository)
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
@@ -204,7 +204,7 @@ jobs:
 
   worldgen-full:
     needs: changes
-    if: needs.changes.outputs.worldgen != '' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    if: github.repository == 'andreypfau/mcrs' && needs.changes.outputs.worldgen != '' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, mcrs]
     timeout-minutes: 60
     steps:
@@ -247,8 +247,8 @@ jobs:
       - name: fail unless every check job that applies passed
         env:
           CODE: ${{ needs.changes.outputs.code }}
-          OWN: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-          FORK: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository }}
+          OWN: ${{ github.repository == 'andreypfau/mcrs' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+          FORK: ${{ github.repository != 'andreypfau/mcrs' || (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository) }}
           LINT: ${{ needs.lint.result }}
           SELF_HOSTED: ${{ needs.self-hosted.result }}
           HOSTED: ${{ needs.clippy.result }} ${{ needs.test.result }} ${{ needs.portability.result }}
