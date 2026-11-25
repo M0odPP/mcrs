@@ -109,6 +109,16 @@ fn operator_levels_validate_range_and_membership() {
     assert!(unlisted_res.is_err());
 }
 
+fn stab_swing(client: &str) -> SwingObserved {
+    SwingObserved {
+        client: client.to_owned(),
+        subject: "Alice".to_owned(),
+        hand: ProbeHand::Main,
+        animation: SwingAnimationKind::Stab,
+        duration: 6,
+    }
+}
+
 #[test]
 fn normalize_per_client_removes_cross_client_interleaving_while_preserving_order() {
     let make_step = |packets: Vec<PacketObserved>, swings: Vec<SwingObserved>| {
@@ -125,27 +135,18 @@ fn normalize_per_client_removes_cross_client_interleaving_while_preserving_order
             swings: Some(swings),
             swing_bytes: None,
             animates: None,
+            equipment: None,
+            entity_data: None,
+            health: None,
+            damage_events: None,
+            entity_events: None,
+            game_events: None,
             packets: Some(packets),
             checkpoints: Vec::new(),
             player_file: None,
         };
         step.normalize_per_client();
         step
-    };
-
-    let swing_bob = SwingObserved {
-        client: "Bob".to_owned(),
-        subject: "Alice".to_owned(),
-        hand: ProbeHand::Main,
-        animation: SwingAnimationKind::Stab,
-        duration: 6,
-    };
-    let swing_charlie = SwingObserved {
-        client: "Charlie".to_owned(),
-        subject: "Alice".to_owned(),
-        hand: ProbeHand::Main,
-        animation: SwingAnimationKind::Stab,
-        duration: 6,
     };
 
     let run_a = make_step(
@@ -167,7 +168,7 @@ fn normalize_per_client_removes_cross_client_interleaving_while_preserving_order
                 packet: PacketKind::Sound,
             },
         ],
-        vec![swing_charlie.clone(), swing_bob.clone()],
+        vec![stab_swing("Charlie"), stab_swing("Bob")],
     );
     let run_b = make_step(
         vec![
@@ -188,7 +189,7 @@ fn normalize_per_client_removes_cross_client_interleaving_while_preserving_order
                 packet: PacketKind::Sound,
             },
         ],
-        vec![swing_bob.clone(), swing_charlie.clone()],
+        vec![stab_swing("Bob"), stab_swing("Charlie")],
     );
 
     assert_eq!(run_a, run_b);
@@ -260,4 +261,30 @@ fn sync_position_requires_world_acks() {
         ]
     }"#;
     assert!(serde_json::from_str::<Scenario>(with_swing).is_ok());
+}
+
+#[test]
+fn wave1_scenario_and_trace_normalize_round_trip() {
+    let scenario: Scenario = serde_json::from_str(
+        r#"{"observe":{"equipment":true,"entity_data":true,"health":true,"damage_event":true,"entity_event":true,"game_event":true,"packet_order":true},"steps":[{"id":"move","move_player":{"client":"Alice","position":[1.0,64.0,2.0],"on_ground":true}},{"id":"command","player_command":{"client":"Alice","action":"start_sprinting"}},{"id":"input","player_input":{"client":"Alice","forward":true,"sprint":true}}]}"#,
+    )
+    .unwrap();
+    let observe_ok = scenario.observe.health && scenario.observe.game_event;
+    assert!(observe_ok && scenario.steps.len() == 3, "wave1 scenario");
+    let mut step: StepTrace = serde_json::from_str(
+        r#"{"id":"step","observed":"joined","health":[{"client":"Bob","health":10.0,"food":20,"saturation":5.0},{"client":"Alice","health":20.0,"food":20,"saturation":5.0}]}"#,
+    )
+    .unwrap();
+    step.normalize_per_client();
+    let decoded: StepTrace = serde_json::from_str(&serde_json::to_string(&step).unwrap()).unwrap();
+    let clients: Vec<_> = decoded
+        .health
+        .iter()
+        .flatten()
+        .map(|entry| entry.client.as_str())
+        .collect();
+    assert!(
+        decoded == step && clients == ["Alice", "Bob"],
+        "round-trip and normalized order"
+    );
 }

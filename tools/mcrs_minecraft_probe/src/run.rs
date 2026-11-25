@@ -1,12 +1,15 @@
 use crate::client::{self, Event, LoadSignal, Login, Order, QueuedOrder, Signal};
+use crate::gameplay::GameplaySignal;
 use crate::swing::CapturedSwing;
 use crate::{
-    Action, AnimateObserved, ChatMessage, Checkpoint, CommandTree, ConnectionState, Direction,
-    Disconnect, ExpectedPacket, Host, MenuEvent, Observe, Observed, PacketKind, PacketObserved,
-    Scenario, StepTrace, SwingObserved, SwingWireCheck, Trace, TraceVersion,
+    Action, AnimateObserved, ChatMessage, Checkpoint, CommandTree, ConnectionState,
+    DamageEventObserved, Direction, Disconnect, EntityDataObserved, EntityEventObserved,
+    EquipmentObserved, ExpectedPacket, GameEventObserved, HealthObserved, Host, MenuEvent, Observe,
+    Observed, PacketKind, PacketObserved, Scenario, StepTrace, SwingWireCheck, Trace, TraceVersion,
 };
 use anyhow::Context;
 use mcrs_minecraft_core::VERSION;
+use mcrs_minecraft_protocol_game::serverbound::PlayerInputFlags;
 use std::collections::BTreeMap;
 use std::mem;
 use std::net::SocketAddr;
@@ -61,6 +64,12 @@ struct SettleSink {
     trees: Vec<CommandTree>,
     swings: Vec<CapturedSwing>,
     animates: Vec<AnimateObserved>,
+    equipment: Vec<EquipmentObserved>,
+    entity_data: Vec<EntityDataObserved>,
+    health: Vec<HealthObserved>,
+    damage_events: Vec<DamageEventObserved>,
+    entity_events: Vec<EntityEventObserved>,
+    game_events: Vec<GameEventObserved>,
     packets: Vec<PacketObserved>,
     checkpoints: Vec<Checkpoint>,
     orders: BTreeMap<String, UnboundedSender<QueuedOrder>>,
@@ -77,6 +86,12 @@ impl SettleSink {
             trees: Vec::new(),
             swings: Vec::new(),
             animates: Vec::new(),
+            equipment: Vec::new(),
+            entity_data: Vec::new(),
+            health: Vec::new(),
+            damage_events: Vec::new(),
+            entity_events: Vec::new(),
+            game_events: Vec::new(),
             packets: Vec::new(),
             checkpoints: Vec::new(),
             orders: BTreeMap::new(),
@@ -195,23 +210,31 @@ pub async fn run<H: Host>(
             .swing
             .then(|| compute_swing_bytes(&captured_swings))
             .flatten();
-        let swings: Vec<SwingObserved> = captured_swings
+        let swings = captured_swings
             .into_iter()
             .map(|entry| entry.observed)
             .collect();
         let animates = mem::take(&mut clients.sink.animates);
         let packets = mem::take(&mut clients.sink.packets);
+        let obs = &scenario.observe;
+        let sink = &mut clients.sink;
         let mut step_trace = StepTrace {
             id: step.id.clone(),
             observed,
             player_bans,
-            inventory: scenario.observe.inventory.then_some(menu),
-            sounds: scenario.observe.sound.then_some(sounds),
-            command_trees: (!scenario.observe.commands.is_empty()).then_some(trees),
-            swings: scenario.observe.swing.then_some(swings),
+            inventory: obs.inventory.then_some(menu),
+            sounds: obs.sound.then_some(sounds),
+            command_trees: (!obs.commands.is_empty()).then_some(trees),
+            swings: obs.swing.then_some(swings),
             swing_bytes,
-            animates: scenario.observe.animate.then_some(animates),
-            packets: (scenario.observe.packet_order && step.packet_order).then_some(packets),
+            animates: obs.animate.then_some(animates),
+            equipment: obs.equipment.then(|| mem::take(&mut sink.equipment)),
+            entity_data: obs.entity_data.then(|| mem::take(&mut sink.entity_data)),
+            health: obs.health.then(|| mem::take(&mut sink.health)),
+            damage_events: obs.damage_event.then(|| mem::take(&mut sink.damage_events)),
+            entity_events: obs.entity_event.then(|| mem::take(&mut sink.entity_events)),
+            game_events: obs.game_event.then(|| mem::take(&mut sink.game_events)),
+            packets: (obs.packet_order && step.packet_order).then_some(packets),
             checkpoints: mem::take(&mut clients.sink.checkpoints),
             player_file,
         };
@@ -351,6 +374,7 @@ impl Clients {
                 | Signal::Removed(_)
                 | Signal::PositionAccepted(_)
                 | Signal::Animate(_)
+                | Signal::Gameplay(_)
                 | Signal::Packet(_) => continue,
                 Signal::Disconnected(reason) => Some(reason),
                 Signal::Closed | Signal::Failed(_) => None,
@@ -404,6 +428,7 @@ impl Clients {
                 | Signal::Removed(_)
                 | Signal::PositionAccepted(_)
                 | Signal::Animate(_)
+                | Signal::Gameplay(_)
                 | Signal::Packet(_)
                 | Signal::Closed
                 | Signal::Failed(_) => {}
@@ -745,34 +770,40 @@ impl SettleSink {
         self.packet_sample_start.is_some_and(|start| at >= start)
     }
 
+    fn record_packet(&mut self, client: &str, packet: PacketKind, at: time::Instant) {
+        if self.in_sample(at) {
+            let client = client.to_owned();
+            self.packets.push(PacketObserved { client, packet });
+        }
+    }
+
+    fn record_gameplay(&mut self, client: &str, signal: GameplaySignal, at: time::Instant) {
+        self.record_packet(client, signal.kind(), at);
+        match signal {
+            GameplaySignal::Equipment(packet) => self.equipment.push(packet),
+            GameplaySignal::EntityData(packet) => self.entity_data.push(packet),
+            GameplaySignal::Health(packet) => self.health.push(packet),
+            GameplaySignal::DamageEvent(packet) => self.damage_events.push(packet),
+            GameplaySignal::EntityEvent(packet) => self.entity_events.push(packet),
+            GameplaySignal::GameEvent(packet) => self.game_events.push(packet),
+        }
+    }
+
     fn record_non_terminal(&mut self, client: String, signal: Signal, at: time::Instant) {
         match signal {
             Signal::Menu(packet) => self.menu.push(MenuEvent { client, packet }),
             Signal::Sound(packet) => {
-                if self.in_sample(at) {
-                    self.packets.push(PacketObserved {
-                        client,
-                        packet: PacketKind::Sound,
-                    });
-                }
+                self.record_packet(&client, PacketKind::Sound, at);
                 self.sounds.push(packet);
             }
             Signal::Commands(tree) => self.trees.push(tree),
             Signal::Swing(packet) => {
-                if self.in_sample(at) {
-                    self.packets.push(PacketObserved {
-                        client,
-                        packet: PacketKind::SwingAnimation,
-                    });
-                }
+                self.record_packet(&client, PacketKind::SwingAnimation, at);
                 self.swings.push(packet);
             }
             Signal::Animate(packet) => self.animates.push(packet),
-            Signal::Packet(packet) => {
-                if self.in_sample(at) {
-                    self.packets.push(PacketObserved { client, packet });
-                }
-            }
+            Signal::Gameplay(packet) => self.record_gameplay(&client, packet, at),
+            Signal::Packet(packet) => self.record_packet(&client, packet, at),
             Signal::Chat(_)
             | Signal::BlockAck(_)
             | Signal::Added(_)
@@ -949,19 +980,53 @@ fn order_of(action: &Action) -> Option<(&str, Order)> {
             Some((client.as_str(), Order::ClientMainArm((*arm).into())))
         }
         Action::PunchExtraByte { client } => Some((client.as_str(), Order::PunchExtraByte)),
-        Action::Join(_)
-        | Action::JoinDeferred(_)
-        | Action::Leave(_)
-        | Action::Command { .. }
-        | Action::Suggest { .. }
-        | Action::Console { .. }
-        | Action::Wait { .. }
-        | Action::AwaitPacket { .. }
-        | Action::AdvanceTicks { .. }
-        | Action::AwaitPlayerTicks { .. }
-        | Action::Sequence { .. }
-        | Action::RestartServer {} => None,
+        _ => gameplay_order_of(action),
     }
+}
+
+fn gameplay_order_of(action: &Action) -> Option<(&str, Order)> {
+    Some(match action {
+        Action::MovePlayer {
+            client,
+            position,
+            on_ground,
+            look,
+        } => (
+            client.as_str(),
+            Order::MovePlayer(*position, *on_ground, *look),
+        ),
+        Action::PlayerCommand {
+            client,
+            action,
+            data,
+        } => (
+            client.as_str(),
+            Order::PlayerCommand((*action).into(), *data),
+        ),
+        Action::PlayerInput {
+            client,
+            forward,
+            backward,
+            left,
+            right,
+            jump,
+            sneak,
+            sprint,
+        } => (
+            client.as_str(),
+            Order::PlayerInput(
+                PlayerInputFlags::new()
+                    .with_forward(*forward)
+                    .with_backward(*backward)
+                    .with_left(*left)
+                    .with_right(*right)
+                    .with_jump(*jump)
+                    .with_shift(*sneak)
+                    .with_sprint(*sprint),
+            ),
+        ),
+        _ => return None,
+    })
 }
 
 fn collect_sent(
@@ -999,6 +1064,7 @@ fn collect_sent(
             | Signal::Removed(_)
             | Signal::PositionAccepted(_)
             | Signal::Animate(_)
+            | Signal::Gameplay(_)
             | Signal::Packet(_)
             | Signal::Closed
             | Signal::Failed(_) => {}
@@ -1014,7 +1080,7 @@ fn collect_sent(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{ProbeHand, SwingAnimationKind};
+    use crate::{ProbeHand, SwingAnimationKind, SwingObserved};
     use mcrs_minecraft_protocol_game::Position;
     use mcrs_minecraft_text::Text;
 
@@ -1387,5 +1453,64 @@ mod tests {
             panic!("expected observer failure to abort settle");
         };
         assert!(fail_err.to_string().contains("Bob"), "{fail_err}");
+    }
+
+    #[test]
+    fn record_non_terminal_records_packet_order_for_observed_gameplay_signals() {
+        use GameplaySignal as Kind;
+        use PacketKind::*;
+        fn parse_json<T: serde::de::DeserializeOwned>(raw: &str) -> T {
+            serde_json::from_str(raw).unwrap()
+        }
+        let base = time::Instant::now();
+        let observe: Observe = parse_json(
+            r#"{"equipment":true,"entity_data":true,"health":true,"damage_event":true,"entity_event":true,"game_event":true,"packet_order":true}"#,
+        );
+        let mut sink = SettleSink::new(Duration::ZERO, observe);
+        let start = base + Duration::from_millis(10);
+        sink.packet_sample_start = Some(start);
+        let initial = Kind::Health(HealthObserved {
+            client: "P1".into(),
+            health: 20.0,
+            food: 20,
+            saturation: 5.0,
+        });
+        sink.record_non_terminal("P1".into(), Signal::Gameplay(initial), base);
+        assert!(
+            sink.health.len() == 1 && sink.packets.is_empty(),
+            "pre-sample behavior"
+        );
+
+        let inside_sample = start + Duration::from_millis(1);
+        for signal in [
+            Kind::Equipment(parse_json(r#"{"client":"P1","subject":"P1","slots":[]}"#)),
+            Kind::EntityData(parse_json(r#"{"client":"P1","subject":"P1","entries":[]}"#)),
+            Kind::Health(parse_json(
+                r#"{"client":"P1","health":16.0,"food":20,"saturation":5.0}"#,
+            )),
+            Kind::DamageEvent(parse_json(
+                r#"{"client":"P1","subject":"P1","damage_type":1}"#,
+            )),
+            Kind::EntityEvent(parse_json(r#"{"client":"P1","subject":"P1","status":2}"#)),
+            Kind::GameEvent(parse_json(
+                r#"{"client":"P1","event":"end_raining","param":0.0}"#,
+            )),
+        ] {
+            sink.record_non_terminal("P1".into(), Signal::Gameplay(signal), inside_sample);
+        }
+        let counts_ok = sink.equipment.len() == 1
+            && sink.entity_data.len() == 1
+            && sink.health.len() == 2
+            && sink.damage_events.len() == 1
+            && sink.entity_events.len() == 1
+            && sink.game_events.len() == 1;
+        assert!(counts_ok, "recorded gameplay signal counts");
+        let kinds: Vec<_> = sink.packets.iter().map(|entry| entry.packet).collect();
+        let head_ok = kinds.starts_with(&[SetEquipment, SetEntityData, SetHealth]);
+        let tail_ok = kinds.ends_with(&[DamageEvent, EntityEvent, GameEvent]);
+        assert!(
+            kinds.len() == 6 && head_ok && tail_ok,
+            "gameplay packet_order"
+        );
     }
 }

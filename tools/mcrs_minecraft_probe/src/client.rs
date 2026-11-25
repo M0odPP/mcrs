@@ -1,3 +1,4 @@
+use crate::gameplay::GameplaySignal;
 use crate::menu_view::MenuView;
 use crate::pose::Pose;
 use crate::swing::{CapturedSwing, EntityNames};
@@ -7,7 +8,7 @@ use crate::{
 };
 use anyhow::Context;
 use mcrs_minecraft_container_click::Clicked;
-use mcrs_minecraft_core::VERSION;
+use mcrs_minecraft_core::{Look, VERSION};
 use mcrs_minecraft_network::SwitchMode;
 use mcrs_minecraft_network::join::Configuration;
 use mcrs_minecraft_network::packet_io::PacketIo;
@@ -39,18 +40,20 @@ use mcrs_minecraft_protocol_game::clientbound::{
     ClientboundChunkBatchFinished, ClientboundCommandSuggestions, ClientboundCommands,
     ClientboundEntityPositionSync, ClientboundLogin, ClientboundMoveEntityPos,
     ClientboundMoveEntityPosRot, ClientboundPlayerPosition, ClientboundRemoveEntities,
-    ClientboundRespawn, ClientboundSectionBlocksUpdate, ClientboundSetEntityData,
-    ClientboundSetEquipment, ClientboundSystemChatPacket, ClientboundTeleportEntity,
+    ClientboundRespawn, ClientboundSectionBlocksUpdate, ClientboundSystemChatPacket,
+    ClientboundTeleportEntity,
 };
 use mcrs_minecraft_protocol_game::player::PlayerAction;
 use mcrs_minecraft_protocol_game::serverbound::{
-    ServerboundAttack, ServerboundChatCommand, ServerboundChunkBatchReceived,
-    ServerboundClientInformation as GameClientInformation, ServerboundCommandSuggestion,
-    ServerboundContainerClick, ServerboundContainerClose, ServerboundInteract,
-    ServerboundPlayerAction, ServerboundPlayerLoaded, ServerboundPunch, ServerboundSetCarriedItem,
+    PlayerCommandAction, PlayerInputFlags, ServerboundAttack, ServerboundChatCommand,
+    ServerboundChunkBatchReceived, ServerboundClientInformation as GameClientInformation,
+    ServerboundCommandSuggestion, ServerboundContainerClick, ServerboundContainerClose,
+    ServerboundInteract, ServerboundMovePlayerPos, ServerboundMovePlayerPosRot,
+    ServerboundPlayerAction, ServerboundPlayerCommand, ServerboundPlayerInput,
+    ServerboundPlayerLoaded, ServerboundPunch, ServerboundSetCarriedItem,
     ServerboundSetCreativeModeSlot, ServerboundUseItem, ServerboundUseItemOn,
 };
-use mcrs_minecraft_protocol_game::{Direction, Hand, LpVec3, Position};
+use mcrs_minecraft_protocol_game::{Direction, Hand, LpVec3, MoveFlags, Position};
 use mcrs_minecraft_text::Text;
 use mcrs_voxel::BlockPos;
 use std::collections::VecDeque;
@@ -134,6 +137,9 @@ pub(crate) enum Order {
         hand: Hand,
         secondary: bool,
     },
+    MovePlayer([f64; 3], bool, Option<[f32; 2]>),
+    PlayerCommand(PlayerCommandAction, i32),
+    PlayerInput(PlayerInputFlags),
 }
 
 pub(crate) struct Event {
@@ -169,10 +175,17 @@ pub(crate) enum Signal {
     Removed(Vec<String>),
     PositionAccepted(Position),
     Animate(AnimateObserved),
+    Gameplay(GameplaySignal),
     Packet(PacketKind),
     Disconnected(Text),
     Closed,
     Failed(String),
+}
+
+impl Signal {
+    fn is_terminal(&self) -> bool {
+        matches!(self, Self::Disconnected(_) | Self::Closed | Self::Failed(_))
+    }
 }
 
 pub(crate) async fn log_in(address: SocketAddr, name: &str) -> anyhow::Result<Login> {
@@ -284,7 +297,16 @@ async fn acknowledge_login(
 }
 
 pub(crate) fn needs_world_acks(observe: &Observe) -> bool {
-    observe.inventory || observe.swing || observe.animate || observe.packet_order
+    observe.inventory
+        || observe.swing
+        || observe.animate
+        || observe.equipment
+        || observe.entity_data
+        || observe.health
+        || observe.damage_event
+        || observe.entity_event
+        || observe.game_event
+        || observe.packet_order
 }
 
 fn client_information(main_arm: MainArm) -> ClientInformation<'static> {
@@ -316,14 +338,8 @@ pub(crate) async fn session(
     events: UnboundedSender<Event>,
 ) {
     let mut io = joined.io;
-    let SessionConfig {
-        observe,
-        tracks_pose,
-        known_players,
-        load_signal,
-    } = config;
-    if load_signal == LoadSignal::Send
-        && needs_world_acks(&observe)
+    if config.load_signal == LoadSignal::Send
+        && needs_world_acks(&config.observe)
         && let Err(error) = automatic_reply(&mut io, &ServerboundPlayerLoaded).await
     {
         let signal = failure(&client, &error);
@@ -332,11 +348,12 @@ pub(crate) async fn session(
     }
     let mut state = SessionState {
         client: &client,
-        observe: &observe,
-        tracks_pose,
+        player_id: joined.player_id,
+        observe: &config.observe,
+        tracks_pose: config.tracks_pose,
         view: MenuView::default(),
         pose: Pose::default(),
-        names: EntityNames::with_players(&known_players),
+        names: EntityNames::with_players(&config.known_players),
         awaiting_respawn_pos: false,
     };
     state.names.record_login(&client, joined.player_id);
@@ -350,20 +367,7 @@ pub(crate) async fn session(
                     Err(error) => break failure(&client, &error),
                 };
                 match read_game_packet(&mut io, &mut state, id, &body).await {
-                    Ok(Some(
-                        signal @ (Signal::Chat(_)
-                        | Signal::Menu(_)
-                        | Signal::Sound(_)
-                        | Signal::Commands(_)
-                        | Signal::Suggestions { .. }
-                        | Signal::Swing(_)
-                        | Signal::BlockAck(_)
-                        | Signal::Added(_)
-                        | Signal::Removed(_)
-                        | Signal::PositionAccepted(_)
-                        | Signal::Animate(_)
-                        | Signal::Packet(_)),
-                    )) => {
+                    Ok(Some(signal)) if !signal.is_terminal() => {
                         if events.send(Event::now(client.clone(), signal)).is_err() {
                             return;
                         }
@@ -397,6 +401,7 @@ pub(crate) async fn session(
                             queued.order,
                             Order::Attack(_)
                                 | Order::Interact { .. }
+                                | Order::MovePlayer(..)
                                 | Order::SyncPosition
                                 | Order::UseItem { .. }
                         ))
@@ -480,6 +485,7 @@ fn failure(client: &str, error: &anyhow::Error) -> Signal {
 
 struct SessionState<'a> {
     client: &'a str,
+    player_id: i32,
     observe: &'a Observe,
     tracks_pose: bool,
     view: MenuView,
@@ -605,6 +611,60 @@ async fn send_order(
             })
             .await
         }
+        other => send_gameplay_order(io, state, other).await,
+    }
+}
+
+fn prepare_move_player(
+    pose: &mut Pose,
+    client: &str,
+    position: [f64; 3],
+    on_ground: bool,
+    look: Option<[f32; 2]>,
+) -> anyhow::Result<MoveFlags> {
+    if !pose.is_accepted() {
+        anyhow::bail!("{client} cannot move_player before accepting a player_position packet");
+    }
+    pose.move_to(position, on_ground, look);
+    Ok(MoveFlags::new().with_on_ground(on_ground))
+}
+
+async fn send_gameplay_order(
+    io: &mut PacketIo<TcpStream>,
+    state: &mut SessionState<'_>,
+    order: Order,
+) -> anyhow::Result<()> {
+    match order {
+        Order::MovePlayer(pos, on_ground, look) => {
+            let flags = prepare_move_player(&mut state.pose, state.client, pos, on_ground, look)?;
+            let position = Position::new(pos[0], pos[1], pos[2]);
+            match look {
+                Some([yaw, pitch]) => {
+                    let look = Look { yaw, pitch };
+                    io.send_packet(&ServerboundMovePlayerPosRot {
+                        position,
+                        look,
+                        flags,
+                    })
+                    .await
+                }
+                None => {
+                    io.send_packet(&ServerboundMovePlayerPos { position, flags })
+                        .await
+                }
+            }
+        }
+        Order::PlayerCommand(action, data) => {
+            let entity_id = VarInt(state.player_id);
+            io.send_packet(&ServerboundPlayerCommand {
+                entity_id,
+                action,
+                data: VarInt(data),
+            })
+            .await
+        }
+        Order::PlayerInput(input) => io.send_packet(&ServerboundPlayerInput { input }).await,
+        _ => Ok(()),
     }
 }
 
@@ -772,10 +832,8 @@ async fn read_game_packet(
             &state.names,
             body,
         )?)));
-    } else if state.observe.packet_order
-        && let Some(packet) = packet_order_kind(id)
-    {
-        return Ok(Some(Signal::Packet(packet)));
+    } else if let Some(signal) = read_observed(state, id, body)? {
+        return Ok(Some(signal));
     } else if id == ClientboundAddEntity::ID {
         let packet: ClientboundAddEntity = decode(body)?;
         state.names.record_add_entity(&packet);
@@ -849,6 +907,19 @@ where
         .context("automatic packet write timed out")?
 }
 
+fn read_observed(state: &SessionState<'_>, id: i32, body: &[u8]) -> anyhow::Result<Option<Signal>> {
+    if let Some(signal) = GameplaySignal::read(state.observe, state.client, &state.names, id, body)?
+    {
+        return Ok(Some(Signal::Gameplay(signal)));
+    }
+    Ok(state
+        .observe
+        .packet_order
+        .then(|| packet_order_kind(id))
+        .flatten()
+        .map(Signal::Packet))
+}
+
 fn packet_order_kind(id: i32) -> Option<PacketKind> {
     if SwingObserved::is_packet(id) {
         Some(PacketKind::SwingAnimation)
@@ -858,12 +929,8 @@ fn packet_order_kind(id: i32) -> Option<PacketKind> {
         Some(PacketKind::BlockUpdate)
     } else if id == ClientboundSectionBlocksUpdate::ID {
         Some(PacketKind::SectionBlocksUpdate)
-    } else if id == ClientboundSetEquipment::ID {
-        Some(PacketKind::SetEquipment)
-    } else if id == ClientboundSetEntityData::ID {
-        Some(PacketKind::SetEntityData)
     } else {
-        None
+        GameplaySignal::packet_kind(id)
     }
 }
 
@@ -880,4 +947,64 @@ fn is_close(error: &anyhow::Error) -> bool {
                 | io::ErrorKind::ConnectionAborted
         )
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn packet_order_and_observed_signals_cover_gameplay_packets() {
+        use PacketKind::*;
+        use mcrs_minecraft_protocol_game::clientbound as wire;
+        for (packet_id, kind) in [
+            (wire::ClientboundSetEquipment::ID, SetEquipment),
+            (wire::ClientboundSetEntityData::ID, SetEntityData),
+            (wire::ClientboundSetHealth::ID, SetHealth),
+            (wire::ClientboundDamageEvent::ID, DamageEvent),
+            (wire::ClientboundEntityEvent::ID, EntityEvent),
+            (wire::ClientboundGameEvent::ID, GameEvent),
+        ] {
+            let actual = packet_order_kind(packet_id);
+            assert!(actual == Some(kind), "packet {packet_id} mismatch");
+        }
+    }
+
+    #[test]
+    fn move_player_requires_accepted_pose_and_preserves_on_ground() {
+        let mut pose = Pose::default();
+        assert!(!pose.is_accepted(), "fresh pose unaccepted");
+        let err = prepare_move_player(&mut pose, "Alice", [1.0, 64.0, 2.0], false, None)
+            .unwrap_err()
+            .to_string();
+        assert!(err.contains("player_position"), "{err}");
+        let unaccepted = !pose.is_accepted() && pose.move_pos_rot().is_none();
+        assert!(unaccepted, "pose stayed unaccepted");
+
+        pose.accept(&ClientboundPlayerPosition {
+            teleport_id: VarInt(1),
+            position: Position::new(0.0, 64.0, 0.0).into(),
+            velocity: Default::default(),
+            look: Look {
+                yaw: 10.0,
+                pitch: 5.0,
+            },
+            flags: Default::default(),
+        });
+        let accepted = pose.is_accepted() && pose.move_pos_rot().unwrap().flags.on_ground();
+        assert!(accepted, "accept sets accepted and on_ground");
+
+        let target = [1.5, 65.0, -2.5];
+        let look = Some([90.0, 15.0]);
+        let flags = prepare_move_player(&mut pose, "Alice", target, false, look).unwrap();
+        let sync = pose.move_pos_rot().expect("accepted pose builds sync");
+        let pos_ok = sync.position == Position::new(1.5, 65.0, -2.5);
+        let look_ok = sync.look
+            == Look {
+                yaw: 90.0,
+                pitch: 15.0,
+            };
+        let ground_ok = !flags.on_ground() && !sync.flags.on_ground();
+        assert!(pos_ok && look_ok && ground_ok, "sync matches move_player");
+    }
 }
