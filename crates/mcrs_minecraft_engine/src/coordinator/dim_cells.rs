@@ -44,6 +44,7 @@ use crate::persistence::AutosaveCadence;
 use crate::player_roster::RosterRow;
 use crate::player_view::PlayerView;
 use crate::server_difficulty::ServerDifficulty;
+use crate::server_edit::{DimensionWeatherLevels, Weather};
 use crate::to_coordinator::RoutedInput;
 use crate::to_muxer::{DimClosed, DimDelivered, DimOpened};
 use crate::whitelist::Whitelist;
@@ -60,6 +61,7 @@ impl Plugin for DimCellsPlugin {
         app.init_resource::<EntityIdRanges>();
         app.init_resource::<PlayerRoster>();
         app.init_resource::<RunningDimensions>();
+        app.init_resource::<DimensionWeatherLevels>();
         app.add_message::<DimOpened>();
         app.add_message::<DimClosed>();
         app.add_message::<DimDelivered>();
@@ -727,6 +729,7 @@ struct Globals {
     ops: Option<OpList>,
     whitelist: Option<Whitelist>,
     bans: Option<BanList>,
+    weather: Option<Weather>,
     game_rules: Option<GameRules>,
     difficulty: Option<ServerDifficulty>,
     tick_pace: Option<TickPace>,
@@ -746,6 +749,7 @@ impl Globals {
             ops: changed(host),
             whitelist: changed(host),
             bans: changed(host),
+            weather: changed(host),
             game_rules: changed(host),
             difficulty: changed(host),
             tick_pace: changed(host),
@@ -778,6 +782,7 @@ impl Globals {
             ops: self.ops.clone(),
             whitelist: self.whitelist.clone(),
             bans: self.bans.clone(),
+            weather: self.weather,
             game_rules: self.game_rules.clone(),
             difficulty: self.difficulty,
             tick_pace: self.tick_pace.clone(),

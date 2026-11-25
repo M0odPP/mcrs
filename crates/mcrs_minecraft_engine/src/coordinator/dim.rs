@@ -15,6 +15,7 @@ use crate::coordinator::entity_id_ranges::EntityIdRanges;
 use crate::coordinator::roster::PlayerRoster;
 use crate::coordinator::running_dimensions::RunningDimensions;
 use crate::dim_tick::DimOutput;
+use crate::server_edit::DimensionWeatherLevels;
 use crate::to_muxer::{Destination, DimClosed, DimDelivered, RoutedDeparture};
 
 pub(crate) fn take_dim_outputs(world: &mut World) {
@@ -82,6 +83,7 @@ pub(crate) fn take_dim_outputs(world: &mut World) {
         for edit in output.server_edits {
             world.trigger(edit);
         }
+        record_weather_level(world, label, output.weather_level);
         let running = world.get_resource::<RunningDimensions>();
         let departures: Vec<RoutedDeparture> = output
             .departures
@@ -113,6 +115,18 @@ struct DimMerged {
     output: DimOutput,
 }
 
+fn record_weather_level(
+    world: &mut World,
+    label: Entity,
+    level: Option<mcrs_minecraft_dimension_environment::environment::WeatherLevel>,
+) {
+    if let Some(level) = level
+        && let Some(mut levels) = world.get_resource_mut::<DimensionWeatherLevels>()
+    {
+        levels.insert(label, level);
+    }
+}
+
 #[derive(bevy_ecs::component::Component)]
 pub struct DimSubAppHandle;
 
@@ -142,6 +156,9 @@ pub(crate) fn drain_dim_despawn_queue(app: &mut App) {
         if let Some(mut running) = world.get_resource_mut::<RunningDimensions>() {
             running.remove(entity);
         }
+        if let Some(mut levels) = world.get_resource_mut::<DimensionWeatherLevels>() {
+            levels.remove(entity);
+        }
 
         match world.get_entity_mut(entity) {
             Ok(entity_mut) => entity_mut.despawn(),
@@ -150,5 +167,26 @@ pub(crate) fn drain_dim_despawn_queue(app: &mut App) {
                 "DimDespawnQueue entity already absent from host world (expected on the OnRemove observer path)"
             ),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use mcrs_minecraft_dimension_environment::environment::WeatherLevel;
+
+    #[test]
+    fn dim_output_weather_level_updates_host_map_only_when_present() {
+        let mut w = World::new();
+        w.init_resource::<DimensionWeatherLevels>();
+        let (ow, ne) = (w.spawn_empty().id(), w.spawn_empty().id());
+        let wet = WeatherLevel {
+            rain: 0.75,
+            thunder: 0.5,
+        };
+        record_weather_level(&mut w, ow, Some(wet));
+        record_weather_level(&mut w, ne, None);
+        let lv = w.resource::<DimensionWeatherLevels>();
+        assert_eq!((lv.get(ow), lv.get(ne)), (Some(wet), None));
     }
 }

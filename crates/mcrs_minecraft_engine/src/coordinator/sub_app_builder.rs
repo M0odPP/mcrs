@@ -20,6 +20,7 @@ use crate::dim_mail::DimMail;
 use crate::dim_tick::{DimInbox, DimInboxDrain, drain_dim_inbox, inbox_holds_messages};
 use crate::player_order::{DepartureRequests, OrderedPlayer};
 use crate::player_roster::{ForeignPlayers, OwnPlayers, report_own_players};
+use crate::server_edit::{DimensionWeatherLevels, Weather};
 use crate::to_muxer::DimOpened;
 use mcrs_minecraft_engine_world::block_update::{BlockPlaced, BlockSetRequest};
 use mcrs_minecraft_engine_world::entity_ids::CellEntityIds;
@@ -31,7 +32,7 @@ use crate::minecraft_entity::MinecraftEntityPlugin;
 use crate::player_tracker::PlayerTrackerPlugin;
 use mcrs_minecraft_block::definition::Blocks;
 use mcrs_minecraft_dimension_environment::dimension_type::DimensionTypeFile;
-use mcrs_minecraft_dimension_environment::environment::DimensionEnvironment;
+use mcrs_minecraft_dimension_environment::environment::{DimensionEnvironment, WeatherLevel};
 use mcrs_minecraft_engine_world::owned_columns::{OwnedColumns, region_partition};
 use mcrs_minecraft_engine_world::server_loop::run_schedules_on_one_thread;
 use mcrs_minecraft_engine_world::tick::TickSet;
@@ -266,6 +267,7 @@ fn spawn_dim_subapp(app: &mut App, request: &DimSpawnRequest) -> Result<Entity, 
                 .cloned()
                 .unwrap_or_default(),
         );
+        sub_app.insert_resource(host.get_resource::<Weather>().copied().unwrap_or_default());
         sub_app.insert_resource(
             host.get_resource::<mcrs_minecraft_engine_world::game_rules::GameRules>()
                 .cloned()
@@ -325,6 +327,17 @@ fn spawn_dim_subapp(app: &mut App, request: &DimSpawnRequest) -> Result<Entity, 
                 .world_mut()
                 .entity_mut(dim_entity)
                 .insert(HasSkyLight);
+        }
+        if has_weather && index == CellIndex(0) {
+            let weather = app
+                .world()
+                .get_resource::<Weather>()
+                .copied()
+                .unwrap_or_default();
+            let (rain, thunder) = mcrs_minecraft_weather::initial_levels(&weather.as_state());
+            app.world_mut()
+                .get_resource_or_init::<DimensionWeatherLevels>()
+                .insert(label_entity, WeatherLevel { rain, thunder });
         }
         if has_weather {
             sub_app

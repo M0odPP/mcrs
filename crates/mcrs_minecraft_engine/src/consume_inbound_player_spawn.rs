@@ -18,21 +18,25 @@ use crate::persisted_registry::PersistedSnapshot;
 use crate::persistence;
 use crate::player_bundle::PlayerBundle;
 use crate::publish_player_tiles::AnnounceJoin;
+use crate::server_edit::Weather;
 use crate::teleport::TeleportState;
 use crate::world_state::SavedSpawn;
 use bevy_ecs::entity::Entity;
 use bevy_ecs::message::{MessageReader, MessageWriter};
-use bevy_ecs::prelude::{Commands, Query, Res, SystemSet, With};
+use bevy_ecs::prelude::{Commands, Has, Query, Res, SystemSet, With};
 use bevy_ecs::world::World;
 use bevy_math::DVec3;
 use mcrs_minecraft_dimension::Dimension as DimensionKey;
+use mcrs_minecraft_dimension_environment::environment::WeatherLevel;
 use mcrs_minecraft_engine_world::entity::physics::{Rotation, Transform};
 use mcrs_minecraft_engine_world::entity::player::chunk_view::PlayerViewDistance;
 use mcrs_minecraft_engine_world::entity::player::chunk_view::SentChunkView;
 use mcrs_minecraft_engine_world::game_rules::GameRules;
 use mcrs_minecraft_engine_world::session::Owner;
 use mcrs_minecraft_engine_world::tick_pace::TickPace;
-use mcrs_minecraft_engine_world::world::dimension::{Dimension, DimensionTypeId, InDimension};
+use mcrs_minecraft_engine_world::world::dimension::{
+    Dimension, DimensionTypeId, HasWeather, InDimension,
+};
 use mcrs_minecraft_engine_world::world::lifecycle::simulation::SimulationDistance;
 use mcrs_minecraft_entity_key::EntityUuid;
 use mcrs_minecraft_game_mode::{GameMode, PlayerGameMode};
@@ -56,7 +60,15 @@ pub(crate) fn consume_inbound_player_spawn(
     mut reader: MessageReader<InboundPlayerSpawn>,
     mut attached: MessageWriter<OutboundPlayerAttached>,
     mut packet_writer: MessageWriter<OutboundPlayerPacket>,
-    dims: Query<(Entity, &ResourceKeyBuf<DimensionKey>, &DimensionTypeId), With<Dimension>>,
+    dims: Query<
+        (
+            Entity,
+            &ResourceKeyBuf<DimensionKey>,
+            &DimensionTypeId,
+            Has<HasWeather>,
+        ),
+        With<Dimension>,
+    >,
     mut commands: Commands,
     simulation_distance: Res<SimulationDistance>,
     default_game_mode: Res<DefaultGameMode>,
@@ -67,9 +79,11 @@ pub(crate) fn consume_inbound_player_spawn(
     game_rules: Option<Res<GameRules>>,
     saved_spawn: Option<Res<SavedSpawn>>,
     pace: Option<Res<TickPace>>,
+    weather_level: Option<Res<WeatherLevel>>,
+    weather: Option<Res<Weather>>,
 ) {
     for spawn in reader.read() {
-        let Some((dim, dim_key, dimension_type)) = dims.iter().next() else {
+        let Some((dim, dim_key, dimension_type, has_weather)) = dims.iter().next() else {
             continue;
         };
         let Some(profile) = spawn.snapshot.profile() else {
@@ -77,21 +91,7 @@ pub(crate) fn consume_inbound_player_spawn(
             continue;
         };
         let transform = join_transform(&spawn.snapshot, saved_spawn.as_deref());
-        let client_info = spawn.snapshot.client_info();
-        let view_distance = spawn.snapshot.view_distance().map_or_else(
-            || PlayerViewDistance {
-                distance: clamp_view_distance(
-                    client_info
-                        .as_ref()
-                        .map_or(VIEW_DISTANCE_FALLBACK, |info| info.view_distance),
-                ),
-                ..Default::default()
-            },
-            |view| PlayerViewDistance {
-                distance: clamp_view_distance(view.distance),
-                ..view
-            },
-        );
+        let (client_info, view_distance) = join_client_view(&spawn.snapshot);
         let op_level = ops.level_of(&profile.id, *default_op_level);
         let arrival = Arrival::absolute(transform);
         let mut teleport_state = TeleportState::default();
@@ -159,6 +159,7 @@ pub(crate) fn consume_inbound_player_spawn(
             arrival.position_packet(login_teleport_id),
             game_mode::abilities(default_game_mode.0, PlayerFlying(false)),
             pace.as_deref(),
+            initial_spawn_weather(has_weather, weather_level.as_deref(), weather.as_deref()),
             |packet| {
                 packet_writer.write(packet);
             },
@@ -171,6 +172,42 @@ pub(crate) fn consume_inbound_player_spawn(
         });
         attached.write(OutboundPlayerAttached { session });
     }
+}
+
+fn initial_spawn_weather(
+    has_weather: bool,
+    weather_level: Option<&WeatherLevel>,
+    weather: Option<&Weather>,
+) -> Option<WeatherLevel> {
+    has_weather.then(|| {
+        weather_level.copied().unwrap_or_else(|| {
+            let (rain, thunder) = weather.map_or((0.0, 0.0), |weather| {
+                mcrs_minecraft_weather::initial_levels(&weather.as_state())
+            });
+            WeatherLevel { rain, thunder }
+        })
+    })
+}
+
+fn join_client_view(
+    snapshot: &PersistedSnapshot,
+) -> (Option<crate::client_info::ClientInfo>, PlayerViewDistance) {
+    let client_info = snapshot.client_info();
+    let view_distance = snapshot.view_distance().map_or_else(
+        || PlayerViewDistance {
+            distance: clamp_view_distance(
+                client_info
+                    .as_ref()
+                    .map_or(VIEW_DISTANCE_FALLBACK, |info| info.view_distance),
+            ),
+            ..Default::default()
+        },
+        |view| PlayerViewDistance {
+            distance: clamp_view_distance(view.distance),
+            ..view
+        },
+    );
+    (client_info, view_distance)
 }
 
 fn join_transform(snapshot: &PersistedSnapshot, saved_spawn: Option<&SavedSpawn>) -> Transform {
@@ -241,4 +278,33 @@ fn spawn_player_entity(
             profile,
         ))
         .id()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::initial_spawn_weather as spawn_weather;
+    use crate::server_edit::Weather;
+    use mcrs_minecraft_dimension_environment::environment::WeatherLevel;
+
+    #[test]
+    fn initial_spawn_weather_honors_has_weather_and_falls_back_to_weather_state() {
+        let wl = |rain, thunder| WeatherLevel { rain, thunder };
+        let mut storm = Weather::default();
+        (storm.raining, storm.thundering) = (true, true);
+        let got = (
+            spawn_weather(false, Some(&wl(0.4, 0.1)), Some(&storm)),
+            spawn_weather(true, Some(&wl(0.4, 0.1)), Some(&storm)),
+            spawn_weather(true, None, Some(&storm)),
+            spawn_weather(true, None, None),
+        );
+        assert_eq!(
+            got,
+            (
+                None,
+                Some(wl(0.4, 0.1)),
+                Some(wl(1.0, 1.0)),
+                Some(wl(0.0, 0.0))
+            )
+        );
+    }
 }

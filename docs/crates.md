@@ -56,7 +56,7 @@ Use the crate that owns the item. Do not write a second copy.
 - `mcrs_minecraft_command_registry`: The registries and the block table that a host lends to the command arguments
 - `mcrs_minecraft_command_tree`: The nodes of the command tree that the commands packet carries
 - `mcrs_minecraft_command_vanilla`: The vanilla commands execute, gamemode, teleport, locate, summon and time, and the command effects they write
-- `mcrs_minecraft_command_world`: The commands that change the world and the server: fill, forceload, gamerule, weather clear, and tick query and sprint
+- `mcrs_minecraft_command_world`: The commands that change the world and the server: fill, forceload, gamerule, weather, and tick query and sprint
 
 ## creative
 
@@ -281,5 +281,6 @@ Use the crate that owns the item. Do not write a second copy.
 - `mcrs_minecraft_trim`: The values of the trim material and trim pattern registries
 - `mcrs_minecraft_value_provider`: Int, float and height providers and their codecs
 - `mcrs_minecraft_volume`: One block access API over every store of world data: bounds, per-section access, section handles and cursors
+- `mcrs_minecraft_weather`: No-std vanilla weather cycle timers, binary32 strength ramps, command durations, and storm rules
 - `mcrs_test_alloc`: A global allocator that counts the allocations of the calling thread, for tests
 - `mcrs_voxel`: Owns the block, section, local and column positions and the block state id of a voxel world; the chunk position type is ColumnPos

@@ -4946,6 +4946,7 @@ dependencies = [
  "mcrs_minecraft_game_rule",
  "mcrs_minecraft_simulation",
  "mcrs_minecraft_text",
+ "mcrs_minecraft_weather",
  "mcrs_voxel",
  "rand 0.10.0",
  "tracing",
@@ -5156,6 +5157,7 @@ dependencies = [
  "mcrs_minecraft_swing",
  "mcrs_minecraft_text",
  "mcrs_minecraft_volume",
+ "mcrs_minecraft_weather",
  "mcrs_minecraft_worldgen_generator",
  "mcrs_voxel",
  "rustc-hash 2.1.1",
@@ -7619,6 +7621,13 @@ dependencies = [
  "mcrs_minecraft_core",
  "mcrs_voxel",
  "thiserror 2.0.18",
+]
+
+[[package]]
+name = "mcrs_minecraft_weather"
+version = "0.5.8"
+dependencies = [
+ "mcrs_test_alloc",
 ]
 
 [[package]]

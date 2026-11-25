@@ -1,0 +1,15 @@
+pub const CLEAR_TICKS_MIN: u32 = 12_000;
+pub const CLEAR_TICKS_MAX: u32 = 180_000;
+pub const RAIN_ON_MIN: u32 = 12_000;
+pub const RAIN_ON_MAX: u32 = 24_000;
+pub const RAIN_OFF_MIN: u32 = 12_000;
+pub const RAIN_OFF_MAX: u32 = 180_000;
+pub const THUNDER_ON_MIN: u32 = 3_600;
+pub const THUNDER_ON_MAX: u32 = 15_600;
+pub const THUNDER_OFF_MIN: u32 = 12_000;
+pub const THUNDER_OFF_MAX: u32 = 180_000;
+pub const STRENGTH_STEP: f32 = 0.01;
+pub const WET_THRESHOLD: f32 = 0.2;
+pub const THUNDER_THRESHOLD: f32 = 0.2;
+pub const LIGHTNING_ROD_RADIUS: i32 = 128;
+pub const RAIN_TEMPERATURE_MIN: f32 = 0.15;

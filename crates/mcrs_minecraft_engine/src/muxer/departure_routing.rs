@@ -9,6 +9,7 @@ use crate::muxer::dim_outputs;
 use crate::muxer::entity_replication;
 use crate::muxer::muxer_link::{self, Answers};
 use crate::respawn_packet::{KeptPlayerData, respawn_packet};
+use crate::server_edit::DimensionWeatherLevels;
 use crate::to_muxer::{Destination, RoutedDeparture};
 use bevy_ecs::entity::Entity;
 use bevy_ecs::world::World;
@@ -67,6 +68,7 @@ fn announce(host: &mut World, anchor: Entity, destination: Destination, departur
     }
     let session = departure.session;
     let pace = host.get_resource::<TickPace>().cloned();
+    let weather = destination_weather(host, destination.label);
     let carried = &mut departure.carried;
     let teleport_id = carried.send_teleport(departure.arrival.transform);
     dim_outputs::deliver(
@@ -87,9 +89,61 @@ fn announce(host: &mut World, anchor: Entity, destination: Destination, departur
         departure.arrival.position_packet(teleport_id),
         game_mode::abilities(carried.game_mode(), carried.flying()),
         pace.as_ref(),
+        weather,
         |packet| dim_outputs::deliver(host, packet),
     );
     if let Some(look_at) = departure.arrival.look_at.clone() {
         dim_outputs::deliver(host, bus::to(session, PacketPayload::PlayerLookAt(look_at)));
+    }
+}
+
+fn destination_weather(
+    host: &World,
+    dest: Entity,
+) -> Option<mcrs_minecraft_dimension_environment::environment::WeatherLevel> {
+    host.get_resource::<DimensionWeatherLevels>()
+        .and_then(|levels| levels.get(dest))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ability::{PlayerFlying, PlayerOpLevel};
+    use mcrs_minecraft_dimension_environment::environment::WeatherLevel;
+    use mcrs_minecraft_engine_world::entity::physics::Transform;
+    use mcrs_minecraft_game_mode::GameMode;
+    use mcrs_minecraft_protocol_game::clientbound::ClientboundGameEvent;
+
+    #[test]
+    fn destination_weather_drives_transfer_packet_order_before_chunk_load_start() {
+        let mut host = World::new();
+        let (wet, dry) = (host.spawn_empty().id(), host.spawn_empty().id());
+        let lvl = WeatherLevel {
+            rain: 0.8,
+            thunder: 0.5,
+        };
+        host.get_resource_or_init::<DimensionWeatherLevels>()
+            .insert(wet, lvl);
+        assert_eq!(
+            (
+                destination_weather(&host, wet),
+                destination_weather(&host, dry)
+            ),
+            (Some(lvl), None)
+        );
+        let pos =
+            crate::dimension_change::Arrival::absolute(Transform::default()).position_packet(1);
+        let ab = game_mode::abilities(GameMode::Survival, PlayerFlying(false));
+        let mut got = Vec::new();
+        let w = destination_weather(&host, wet);
+        enter_level_packets(PlayerSession(1), PlayerOpLevel(0), pos, ab, None, w, |p| {
+            if let PacketPayload::GameEvent(ClientboundGameEvent { game_event }) = p.data {
+                got.push(format!("{game_event:?}"));
+            }
+        });
+        assert_eq!(
+            got.join(","),
+            "BeginRaining,RainLevelChange(0.8),ThunderLevelChange(0.5),LevelChunksLoadStart"
+        );
     }
 }

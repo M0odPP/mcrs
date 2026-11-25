@@ -1,5 +1,5 @@
 use bevy_app::SubApp;
-use bevy_ecs::change_detection::DetectChangesMut;
+use bevy_ecs::change_detection::{DetectChanges, DetectChangesMut};
 use bevy_ecs::component::ComponentId;
 use bevy_ecs::message::{Message, Messages};
 use bevy_ecs::resource::Resource;
@@ -8,6 +8,7 @@ use bevy_ecs::system::{Res, ResMut};
 use bevy_ecs::world::World;
 use mcrs_engine_cell::{SubAppWorld, Tick};
 use mcrs_minecraft_core::Versioned;
+use mcrs_minecraft_dimension_environment::environment::WeatherLevel;
 use mcrs_minecraft_engine_registries::RegistrySnapshot;
 use mcrs_minecraft_engine_world::entity::player::Player;
 use mcrs_minecraft_engine_world::world::lifecycle::trace::{ColumnTraceLog, TraceEvent};
@@ -40,7 +41,7 @@ use crate::player_dimension_change;
 use crate::player_order::OrderedPlayer;
 use crate::player_roster::{ForeignPlayers, OwnPlayers, RosterRow};
 use crate::server_difficulty::ServerDifficulty;
-use crate::server_edit::ServerEdit;
+use crate::server_edit::{ServerEdit, Weather};
 use crate::tile_events::TileEvents;
 use crate::to_muxer::ClientOutput;
 use crate::whitelist::{EditWhitelist, Whitelist};
@@ -71,6 +72,7 @@ pub struct DimInput {
     pub(crate) ops: Option<OpList>,
     pub(crate) whitelist: Option<Whitelist>,
     pub(crate) bans: Option<BanList>,
+    pub(crate) weather: Option<Weather>,
     pub(crate) game_rules: Option<GameRules>,
     pub(crate) difficulty: Option<ServerDifficulty>,
     pub(crate) tick_pace: Option<TickPace>,
@@ -100,6 +102,7 @@ pub struct DimOutput {
     pub(crate) cell_mail: CellMail,
     pub(crate) store_inputs: Vec<ColumnStoreInput>,
     pub(crate) generation_asks: Vec<ColumnPos>,
+    pub(crate) weather_level: Option<WeatherLevel>,
     pub(crate) player_save_failed: bool,
 }
 
@@ -112,6 +115,7 @@ impl DimOutput {
         self.ban_edits.extend(other.ban_edits);
         self.ops_edits.extend(other.ops_edits);
         self.server_edits.extend(other.server_edits);
+        self.weather_level = other.weather_level.or(self.weather_level);
         self.player_save_failed |= other.player_save_failed;
     }
 }
@@ -185,6 +189,13 @@ fn apply_input(world: &mut World, _tick: Tick, input: DimInput) {
     }
     if let Some(bans) = input.bans {
         world.insert_resource(bans);
+    }
+    if let Some(weather) = input.weather {
+        if let Some(mut existing) = world.get_resource_mut::<Weather>() {
+            existing.set_if_neq(weather);
+        } else {
+            world.insert_resource(weather);
+        }
     }
     if let Some(game_rules) = input.game_rules {
         world.insert_resource(game_rules);
@@ -288,6 +299,10 @@ fn take_output(world: &mut World) -> DimOutput {
     drain_into(world, &mut output.client.column_changes);
     drain_into(world, &mut output.client.positions);
     drain_into(world, &mut output.client.block_acks);
+    output.weather_level = world
+        .get_resource_ref::<WeatherLevel>()
+        .filter(|level| level.is_changed())
+        .map(|level| *level);
     if let Some(mut store) = world.get_resource_mut::<ColumnStoreLink>() {
         store.take_sent(&mut output.store_inputs);
         store.take_generation_asks(&mut output.generation_asks);
@@ -359,6 +374,7 @@ mod tests {
             ops: None,
             whitelist: None,
             bans: None,
+            weather: None,
             game_rules: None,
             difficulty: None,
             tick_pace: None,
@@ -432,5 +448,23 @@ mod tests {
         assert_eq!(output.departures.len(), 1);
         assert!(done.load(Ordering::SeqCst), "the write finished first");
         let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn weather_level_is_emitted_only_when_changed() {
+        let mut w = World::new();
+        let wet = WeatherLevel {
+            rain: 0.6,
+            thunder: 0.3,
+        };
+        w.insert_resource(wet);
+        assert_eq!(take_output(&mut w).weather_level, Some(wet));
+        w.clear_trackers();
+        assert_eq!(take_output(&mut w).weather_level, None);
+        *w.resource_mut::<WeatherLevel>() = WeatherLevel::default();
+        assert_eq!(
+            take_output(&mut w).weather_level,
+            Some(WeatherLevel::default())
+        );
     }
 }
