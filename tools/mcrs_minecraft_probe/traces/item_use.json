@@ -1,0 +1,3228 @@
+{
+  "version": {
+    "name": "26.4 Snapshot 7",
+    "protocol": 1073742169
+  },
+  "steps": [
+    {
+      "id": "prepare",
+      "observed": {
+        "console": {
+          "output": [
+            "The difficulty has been set to Peaceful",
+            "Game rule spawn_mobs is now set to false"
+          ]
+        }
+      },
+      "inventory": [],
+      "sounds": [],
+      "equipment": [],
+      "entity_data": [],
+      "health": [],
+      "entity_events": []
+    },
+    {
+      "id": "join_alice",
+      "observed": "joined",
+      "inventory": [
+        {
+          "client": "Alice",
+          "kind": "set_held_slot",
+          "slot": 0
+        },
+        {
+          "client": "Alice",
+          "kind": "container_set_content",
+          "container": 0,
+          "state_id": 1,
+          "slots": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "carried": null
+        }
+      ],
+      "sounds": [],
+      "equipment": [],
+      "entity_data": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 20.0
+            },
+            {
+              "index": 16,
+              "kind": "byte",
+              "value": 127
+            }
+          ]
+        }
+      ],
+      "health": [
+        {
+          "client": "Alice",
+          "health": 20.0,
+          "food": 20,
+          "saturation": 5.0
+        }
+      ],
+      "entity_events": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "status": 28
+        }
+      ]
+    },
+    {
+      "id": "join_bob",
+      "observed": "joined",
+      "inventory": [
+        {
+          "client": "Bob",
+          "kind": "set_held_slot",
+          "slot": 0
+        },
+        {
+          "client": "Bob",
+          "kind": "container_set_content",
+          "container": 0,
+          "state_id": 1,
+          "slots": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "carried": null
+        }
+      ],
+      "sounds": [],
+      "equipment": [],
+      "entity_data": [
+        {
+          "client": "Alice",
+          "subject": "Bob",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 20.0
+            },
+            {
+              "index": 16,
+              "kind": "byte",
+              "value": 127
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Bob",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 20.0
+            },
+            {
+              "index": 16,
+              "kind": "byte",
+              "value": 127
+            }
+          ]
+        },
+        {
+          "client": "Bob",
+          "subject": "Bob",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 20.0
+            },
+            {
+              "index": 16,
+              "kind": "byte",
+              "value": 127
+            }
+          ]
+        },
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 20.0
+            },
+            {
+              "index": 16,
+              "kind": "byte",
+              "value": 127
+            }
+          ]
+        }
+      ],
+      "health": [
+        {
+          "client": "Bob",
+          "health": 20.0,
+          "food": 20,
+          "saturation": 5.0
+        }
+      ],
+      "entity_events": [
+        {
+          "client": "Bob",
+          "subject": "Bob",
+          "status": 28
+        }
+      ]
+    },
+    {
+      "id": "setup_shield",
+      "observed": {
+        "console": {
+          "output": [
+            "No items were found on player Alice",
+            "Teleported Alice to 0.500000, -60.000000, 0.500000",
+            "Teleported Bob to 2.500000, -60.000000, 0.500000",
+            "Successfully filled 121 block(s)",
+            "No blocks were filled",
+            "Replaced 1 slot(s) on Alice with [Shield]",
+            "Replaced 1 slot(s) on Alice with [Apple]",
+            "Replaced 1 slot(s) on Alice with [Stick]"
+          ],
+          "chat": [
+            {
+              "client": "Alice",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.teleport.success.location.single",
+                    "with": [
+                      {
+                        "text": "Alice",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Alice "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            278005000,
+                            -707248403,
+                            -1814916367,
+                            -1817188393
+                          ],
+                          "name": "Alice"
+                        },
+                        "insertion": "Alice"
+                      },
+                      "0.500000",
+                      "-60.000000",
+                      "0.500000"
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            },
+            {
+              "client": "Alice",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.teleport.success.location.single",
+                    "with": [
+                      {
+                        "text": "Bob",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Bob "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            -89793373,
+                            -1009502901,
+                            -1373905431,
+                            -442414277
+                          ],
+                          "name": "Bob"
+                        },
+                        "insertion": "Bob"
+                      },
+                      "2.500000",
+                      "-60.000000",
+                      "0.500000"
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            },
+            {
+              "client": "Alice",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.fill.success",
+                    "with": [
+                      121
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            },
+            {
+              "client": "Alice",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.item.entity.replace.success.single.known_item",
+                    "with": [
+                      1,
+                      {
+                        "text": "Alice",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Alice "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            278005000,
+                            -707248403,
+                            -1814916367,
+                            -1817188393
+                          ],
+                          "name": "Alice"
+                        },
+                        "insertion": "Alice"
+                      },
+                      {
+                        "translate": "chat.square_brackets",
+                        "with": [
+                          {
+                            "text": "",
+                            "extra": [
+                              {
+                                "translate": "item.minecraft.shield"
+                              }
+                            ]
+                          }
+                        ],
+                        "color": "white",
+                        "hover_event": {
+                          "action": "show_item",
+                          "id": "minecraft:shield"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            },
+            {
+              "client": "Alice",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.item.entity.replace.success.single.known_item",
+                    "with": [
+                      1,
+                      {
+                        "text": "Alice",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Alice "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            278005000,
+                            -707248403,
+                            -1814916367,
+                            -1817188393
+                          ],
+                          "name": "Alice"
+                        },
+                        "insertion": "Alice"
+                      },
+                      {
+                        "translate": "chat.square_brackets",
+                        "with": [
+                          {
+                            "text": "",
+                            "extra": [
+                              {
+                                "translate": "item.minecraft.apple"
+                              }
+                            ]
+                          }
+                        ],
+                        "color": "white",
+                        "hover_event": {
+                          "action": "show_item",
+                          "id": "minecraft:apple"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            },
+            {
+              "client": "Alice",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.item.entity.replace.success.single.known_item",
+                    "with": [
+                      1,
+                      {
+                        "text": "Alice",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Alice "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            278005000,
+                            -707248403,
+                            -1814916367,
+                            -1817188393
+                          ],
+                          "name": "Alice"
+                        },
+                        "insertion": "Alice"
+                      },
+                      {
+                        "translate": "chat.square_brackets",
+                        "with": [
+                          {
+                            "text": "",
+                            "extra": [
+                              {
+                                "translate": "item.minecraft.stick"
+                              }
+                            ]
+                          }
+                        ],
+                        "color": "white",
+                        "hover_event": {
+                          "action": "show_item",
+                          "id": "minecraft:stick"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            },
+            {
+              "client": "Bob",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.teleport.success.location.single",
+                    "with": [
+                      {
+                        "text": "Alice",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Alice "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            278005000,
+                            -707248403,
+                            -1814916367,
+                            -1817188393
+                          ],
+                          "name": "Alice"
+                        },
+                        "insertion": "Alice"
+                      },
+                      "0.500000",
+                      "-60.000000",
+                      "0.500000"
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            },
+            {
+              "client": "Bob",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.teleport.success.location.single",
+                    "with": [
+                      {
+                        "text": "Bob",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Bob "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            -89793373,
+                            -1009502901,
+                            -1373905431,
+                            -442414277
+                          ],
+                          "name": "Bob"
+                        },
+                        "insertion": "Bob"
+                      },
+                      "2.500000",
+                      "-60.000000",
+                      "0.500000"
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            },
+            {
+              "client": "Bob",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.fill.success",
+                    "with": [
+                      121
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            },
+            {
+              "client": "Bob",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.item.entity.replace.success.single.known_item",
+                    "with": [
+                      1,
+                      {
+                        "text": "Alice",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Alice "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            278005000,
+                            -707248403,
+                            -1814916367,
+                            -1817188393
+                          ],
+                          "name": "Alice"
+                        },
+                        "insertion": "Alice"
+                      },
+                      {
+                        "translate": "chat.square_brackets",
+                        "with": [
+                          {
+                            "text": "",
+                            "extra": [
+                              {
+                                "translate": "item.minecraft.shield"
+                              }
+                            ]
+                          }
+                        ],
+                        "color": "white",
+                        "hover_event": {
+                          "action": "show_item",
+                          "id": "minecraft:shield"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            },
+            {
+              "client": "Bob",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.item.entity.replace.success.single.known_item",
+                    "with": [
+                      1,
+                      {
+                        "text": "Alice",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Alice "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            278005000,
+                            -707248403,
+                            -1814916367,
+                            -1817188393
+                          ],
+                          "name": "Alice"
+                        },
+                        "insertion": "Alice"
+                      },
+                      {
+                        "translate": "chat.square_brackets",
+                        "with": [
+                          {
+                            "text": "",
+                            "extra": [
+                              {
+                                "translate": "item.minecraft.apple"
+                              }
+                            ]
+                          }
+                        ],
+                        "color": "white",
+                        "hover_event": {
+                          "action": "show_item",
+                          "id": "minecraft:apple"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            },
+            {
+              "client": "Bob",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.item.entity.replace.success.single.known_item",
+                    "with": [
+                      1,
+                      {
+                        "text": "Alice",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Alice "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            278005000,
+                            -707248403,
+                            -1814916367,
+                            -1817188393
+                          ],
+                          "name": "Alice"
+                        },
+                        "insertion": "Alice"
+                      },
+                      {
+                        "translate": "chat.square_brackets",
+                        "with": [
+                          {
+                            "text": "",
+                            "extra": [
+                              {
+                                "translate": "item.minecraft.stick"
+                              }
+                            ]
+                          }
+                        ],
+                        "color": "white",
+                        "hover_event": {
+                          "action": "show_item",
+                          "id": "minecraft:stick"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            }
+          ]
+        }
+      },
+      "inventory": [
+        {
+          "client": "Alice",
+          "kind": "container_set_slot",
+          "container": 0,
+          "state_id": 2,
+          "slot": 0,
+          "stack": null
+        },
+        {
+          "client": "Alice",
+          "kind": "container_set_slot",
+          "container": 0,
+          "state_id": 3,
+          "slot": 36,
+          "stack": {
+            "item": "minecraft:shield",
+            "count": 1,
+            "components": {
+              "added": [],
+              "removed": []
+            }
+          }
+        },
+        {
+          "client": "Alice",
+          "kind": "container_set_slot",
+          "container": 0,
+          "state_id": 4,
+          "slot": 45,
+          "stack": {
+            "item": "minecraft:apple",
+            "count": 1,
+            "components": {
+              "added": [],
+              "removed": []
+            }
+          }
+        },
+        {
+          "client": "Alice",
+          "kind": "container_set_slot",
+          "container": 0,
+          "state_id": 5,
+          "slot": 37,
+          "stack": {
+            "item": "minecraft:stick",
+            "count": 1,
+            "components": {
+              "added": [],
+              "removed": []
+            }
+          }
+        }
+      ],
+      "sounds": [],
+      "equipment": [
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "slots": [
+            {
+              "slot": "mainhand",
+              "stack": {
+                "item": "minecraft:shield",
+                "count": 1
+              }
+            },
+            {
+              "slot": "offhand",
+              "stack": {
+                "item": "minecraft:apple",
+                "count": 1
+              }
+            }
+          ]
+        }
+      ],
+      "entity_data": [],
+      "health": [],
+      "entity_events": []
+    },
+    {
+      "id": "wait_setup",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "inventory": [],
+      "sounds": [],
+      "equipment": [],
+      "entity_data": [],
+      "health": [],
+      "entity_events": []
+    },
+    {
+      "id": "start_use_main_shield",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "inventory": [],
+      "sounds": [],
+      "equipment": [
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "slots": [
+            {
+              "slot": "mainhand",
+              "stack": {
+                "item": "minecraft:shield",
+                "count": 1
+              }
+            }
+          ]
+        }
+      ],
+      "entity_data": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "health": [],
+      "entity_events": [],
+      "packets": [
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Bob",
+          "packet": "set_equipment"
+        },
+        {
+          "client": "Bob",
+          "packet": "set_entity_data"
+        }
+      ]
+    },
+    {
+      "id": "hold_3_ticks",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "inventory": [],
+      "sounds": [],
+      "equipment": [],
+      "entity_data": [],
+      "health": [],
+      "entity_events": []
+    },
+    {
+      "id": "release_use_shield",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "inventory": [],
+      "sounds": [],
+      "equipment": [],
+      "entity_data": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 0
+            }
+          ]
+        }
+      ],
+      "health": [],
+      "entity_events": [],
+      "packets": [
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Bob",
+          "packet": "set_entity_data"
+        }
+      ]
+    },
+    {
+      "id": "start_use_main_then_swap_slot",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "inventory": [],
+      "sounds": [],
+      "equipment": [
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "slots": [
+            {
+              "slot": "mainhand",
+              "stack": {
+                "item": "minecraft:shield",
+                "count": 1
+              }
+            }
+          ]
+        }
+      ],
+      "entity_data": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "health": [],
+      "entity_events": [],
+      "packets": [
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Bob",
+          "packet": "set_equipment"
+        },
+        {
+          "client": "Bob",
+          "packet": "set_entity_data"
+        }
+      ]
+    },
+    {
+      "id": "wait_before_slot_cancel",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "inventory": [],
+      "sounds": [],
+      "equipment": [],
+      "entity_data": [],
+      "health": [],
+      "entity_events": []
+    },
+    {
+      "id": "switch_slot_cancels_use",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "inventory": [],
+      "sounds": [],
+      "equipment": [
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "slots": [
+            {
+              "slot": "mainhand",
+              "stack": {
+                "item": "minecraft:stick",
+                "count": 1
+              }
+            }
+          ]
+        }
+      ],
+      "entity_data": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 0
+            }
+          ]
+        }
+      ],
+      "health": [],
+      "entity_events": [],
+      "packets": [
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Bob",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Bob",
+          "packet": "set_equipment"
+        }
+      ]
+    },
+    {
+      "id": "try_use_stick_inert",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "inventory": [],
+      "sounds": [],
+      "equipment": [],
+      "entity_data": [],
+      "health": [],
+      "entity_events": [],
+      "packets": []
+    },
+    {
+      "id": "setup_offhand_shield",
+      "observed": {
+        "console": {
+          "output": [
+            "Replaced 1 slot(s) on Alice with [Shield]"
+          ],
+          "chat": [
+            {
+              "client": "Alice",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.item.entity.replace.success.single.known_item",
+                    "with": [
+                      1,
+                      {
+                        "text": "Alice",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Alice "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            278005000,
+                            -707248403,
+                            -1814916367,
+                            -1817188393
+                          ],
+                          "name": "Alice"
+                        },
+                        "insertion": "Alice"
+                      },
+                      {
+                        "translate": "chat.square_brackets",
+                        "with": [
+                          {
+                            "text": "",
+                            "extra": [
+                              {
+                                "translate": "item.minecraft.shield"
+                              }
+                            ]
+                          }
+                        ],
+                        "color": "white",
+                        "hover_event": {
+                          "action": "show_item",
+                          "id": "minecraft:shield"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            },
+            {
+              "client": "Bob",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.item.entity.replace.success.single.known_item",
+                    "with": [
+                      1,
+                      {
+                        "text": "Alice",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Alice "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            278005000,
+                            -707248403,
+                            -1814916367,
+                            -1817188393
+                          ],
+                          "name": "Alice"
+                        },
+                        "insertion": "Alice"
+                      },
+                      {
+                        "translate": "chat.square_brackets",
+                        "with": [
+                          {
+                            "text": "",
+                            "extra": [
+                              {
+                                "translate": "item.minecraft.shield"
+                              }
+                            ]
+                          }
+                        ],
+                        "color": "white",
+                        "hover_event": {
+                          "action": "show_item",
+                          "id": "minecraft:shield"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            }
+          ]
+        }
+      },
+      "inventory": [
+        {
+          "client": "Alice",
+          "kind": "container_set_slot",
+          "container": 0,
+          "state_id": 6,
+          "slot": 45,
+          "stack": {
+            "item": "minecraft:shield",
+            "count": 1,
+            "components": {
+              "added": [],
+              "removed": []
+            }
+          }
+        }
+      ],
+      "sounds": [
+        {
+          "client": "Bob",
+          "sound": "minecraft:item.armor.equip_generic",
+          "source": 7,
+          "position": [
+            4,
+            -480,
+            4
+          ],
+          "volume": 1.0,
+          "pitch": 1.0,
+          "seed": -6396652979540454597
+        },
+        {
+          "client": "Alice",
+          "sound": "minecraft:item.armor.equip_generic",
+          "source": 7,
+          "position": [
+            4,
+            -480,
+            4
+          ],
+          "volume": 1.0,
+          "pitch": 1.0,
+          "seed": -6396652979540454597
+        }
+      ],
+      "equipment": [
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "slots": [
+            {
+              "slot": "offhand",
+              "stack": {
+                "item": "minecraft:shield",
+                "count": 1
+              }
+            }
+          ]
+        }
+      ],
+      "entity_data": [],
+      "health": [],
+      "entity_events": []
+    },
+    {
+      "id": "use_offhand_shield",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "inventory": [],
+      "sounds": [],
+      "equipment": [
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "slots": [
+            {
+              "slot": "offhand",
+              "stack": {
+                "item": "minecraft:shield",
+                "count": 1
+              }
+            }
+          ]
+        }
+      ],
+      "entity_data": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 3
+            }
+          ]
+        },
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 3
+            }
+          ]
+        }
+      ],
+      "health": [],
+      "entity_events": [],
+      "packets": [
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Bob",
+          "packet": "set_equipment"
+        },
+        {
+          "client": "Bob",
+          "packet": "set_entity_data"
+        }
+      ]
+    },
+    {
+      "id": "wait_offhand",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "inventory": [],
+      "sounds": [],
+      "equipment": [],
+      "entity_data": [],
+      "health": [],
+      "entity_events": []
+    },
+    {
+      "id": "release_offhand_shield",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "inventory": [],
+      "sounds": [],
+      "equipment": [],
+      "entity_data": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 2
+            }
+          ]
+        },
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 2
+            }
+          ]
+        }
+      ],
+      "health": [],
+      "entity_events": [],
+      "packets": [
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Bob",
+          "packet": "set_entity_data"
+        }
+      ]
+    },
+    {
+      "id": "test_full_hunger_food_and_adventure",
+      "observed": {
+        "console": {
+          "output": [
+            "Replaced 1 slot(s) on Alice with [Air]",
+            "Replaced 1 slot(s) on Alice with [Apple]",
+            "Replaced 1 slot(s) on Alice with [Golden Apple]"
+          ],
+          "chat": [
+            {
+              "client": "Alice",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.item.entity.replace.success.single.known_item",
+                    "with": [
+                      1,
+                      {
+                        "text": "Alice",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Alice "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            278005000,
+                            -707248403,
+                            -1814916367,
+                            -1817188393
+                          ],
+                          "name": "Alice"
+                        },
+                        "insertion": "Alice"
+                      },
+                      {
+                        "translate": "chat.square_brackets",
+                        "with": [
+                          {
+                            "text": "",
+                            "extra": [
+                              {
+                                "translate": "block.minecraft.air"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            },
+            {
+              "client": "Alice",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.item.entity.replace.success.single.known_item",
+                    "with": [
+                      1,
+                      {
+                        "text": "Alice",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Alice "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            278005000,
+                            -707248403,
+                            -1814916367,
+                            -1817188393
+                          ],
+                          "name": "Alice"
+                        },
+                        "insertion": "Alice"
+                      },
+                      {
+                        "translate": "chat.square_brackets",
+                        "with": [
+                          {
+                            "text": "",
+                            "extra": [
+                              {
+                                "translate": "item.minecraft.apple"
+                              }
+                            ]
+                          }
+                        ],
+                        "color": "white",
+                        "hover_event": {
+                          "action": "show_item",
+                          "id": "minecraft:apple"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            },
+            {
+              "client": "Alice",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.item.entity.replace.success.single.known_item",
+                    "with": [
+                      1,
+                      {
+                        "text": "Alice",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Alice "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            278005000,
+                            -707248403,
+                            -1814916367,
+                            -1817188393
+                          ],
+                          "name": "Alice"
+                        },
+                        "insertion": "Alice"
+                      },
+                      {
+                        "translate": "chat.square_brackets",
+                        "with": [
+                          {
+                            "text": "",
+                            "extra": [
+                              {
+                                "translate": "item.minecraft.golden_apple"
+                              }
+                            ]
+                          }
+                        ],
+                        "color": "white",
+                        "hover_event": {
+                          "action": "show_item",
+                          "id": "minecraft:golden_apple"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            },
+            {
+              "client": "Bob",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.item.entity.replace.success.single.known_item",
+                    "with": [
+                      1,
+                      {
+                        "text": "Alice",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Alice "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            278005000,
+                            -707248403,
+                            -1814916367,
+                            -1817188393
+                          ],
+                          "name": "Alice"
+                        },
+                        "insertion": "Alice"
+                      },
+                      {
+                        "translate": "chat.square_brackets",
+                        "with": [
+                          {
+                            "text": "",
+                            "extra": [
+                              {
+                                "translate": "block.minecraft.air"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            },
+            {
+              "client": "Bob",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.item.entity.replace.success.single.known_item",
+                    "with": [
+                      1,
+                      {
+                        "text": "Alice",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Alice "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            278005000,
+                            -707248403,
+                            -1814916367,
+                            -1817188393
+                          ],
+                          "name": "Alice"
+                        },
+                        "insertion": "Alice"
+                      },
+                      {
+                        "translate": "chat.square_brackets",
+                        "with": [
+                          {
+                            "text": "",
+                            "extra": [
+                              {
+                                "translate": "item.minecraft.apple"
+                              }
+                            ]
+                          }
+                        ],
+                        "color": "white",
+                        "hover_event": {
+                          "action": "show_item",
+                          "id": "minecraft:apple"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            },
+            {
+              "client": "Bob",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.item.entity.replace.success.single.known_item",
+                    "with": [
+                      1,
+                      {
+                        "text": "Alice",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Alice "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            278005000,
+                            -707248403,
+                            -1814916367,
+                            -1817188393
+                          ],
+                          "name": "Alice"
+                        },
+                        "insertion": "Alice"
+                      },
+                      {
+                        "translate": "chat.square_brackets",
+                        "with": [
+                          {
+                            "text": "",
+                            "extra": [
+                              {
+                                "translate": "item.minecraft.golden_apple"
+                              }
+                            ]
+                          }
+                        ],
+                        "color": "white",
+                        "hover_event": {
+                          "action": "show_item",
+                          "id": "minecraft:golden_apple"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            }
+          ]
+        }
+      },
+      "inventory": [
+        {
+          "client": "Alice",
+          "kind": "container_set_slot",
+          "container": 0,
+          "state_id": 7,
+          "slot": 45,
+          "stack": null
+        },
+        {
+          "client": "Alice",
+          "kind": "container_set_slot",
+          "container": 0,
+          "state_id": 8,
+          "slot": 36,
+          "stack": {
+            "item": "minecraft:apple",
+            "count": 1,
+            "components": {
+              "added": [],
+              "removed": []
+            }
+          }
+        },
+        {
+          "client": "Alice",
+          "kind": "container_set_slot",
+          "container": 0,
+          "state_id": 9,
+          "slot": 38,
+          "stack": {
+            "item": "minecraft:golden_apple",
+            "count": 1,
+            "components": {
+              "added": [],
+              "removed": []
+            }
+          }
+        }
+      ],
+      "sounds": [],
+      "equipment": [
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "slots": [
+            {
+              "slot": "offhand",
+              "stack": null
+            }
+          ]
+        }
+      ],
+      "entity_data": [],
+      "health": [],
+      "entity_events": []
+    },
+    {
+      "id": "select_apple",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "inventory": [],
+      "sounds": [],
+      "equipment": [
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "slots": [
+            {
+              "slot": "mainhand",
+              "stack": {
+                "item": "minecraft:apple",
+                "count": 1
+              }
+            }
+          ]
+        }
+      ],
+      "entity_data": [],
+      "health": [],
+      "entity_events": []
+    },
+    {
+      "id": "try_apple_at_full_food",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "inventory": [],
+      "sounds": [],
+      "equipment": [],
+      "entity_data": [],
+      "health": [],
+      "entity_events": [],
+      "packets": []
+    },
+    {
+      "id": "select_golden_apple",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "inventory": [],
+      "sounds": [],
+      "equipment": [
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "slots": [
+            {
+              "slot": "mainhand",
+              "stack": {
+                "item": "minecraft:golden_apple",
+                "count": 1
+              }
+            }
+          ]
+        }
+      ],
+      "entity_data": [],
+      "health": [],
+      "entity_events": []
+    },
+    {
+      "id": "cancel_gapple_via_slot",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "inventory": [],
+      "sounds": [],
+      "equipment": [
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "slots": [
+            {
+              "slot": "mainhand",
+              "stack": {
+                "item": "minecraft:golden_apple",
+                "count": 1
+              }
+            }
+          ]
+        },
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "slots": [
+            {
+              "slot": "mainhand",
+              "stack": {
+                "item": "minecraft:stick",
+                "count": 1
+              }
+            }
+          ]
+        }
+      ],
+      "entity_data": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 0
+            }
+          ]
+        }
+      ],
+      "health": [],
+      "entity_events": [],
+      "packets": [
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Bob",
+          "packet": "set_equipment"
+        },
+        {
+          "client": "Bob",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Bob",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Bob",
+          "packet": "set_equipment"
+        }
+      ]
+    },
+    {
+      "id": "select_gapple_finish",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "inventory": [],
+      "sounds": [],
+      "equipment": [
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "slots": [
+            {
+              "slot": "mainhand",
+              "stack": {
+                "item": "minecraft:golden_apple",
+                "count": 1
+              }
+            }
+          ]
+        }
+      ],
+      "entity_data": [],
+      "health": [],
+      "entity_events": []
+    },
+    {
+      "id": "use_golden_apple_always_eat",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "inventory": [
+        {
+          "client": "Alice",
+          "kind": "container_set_slot",
+          "container": 0,
+          "state_id": 10,
+          "slot": 38,
+          "stack": null
+        }
+      ],
+      "sounds": [
+        {
+          "client": "Bob",
+          "sound": "minecraft:entity.generic.eat",
+          "source": 7,
+          "position": [
+            4,
+            -480,
+            4
+          ],
+          "volume": 0.5,
+          "pitch": 1.0735588,
+          "seed": 8984822105202335331
+        },
+        {
+          "client": "Bob",
+          "sound": "minecraft:entity.generic.eat",
+          "source": 7,
+          "position": [
+            4,
+            -480,
+            4
+          ],
+          "volume": 1.0,
+          "pitch": 1.116292,
+          "seed": 5714797186675691461
+        },
+        {
+          "client": "Bob",
+          "sound": "minecraft:entity.generic.eat",
+          "source": 7,
+          "position": [
+            4,
+            -480,
+            4
+          ],
+          "volume": 1.0,
+          "pitch": 1.1470618,
+          "seed": -5054406643609933025
+        },
+        {
+          "client": "Bob",
+          "sound": "minecraft:entity.generic.eat",
+          "source": 7,
+          "position": [
+            4,
+            -480,
+            4
+          ],
+          "volume": 0.5,
+          "pitch": 0.8735136,
+          "seed": -741383470713011891
+        },
+        {
+          "client": "Bob",
+          "sound": "minecraft:entity.generic.eat",
+          "source": 7,
+          "position": [
+            4,
+            -480,
+            4
+          ],
+          "volume": 0.5,
+          "pitch": 0.87328583,
+          "seed": 1592070483366874229
+        },
+        {
+          "client": "Bob",
+          "sound": "minecraft:entity.generic.eat",
+          "source": 7,
+          "position": [
+            4,
+            -480,
+            4
+          ],
+          "volume": 0.5,
+          "pitch": 0.92992705,
+          "seed": 4476285512063288685
+        },
+        {
+          "client": "Bob",
+          "sound": "minecraft:entity.generic.eat",
+          "source": 7,
+          "position": [
+            4,
+            -480,
+            4
+          ],
+          "volume": 1.0,
+          "pitch": 0.91652954,
+          "seed": 8450925004086234191
+        },
+        {
+          "client": "Bob",
+          "sound": "minecraft:entity.generic.eat",
+          "source": 7,
+          "position": [
+            4,
+            -480,
+            4
+          ],
+          "volume": 1.0,
+          "pitch": 1.2066301,
+          "seed": 2792427998790534878
+        },
+        {
+          "client": "Bob",
+          "sound": "minecraft:entity.player.burp",
+          "source": 7,
+          "position": [
+            4,
+            -480,
+            4
+          ],
+          "volume": 0.5,
+          "pitch": 0.99316627,
+          "seed": -4170588021043971167
+        }
+      ],
+      "equipment": [
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "slots": [
+            {
+              "slot": "mainhand",
+              "stack": {
+                "item": "minecraft:golden_apple",
+                "count": 1
+              }
+            }
+          ]
+        },
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "slots": [
+            {
+              "slot": "mainhand",
+              "stack": null
+            }
+          ]
+        }
+      ],
+      "entity_data": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 0
+            },
+            {
+              "index": 10,
+              "kind": "other",
+              "value": "Particles([EntityEffect(ColorParticle { color: ArgbInt(-3318613) }), EntityEffect(ColorParticle { color: ArgbInt(-14331227) })])"
+            },
+            {
+              "index": 17,
+              "kind": "float",
+              "value": 4.0
+            }
+          ]
+        },
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 0
+            },
+            {
+              "index": 10,
+              "kind": "other",
+              "value": "Particles([EntityEffect(ColorParticle { color: ArgbInt(-3318613) }), EntityEffect(ColorParticle { color: ArgbInt(-14331227) })])"
+            },
+            {
+              "index": 17,
+              "kind": "float",
+              "value": 4.0
+            }
+          ]
+        }
+      ],
+      "health": [],
+      "entity_events": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "status": 9
+        }
+      ],
+      "packets": [
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "entity_event"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Bob",
+          "packet": "set_equipment"
+        },
+        {
+          "client": "Bob",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Bob",
+          "packet": "sound"
+        },
+        {
+          "client": "Bob",
+          "packet": "sound"
+        },
+        {
+          "client": "Bob",
+          "packet": "sound"
+        },
+        {
+          "client": "Bob",
+          "packet": "sound"
+        },
+        {
+          "client": "Bob",
+          "packet": "sound"
+        },
+        {
+          "client": "Bob",
+          "packet": "sound"
+        },
+        {
+          "client": "Bob",
+          "packet": "sound"
+        },
+        {
+          "client": "Bob",
+          "packet": "sound"
+        },
+        {
+          "client": "Bob",
+          "packet": "sound"
+        },
+        {
+          "client": "Bob",
+          "packet": "set_equipment"
+        },
+        {
+          "client": "Bob",
+          "packet": "set_entity_data"
+        }
+      ]
+    },
+    {
+      "id": "wait_consume_finish",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "inventory": [],
+      "sounds": [],
+      "equipment": [],
+      "entity_data": [],
+      "health": [],
+      "entity_events": []
+    },
+    {
+      "id": "creative_eat_setup",
+      "observed": {
+        "console": {
+          "output": [
+            "Set Alice's game mode to Creative Mode"
+          ],
+          "chat": [
+            {
+              "client": "Alice",
+              "text": {
+                "translate": "gameMode.changed",
+                "with": [
+                  {
+                    "translate": "gameMode.creative"
+                  }
+                ]
+              }
+            },
+            {
+              "client": "Alice",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.gamemode.success.other",
+                    "with": [
+                      {
+                        "text": "Alice",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Alice "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            278005000,
+                            -707248403,
+                            -1814916367,
+                            -1817188393
+                          ],
+                          "name": "Alice"
+                        },
+                        "insertion": "Alice"
+                      },
+                      {
+                        "translate": "gameMode.creative"
+                      }
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            },
+            {
+              "client": "Bob",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.gamemode.success.other",
+                    "with": [
+                      {
+                        "text": "Alice",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Alice "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            278005000,
+                            -707248403,
+                            -1814916367,
+                            -1817188393
+                          ],
+                          "name": "Alice"
+                        },
+                        "insertion": "Alice"
+                      },
+                      {
+                        "translate": "gameMode.creative"
+                      }
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            }
+          ]
+        }
+      },
+      "inventory": [],
+      "sounds": [],
+      "equipment": [],
+      "entity_data": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 10,
+              "kind": "other",
+              "value": "Particles([EntityEffect(ColorParticle { color: ArgbInt(-3318613) }), EntityEffect(ColorParticle { color: ArgbInt(-14331227) })])"
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 10,
+              "kind": "other",
+              "value": "Particles([EntityEffect(ColorParticle { color: ArgbInt(-14331227) })])"
+            }
+          ]
+        },
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 10,
+              "kind": "other",
+              "value": "Particles([EntityEffect(ColorParticle { color: ArgbInt(-3318613) }), EntityEffect(ColorParticle { color: ArgbInt(-14331227) })])"
+            }
+          ]
+        },
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 10,
+              "kind": "other",
+              "value": "Particles([EntityEffect(ColorParticle { color: ArgbInt(-14331227) })])"
+            }
+          ]
+        }
+      ],
+      "health": [],
+      "entity_events": []
+    },
+    {
+      "id": "select_apple_creative",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "inventory": [],
+      "sounds": [],
+      "equipment": [
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "slots": [
+            {
+              "slot": "mainhand",
+              "stack": {
+                "item": "minecraft:apple",
+                "count": 1
+              }
+            }
+          ]
+        }
+      ],
+      "entity_data": [],
+      "health": [],
+      "entity_events": []
+    },
+    {
+      "id": "creative_eat_and_release",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "inventory": [],
+      "sounds": [],
+      "equipment": [
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "slots": [
+            {
+              "slot": "mainhand",
+              "stack": {
+                "item": "minecraft:apple",
+                "count": 1
+              }
+            }
+          ]
+        }
+      ],
+      "entity_data": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 0
+            }
+          ]
+        }
+      ],
+      "health": [],
+      "entity_events": [],
+      "packets": [
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Bob",
+          "packet": "set_equipment"
+        },
+        {
+          "client": "Bob",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Bob",
+          "packet": "set_entity_data"
+        }
+      ]
+    },
+    {
+      "id": "adventure_mode_setup",
+      "observed": {
+        "console": {
+          "output": [
+            "Set Alice's game mode to Adventure Mode",
+            "Replaced 1 slot(s) on Alice with [Shield]",
+            "Replaced 1 slot(s) on Alice with [Stone]"
+          ],
+          "chat": [
+            {
+              "client": "Alice",
+              "text": {
+                "translate": "gameMode.changed",
+                "with": [
+                  {
+                    "translate": "gameMode.adventure"
+                  }
+                ]
+              }
+            },
+            {
+              "client": "Alice",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.gamemode.success.other",
+                    "with": [
+                      {
+                        "text": "Alice",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Alice "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            278005000,
+                            -707248403,
+                            -1814916367,
+                            -1817188393
+                          ],
+                          "name": "Alice"
+                        },
+                        "insertion": "Alice"
+                      },
+                      {
+                        "translate": "gameMode.adventure"
+                      }
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            },
+            {
+              "client": "Alice",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.item.entity.replace.success.single.known_item",
+                    "with": [
+                      1,
+                      {
+                        "text": "Alice",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Alice "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            278005000,
+                            -707248403,
+                            -1814916367,
+                            -1817188393
+                          ],
+                          "name": "Alice"
+                        },
+                        "insertion": "Alice"
+                      },
+                      {
+                        "translate": "chat.square_brackets",
+                        "with": [
+                          {
+                            "text": "",
+                            "extra": [
+                              {
+                                "translate": "item.minecraft.shield"
+                              }
+                            ]
+                          }
+                        ],
+                        "color": "white",
+                        "hover_event": {
+                          "action": "show_item",
+                          "id": "minecraft:shield"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            },
+            {
+              "client": "Alice",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.item.entity.replace.success.single.known_item",
+                    "with": [
+                      1,
+                      {
+                        "text": "Alice",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Alice "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            278005000,
+                            -707248403,
+                            -1814916367,
+                            -1817188393
+                          ],
+                          "name": "Alice"
+                        },
+                        "insertion": "Alice"
+                      },
+                      {
+                        "translate": "chat.square_brackets",
+                        "with": [
+                          {
+                            "text": "",
+                            "extra": [
+                              {
+                                "translate": "block.minecraft.stone"
+                              }
+                            ]
+                          }
+                        ],
+                        "color": "white",
+                        "hover_event": {
+                          "action": "show_item",
+                          "id": "minecraft:stone"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            },
+            {
+              "client": "Bob",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.gamemode.success.other",
+                    "with": [
+                      {
+                        "text": "Alice",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Alice "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            278005000,
+                            -707248403,
+                            -1814916367,
+                            -1817188393
+                          ],
+                          "name": "Alice"
+                        },
+                        "insertion": "Alice"
+                      },
+                      {
+                        "translate": "gameMode.adventure"
+                      }
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            },
+            {
+              "client": "Bob",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.item.entity.replace.success.single.known_item",
+                    "with": [
+                      1,
+                      {
+                        "text": "Alice",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Alice "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            278005000,
+                            -707248403,
+                            -1814916367,
+                            -1817188393
+                          ],
+                          "name": "Alice"
+                        },
+                        "insertion": "Alice"
+                      },
+                      {
+                        "translate": "chat.square_brackets",
+                        "with": [
+                          {
+                            "text": "",
+                            "extra": [
+                              {
+                                "translate": "item.minecraft.shield"
+                              }
+                            ]
+                          }
+                        ],
+                        "color": "white",
+                        "hover_event": {
+                          "action": "show_item",
+                          "id": "minecraft:shield"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            },
+            {
+              "client": "Bob",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.item.entity.replace.success.single.known_item",
+                    "with": [
+                      1,
+                      {
+                        "text": "Alice",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Alice "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            278005000,
+                            -707248403,
+                            -1814916367,
+                            -1817188393
+                          ],
+                          "name": "Alice"
+                        },
+                        "insertion": "Alice"
+                      },
+                      {
+                        "translate": "chat.square_brackets",
+                        "with": [
+                          {
+                            "text": "",
+                            "extra": [
+                              {
+                                "translate": "block.minecraft.stone"
+                              }
+                            ]
+                          }
+                        ],
+                        "color": "white",
+                        "hover_event": {
+                          "action": "show_item",
+                          "id": "minecraft:stone"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            }
+          ]
+        }
+      },
+      "inventory": [
+        {
+          "client": "Alice",
+          "kind": "container_set_slot",
+          "container": 0,
+          "state_id": 11,
+          "slot": 36,
+          "stack": {
+            "item": "minecraft:shield",
+            "count": 1,
+            "components": {
+              "added": [],
+              "removed": []
+            }
+          }
+        },
+        {
+          "client": "Alice",
+          "kind": "container_set_slot",
+          "container": 0,
+          "state_id": 12,
+          "slot": 37,
+          "stack": {
+            "item": "minecraft:stone",
+            "count": 1,
+            "components": {
+              "added": [],
+              "removed": []
+            }
+          }
+        }
+      ],
+      "sounds": [],
+      "equipment": [
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "slots": [
+            {
+              "slot": "mainhand",
+              "stack": {
+                "item": "minecraft:shield",
+                "count": 1
+              }
+            }
+          ]
+        }
+      ],
+      "entity_data": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 10,
+              "kind": "other",
+              "value": "Particles([EntityEffect(ColorParticle { color: ArgbInt(-14331227) })])"
+            }
+          ]
+        },
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 10,
+              "kind": "other",
+              "value": "Particles([EntityEffect(ColorParticle { color: ArgbInt(-14331227) })])"
+            }
+          ]
+        }
+      ],
+      "health": [],
+      "entity_events": []
+    },
+    {
+      "id": "select_shield_adv",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "inventory": [],
+      "sounds": [],
+      "equipment": [],
+      "entity_data": [],
+      "health": [],
+      "entity_events": []
+    },
+    {
+      "id": "use_shield_adventure",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "inventory": [],
+      "sounds": [],
+      "equipment": [
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "slots": [
+            {
+              "slot": "mainhand",
+              "stack": {
+                "item": "minecraft:shield",
+                "count": 1
+              }
+            }
+          ]
+        }
+      ],
+      "entity_data": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "health": [],
+      "entity_events": [],
+      "packets": [
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Bob",
+          "packet": "set_equipment"
+        },
+        {
+          "client": "Bob",
+          "packet": "set_entity_data"
+        }
+      ]
+    },
+    {
+      "id": "wait_adv",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "inventory": [],
+      "sounds": [],
+      "equipment": [],
+      "entity_data": [],
+      "health": [],
+      "entity_events": []
+    },
+    {
+      "id": "release_adv",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "inventory": [],
+      "sounds": [],
+      "equipment": [],
+      "entity_data": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "client": "Bob",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "byte",
+              "value": 0
+            }
+          ]
+        }
+      ],
+      "health": [],
+      "entity_events": [],
+      "packets": [
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Bob",
+          "packet": "set_entity_data"
+        }
+      ]
+    },
+    {
+      "id": "leave_bob",
+      "observed": "left",
+      "inventory": [],
+      "sounds": [],
+      "equipment": [],
+      "entity_data": [],
+      "health": [],
+      "entity_events": []
+    },
+    {
+      "id": "leave_alice",
+      "observed": "left",
+      "inventory": [],
+      "sounds": [],
+      "equipment": [],
+      "entity_data": [],
+      "health": [],
+      "entity_events": []
+    }
+  ]
+}
