@@ -2,8 +2,8 @@
 
 Version: see `assets/minecraft/version.json`. Wire packet IDs: `assets/mcrs/reports/packets.json`.
 
-This document states how a server sends player equipment to observers and when equipment actions emit
-equip sounds.
+This document states how a server sends player equipment to **viewers** and when equipment actions
+emit **equip sounds**.
 
 Out of scope:
 - entity tracker range and lifecycle of a spawn bundle (`entity-tracking.md`);
@@ -96,14 +96,14 @@ A player has six **equipment slots** that map to the player inventory (`inventor
 | `4` | `chest` | `P[38]` |
 | `5` | `head` | `P[39]` |
 
-Changes to an unselected hotbar slot or to slots `P[9]` through `P[35]` must not emit an
-**equipment packet**. A change of the selected hotbar slot (`INV-SEL-002`) must re-evaluate
-`mainhand`.
+Changes to an unselected hotbar slot (`set_hotbar_slots`) or to slots `P[9]` through `P[35]`
+(`set_backpack_slot`) must not emit an **equipment packet**. A change of the selected hotbar slot
+(`INV-SEL-002`) must re-evaluate `mainhand`.
 
 Provenance: `black_box_confirmed`. Kind: `semantic`. Confidence: `high`.
 Experiment: `EQP-E1`, `EQP-E2`, `EQP-E3`, `EQP-E5`;
-`tools/mcrs_minecraft_probe/traces/equipment_sync.json` (`set_hotbar_slots`, `select_slot_1`,
-`select_slot_0`, `equip_armour_via_console`, `join_charlie_observer`).
+`tools/mcrs_minecraft_probe/traces/equipment_sync.json` (`set_hotbar_slots`, `set_backpack_slot`,
+`select_slot_1`, `select_slot_0`, `equip_armour_via_console`, `join_charlie_observer`).
 
 ---
 
@@ -127,8 +127,8 @@ Experiment: `EQP-E5`; `tools/mcrs_minecraft_probe/traces/equipment_sync.json` (`
 ### EQP-SYN-002: live updates on slot, selection, and item-use changes
 
 Each tick, the server compares the six **equipment slots** of **actor** against the last state sent
-for **actor**. A slot differs when its item kind, count, or component patch differs (`item-stack.md`,
-`STK-EQ-002`).
+for **actor**. A slot differs when its item kind, count (`set_count_only`), or component patch
+(`set_patch_only`) differs (`item-stack.md`, `STK-EQ-002`).
 
 When at least one slot differs, the server must send one **equipment packet** to each **viewer** of
 **actor**, except where `EQP-SYN-005` applies. That packet must contain every slot that differs.
@@ -140,8 +140,8 @@ before `set_equipment` (`arm-swing.md`, `SWG-DST-003`).
 
 Provenance: `black_box_confirmed`. Kind: `semantic`. Confidence: `high`.
 Experiment: `EQP-E1`, `EQP-E3`, `EQP-E4`; `tools/mcrs_minecraft_probe/traces/equipment_sync.json`
-(`set_hotbar_slots`, `select_slot_1`, `select_slot_0`, `equip_armour_via_console`,
-`equip_helmet_by_use`, `use_helmet_equip`).
+(`set_hotbar_slots`, `set_count_only`, `set_patch_only`, `select_slot_1`, `select_slot_0`,
+`equip_armour_via_console`, `equip_helmet_by_use`, `use_helmet_equip`).
 
 ### EQP-SYN-003: self-exclusion on equipment packets and swap events
 
@@ -154,18 +154,16 @@ not `set_equipment`.
 Provenance: `black_box_confirmed` for self-exclusion; `inventory.md` (`INV-SYN-003`, `INV-SYN-005`)
 for self sync. Kind: `semantic`. Confidence: `high`.
 Experiment: `EQP-E1` through `EQP-E4`; `tools/mcrs_minecraft_probe/traces/equipment_sync.json`
-(`set_hotbar_slots`, `select_slot_1`, `select_slot_0`, `swap_offhand`, `equip_armour_via_console`,
-`equip_helmet_by_use`, `use_helmet_equip`).
+(`set_hotbar_slots`, `set_count_only`, `set_patch_only`, `select_slot_1`, `select_slot_0`,
+`swap_offhand`, `equip_armour_via_console`, `equip_helmet_by_use`, `use_helmet_equip`).
 
-### EQP-SYN-004: broadcast-once payload across viewers
+### EQP-SYN-004: identical payload bytes across viewers
 
-Every field of a live **equipment packet** (`EQP-PKT-001`) or **swap event** (`EQP-PKT-002`) depends
-only on **actor** and not on the **viewer**. An implementation must encode one wire payload per
-**actor** per tick and share identical bytes across all **viewers** of **actor**.
+Every **viewer** of **actor** in one tick must receive identical payload bytes for one live
+**equipment packet** (`EQP-PKT-001`) or one **swap event** (`EQP-PKT-002`).
 
 Provenance: `design`. Kind: `wire`. Confidence: `high`.
-Reason: one shared byte buffer avoids per-viewer serialization, and every **viewer** of that tick
-receives identical wire bytes.
+Reason: packet fields depend only on **actor** and not on the **viewer**.
 
 ### EQP-SYN-005: offhand swap emits entity event `55`
 
@@ -193,14 +191,15 @@ and nearby **viewers** receive that **equip sound** with category `7` (`player`)
 and pitch `1.0`. The packet carries a shared `seed` and the position of **actor** in eighths of a
 block.
 
-In `equip_armour_via_console` and `use_helmet_equip`, recipients receive the **equip sound** packets
-before `set_equipment`. An empty armour slot, a hotbar replacement, a hotbar selection, and an
-offhand swap each emit zero **equip sounds**.
+In `equip_armour_via_console` and `use_helmet_equip`, **actor** and nearby **viewers** receive the
+**equip sound** packets before `set_equipment`. An empty armour slot, a hotbar replacement, a hotbar
+selection, and an offhand swap each emit zero **equip sounds**.
 
 Provenance: `black_box_confirmed`. Kind: `semantic`. Confidence: `high`.
 Experiment: `EQP-E1` through `EQP-E4`; `tools/mcrs_minecraft_probe/traces/equipment_sync.json`
-(`set_hotbar_slots`, `select_slot_1`, `select_slot_0`, `swap_offhand`, `equip_armour_via_console`,
-`equip_helmet_by_use`, `use_helmet_equip`).
+(`set_hotbar_slots`, `set_backpack_slot`, `set_count_only`, `set_patch_only`, `select_slot_1`,
+`select_slot_0`, `swap_offhand`, `equip_armour_via_console`, `equip_helmet_by_use`,
+`use_helmet_equip`).
 
 ---
 
@@ -210,15 +209,18 @@ Each experiment runs against the vanilla server (`assets/minecraft/version.json`
 `tools/mcrs_minecraft_probe/scenarios/equipment_sync.json` and records
 `tools/mcrs_minecraft_probe/traces/equipment_sync.json`.
 
-- **EQP-E1** (`hotbar` slots and slot selection):
+- **EQP-E1** (`hotbar`, backpack, count/patch updates, and selection):
   1. Join `Alice` and `Bob`, then set both players to `survival` mode.
   2. Clear both players and teleport them near `(0.5, -60, 0.5)`.
   3. Replace `Alice` `hotbar.0` with `diamond_sword` and `hotbar.1` with `iron_pickaxe` (`set_hotbar_slots`).
-  4. Select slot `1` (`select_slot_1`), then select slot `0` (`select_slot_0`).
-  - Result: `join_alice` and `join_bob` emit zero `set_equipment` packets. `set_hotbar_slots`,
-    `select_slot_1`, and `select_slot_0` each send one `set_equipment` with `mainhand` only to
-    `Bob`. `Alice` receives zero `set_equipment` packets, and all three steps emit zero `sound`
-    packets.
+  4. Replace `Alice` `inventory.0` (`P[9]`) with `emerald` (`set_backpack_slot`).
+  5. Set `Alice` `hotbar.0` to `apple` `1` (`set_count_base`), then `apple` `2` (`set_count_only`).
+  6. Set `Alice` `hotbar.0` to `diamond_sword[damage=5]` (`set_patch_base`), then `damage=10` (`set_patch_only`).
+  7. Restore `hotbar.0` to `diamond_sword`, select slot `1` (`select_slot_1`), then select slot `0` (`select_slot_0`).
+  - Result: `join_alice`, `join_bob`, and `set_backpack_slot` emit zero `set_equipment` packets.
+    `set_hotbar_slots`, `set_count_only`, `set_patch_only`, `select_slot_1`, and `select_slot_0`
+    each send one `set_equipment` with `mainhand` only to `Bob`, zero to `Alice`, and zero
+    `sound` packets.
 - **EQP-E2** (`offhand` swap):
   1. Send `player_action` `swap_item_with_offhand` from `Alice` (`swap_offhand`).
   2. Wait `200` ms (`wait_after_swap`).
@@ -228,16 +230,17 @@ Each experiment runs against the vanilla server (`assets/minecraft/version.json`
 - **EQP-E3** (armour slots via console):
   1. Replace `Alice` `armor.head`, `armor.chest`, `armor.legs`, and `armor.feet` with `iron_helmet`,
      `diamond_chestplate`, `chainmail_leggings`, and `leather_boots` (`equip_armour_via_console`).
-  - Result: `Alice` and `Bob` both receive four `sound` packets (`equip_iron`, `equip_diamond`,
-    `equip_chain`, `equip_leather`). `Bob` alone then receives one `set_equipment` with `feet`,
-    `legs`, `chest`, and `head` in slot ID order.
+  - Result: `Alice` and `Bob` both receive `minecraft:item.armor.equip_iron`,
+    `minecraft:item.armor.equip_diamond`, `minecraft:item.armor.equip_chain`, and
+    `minecraft:item.armor.equip_leather`. `Bob` alone then receives one `set_equipment` with
+    `feet`, `legs`, `chest`, and `head` in slot ID order.
 - **EQP-E4** (helmet equip via `use_item`):
   1. Clear `Alice` `armor.head` to `air` and place `golden_helmet` in `hotbar.0` (`equip_helmet_by_use`).
   2. Send `use_item` on `main` from `Alice` (`use_helmet_equip`).
   - Result: `equip_helmet_by_use` sends `set_equipment` (`mainhand` = `golden_helmet`, `head` = empty)
-    only to `Bob`, with zero sounds. `use_helmet_equip` sends `item.armor.equip_gold` to `Alice` and
-    `Bob`, then `swing_animation` and `set_equipment` (`mainhand` = empty, `head` = `golden_helmet`)
-    only to `Bob`.
+    only to `Bob`, with zero sounds. `use_helmet_equip` sends `minecraft:item.armor.equip_gold` to
+    `Alice` and `Bob`, then `swing_animation` and `set_equipment` (`mainhand` = empty, `head` =
+    `golden_helmet`) only to `Bob`.
 - **EQP-E5** (late **viewer** spawn):
   1. Join `Charlie` (`join_charlie_observer`).
   2. Set `Charlie` to `survival` mode and teleport `Charlie` near `Alice` (`move_charlie_near`, `wait_charlie`).

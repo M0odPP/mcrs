@@ -46,6 +46,60 @@
       },
       "packet_order": true
     },
+    {
+      "id": "set_backpack_slot",
+      "console": {
+        "lines": [
+          "item replace entity Alice inventory.0 with minecraft:emerald"
+        ]
+      },
+      "packet_order": true
+    },
+    {
+      "id": "set_count_base",
+      "console": {
+        "lines": [
+          "item replace entity Alice hotbar.0 with minecraft:apple 1"
+        ]
+      },
+      "packet_order": true
+    },
+    {
+      "id": "set_count_only",
+      "console": {
+        "lines": [
+          "item replace entity Alice hotbar.0 with minecraft:apple 2"
+        ]
+      },
+      "packet_order": true
+    },
+    {
+      "id": "set_patch_base",
+      "console": {
+        "lines": [
+          "item replace entity Alice hotbar.0 with minecraft:diamond_sword[minecraft:damage=5]"
+        ]
+      },
+      "packet_order": true
+    },
+    {
+      "id": "set_patch_only",
+      "console": {
+        "lines": [
+          "item replace entity Alice hotbar.0 with minecraft:diamond_sword[minecraft:damage=10]"
+        ]
+      },
+      "packet_order": true
+    },
+    {
+      "id": "restore_hotbar0_sword",
+      "console": {
+        "lines": [
+          "item replace entity Alice hotbar.0 with minecraft:diamond_sword"
+        ]
+      },
+      "packet_order": true
+    },
     { "id": "select_slot_1", "select_slot": { "client": "Alice", "slot": 1 }, "packet_order": true },
     { "id": "select_slot_0", "select_slot": { "client": "Alice", "slot": 0 }, "packet_order": true },
     { "id": "swap_offhand", "player_action": { "client": "Alice", "status": "swap_item_with_offhand" }, "packet_order": true },
