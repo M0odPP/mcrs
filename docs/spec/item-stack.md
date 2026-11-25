@@ -97,6 +97,8 @@ section 8.
   the keys.
 - The fixtures `hash_ops`, `item_plain`, `item_nested`, `item_records`, `item_holders`,
   `item_registry_refs` and `inventory_packets` of `tools/fixtures.json`. The codecs of the game write each expected value of these goldens.
+- `tools/mcrs_minecraft_probe/traces/durability.json`: the black-box probe trace of item wear,
+  `minecraft:unbreaking`, `minecraft:unbreakable`, and slot break events on `26.4-snapshot-7`.
 
 ### 0.4 ID prefixes
 
@@ -974,27 +976,34 @@ out of the range of its saved form. Reason: the client cannot save or hash that 
 
 ### 7.2 Damage
 
-**STK-DMG-001** (`source_suggested`, semantic). A stack can take damage when these three
+**STK-DMG-001** (`source_suggested_black_box_confirmed`, semantic). A stack can take damage when these three
 conditions are true:
 
 - it has an effective component `minecraft:max_damage`;
 - it has an effective component `minecraft:damage`;
 - it has no effective component `minecraft:unbreakable`.
 
+Confirmed for `minecraft:unbreakable` (`attack_unbreakable`) and wear-capable items in
+`tools/mcrs_minecraft_probe/traces/durability.json`.
 
-**STK-DMG-002** (`source_suggested`, semantic). The damage value of a stack is the value of the
+**STK-DMG-002** (`source_suggested_black_box_confirmed`, semantic). The damage value of a stack is the value of the
 effective component `minecraft:damage`, or 0 when the stack has none. The result is limited to the
-range from 0 to the maximum damage.
+range from 0 to the maximum damage. Confirmed for `0` and positive wear in
+`tools/mcrs_minecraft_probe/traces/durability.json` (`inspect_diamond_pick`,
+`inspect_sword_damage`); the range clamp relies on source analysis.
 
-**STK-DMG-003** (`source_suggested`, semantic). A write of the damage value limits the new value
+**STK-DMG-003** (`source_suggested_black_box_confirmed`, semantic). A write of the damage value limits the new value
 to the range from 0 to the maximum damage. Then it sets the component `minecraft:damage`
-(STK-PAT-006).
+(STK-PAT-006). Confirmed for `minecraft:damage` updates in `stop_break_1` and `attack_pig_sword`
+of `tools/mcrs_minecraft_probe/traces/durability.json`.
 
-**STK-DMG-004** (`source_suggested`, semantic). A stack is damaged when it can take damage and its
+**STK-DMG-004** (`source_suggested_black_box_confirmed`, semantic). A stack is damaged when it can take damage and its
 damage value is larger than 0. A stack is broken when it can take damage and its damage value is
-equal to the maximum damage or larger.
+equal to the maximum damage or larger. Confirmed for broken state at `max_damage` in
+`stop_break_2` and `test_armour_wear_and_slot_events` of
+`tools/mcrs_minecraft_probe/traces/durability.json`.
 
-**STK-DMG-005** (`source_suggested`, semantic). To apply an amount of damage `a` to a stack, do
+**STK-DMG-005** (`source_suggested_black_box_confirmed`, semantic). To apply an amount of damage `a` to a stack, do
 these steps:
 
 1. If the stack cannot take damage, stop. The stack does not change.
@@ -1003,19 +1012,27 @@ these steps:
 4. If the stack is broken, the stack breaks (STK-DMG-006).
 
 `a` can be negative. A negative amount decreases the damage value. The holder and the enchantments
-of the stack can change `a` or cancel the damage before step 1. Another document states that.
+of the stack can change `a` or cancel the damage before step 1. [durability.md](durability.md)
+and `tools/mcrs_minecraft_probe/traces/durability.json` (`stop_break_1`, `stop_break_2`,
+`attack_pig_sword`, `attack_unbreakable`) confirm positive wear and breaks; negative `a` relies on
+source analysis.
 
-**STK-DMG-006** (`source_suggested`, semantic). When a stack breaks, its count decreases by 1. The
+**STK-DMG-006** (`source_suggested_black_box_confirmed`, semantic). When a stack breaks, its count decreases by 1. The
 operation reports that the stack broke, and reports the item. A stack with the count 1 thus
-becomes the empty stack.
+becomes the empty stack. Confirmed for count `1` to empty `null` slot updates and slot break
+events in `stop_break_2` and `test_armour_wear_and_slot_events` of
+`tools/mcrs_minecraft_probe/traces/durability.json`.
 
-**STK-DMG-007** (`source_suggested`, semantic). A second operation applies damage and never
+**STK-DMG-007** (`source_suggested_black_box_confirmed`, semantic). A second operation applies damage and never
 breaks the stack. It limits the new damage value to the range from 0 to the maximum damage minus
-1. The count does not change.
+1. The count does not change. (`tools/mcrs_minecraft_probe/traces/durability.json` covers standard
+break wear; the non-break clamp rule relies on source analysis.)
 
-**STK-DMG-008** (`source_suggested`, semantic). The next unit of damage breaks a stack when two
+**STK-DMG-008** (`black_box_confirmed`, semantic). The next unit of damage breaks a stack when two
 conditions are true. The stack can take damage. Its damage value is equal to the maximum damage
-minus 1, or larger.
+minus 1, or larger. Confirmed in `tools/mcrs_minecraft_probe/traces/durability.json`: `stop_break_1`
+reaches `31` without a break (`max_damage` `32`), `stop_break_2` breaks at `31`, and
+`test_armour_wear_and_slot_events` breaks all four pieces at `max_damage - 1`.
 
 ### 7.3 Strict validation
 

@@ -1,0 +1,122 @@
+{
+  "target": {
+    "operators": ["Alice", "Bob"]
+  },
+  "observe": {
+    "inventory": true,
+    "entity_event": true,
+    "sound": true,
+    "damage_event": true,
+    "packet_order": true
+  },
+  "steps": [
+    {
+      "id": "prepare",
+      "console": {
+        "lines": [
+          "difficulty normal",
+          "gamerule spawn_mobs false",
+          "kill @e[type=!minecraft:player]"
+        ]
+      }
+    },
+    { "id": "join_alice", "join": "Alice" },
+    { "id": "join_bob", "join": "Bob" },
+    {
+      "id": "setup_pickaxe",
+      "console": {
+        "lines": [
+          "gamemode survival Alice",
+          "gamemode survival Bob",
+          "clear Alice",
+          "tp Alice 0.5 -60 0.5 0 0",
+          "tp Bob 2.5 -60 0.5 90 0",
+          "fill -5 -61 -5 5 -61 5 minecraft:stone",
+          "fill -5 -60 -5 5 -55 5 minecraft:air",
+          "setblock 0 -60 2 minecraft:stone",
+          "setblock 1 -60 2 minecraft:slime_block",
+          "item replace entity Alice weapon.mainhand with minecraft:golden_pickaxe[minecraft:damage=30]"
+        ]
+      }
+    },
+    { "id": "sync_alice", "sync_position": "Alice" },
+    { "id": "break_stone_1", "player_action": { "client": "Alice", "status": "start_destroy_block", "position": [0, -60, 2], "face": "north" } },
+    { "id": "wait_break_1", "wait": { "ms": 350 } },
+    { "id": "stop_break_1", "player_action": { "client": "Alice", "status": "stop_destroy_block", "position": [0, -60, 2], "face": "north" }, "packet_order": true },
+    { "id": "place_stone_2", "console": { "lines": ["setblock 0 -60 2 minecraft:stone"] } },
+    { "id": "break_stone_breaks_pick", "player_action": { "client": "Alice", "status": "start_destroy_block", "position": [0, -60, 2], "face": "north" } },
+    { "id": "wait_break_2", "wait": { "ms": 350 } },
+    { "id": "stop_break_2", "player_action": { "client": "Alice", "status": "stop_destroy_block", "position": [0, -60, 2], "face": "north" }, "packet_order": true },
+    {
+      "id": "test_instant_hardness_zero",
+      "console": {
+        "lines": [
+          "item replace entity Alice weapon.mainhand with minecraft:diamond_pickaxe"
+        ]
+      }
+    },
+    { "id": "break_slime", "player_action": { "client": "Alice", "status": "start_destroy_block", "position": [1, -60, 2], "face": "north" }, "packet_order": true },
+    { "id": "inspect_diamond_pick", "console": { "lines": ["data get entity Alice SelectedItem"] } },
+    {
+      "id": "setup_unbreaking_3_pick",
+      "console": {
+        "lines": [
+          "item replace entity Alice weapon.mainhand with minecraft:golden_pickaxe[minecraft:enchantments={\"minecraft:unbreaking\":3}]",
+          "fill -1 -60 2 2 -60 2 minecraft:stone"
+        ]
+      }
+    },
+    { "id": "break_u1_start", "player_action": { "client": "Alice", "status": "start_destroy_block", "position": [-1, -60, 2], "face": "north" } },
+    { "id": "wait_u1", "wait": { "ms": 350 } },
+    { "id": "break_u1_stop", "player_action": { "client": "Alice", "status": "stop_destroy_block", "position": [-1, -60, 2], "face": "north" } },
+    { "id": "break_u2_start", "player_action": { "client": "Alice", "status": "start_destroy_block", "position": [0, -60, 2], "face": "north" } },
+    { "id": "wait_u2", "wait": { "ms": 350 } },
+    { "id": "break_u2_stop", "player_action": { "client": "Alice", "status": "stop_destroy_block", "position": [0, -60, 2], "face": "north" } },
+    { "id": "break_u3_start", "player_action": { "client": "Alice", "status": "start_destroy_block", "position": [1, -60, 2], "face": "north" } },
+    { "id": "wait_u3", "wait": { "ms": 350 } },
+    { "id": "break_u3_stop", "player_action": { "client": "Alice", "status": "stop_destroy_block", "position": [1, -60, 2], "face": "north" } },
+    { "id": "break_u4_start", "player_action": { "client": "Alice", "status": "start_destroy_block", "position": [2, -60, 2], "face": "north" } },
+    { "id": "wait_u4", "wait": { "ms": 350 } },
+    { "id": "break_u4_stop", "player_action": { "client": "Alice", "status": "stop_destroy_block", "position": [2, -60, 2], "face": "north" } },
+    { "id": "inspect_unbreaking_3", "console": { "lines": ["data get entity Alice SelectedItem"] } },
+    {
+      "id": "test_sword_weapon_wear",
+      "console": {
+        "lines": [
+          "item replace entity Alice weapon.mainhand with minecraft:iron_sword",
+          "summon minecraft:pig 0.5 -60 2.5 {NoAI:1b,Health:20.0f}"
+        ]
+      }
+    },
+    { "id": "wait_pig", "wait": { "ms": 400 } },
+    { "id": "attack_pig_sword", "attack": { "client": "Alice", "target": "minecraft:pig" }, "packet_order": true },
+    { "id": "inspect_sword_damage", "console": { "lines": ["data get entity Alice SelectedItem"] } },
+    {
+      "id": "test_armour_wear_and_slot_events",
+      "console": {
+        "lines": [
+          "item replace entity Alice armor.head with minecraft:golden_helmet[minecraft:damage=76]",
+          "item replace entity Alice armor.chest with minecraft:golden_chestplate[minecraft:damage=111]",
+          "item replace entity Alice armor.legs with minecraft:golden_leggings[minecraft:damage=104]",
+          "item replace entity Alice armor.feet with minecraft:golden_boots[minecraft:damage=90]",
+          "damage Alice 4 minecraft:mob_attack"
+        ]
+      },
+      "packet_order": true
+    },
+    { "id": "wait_armour_break", "wait": { "ms": 300 } },
+    { "id": "inspect_armour_after", "console": { "lines": ["data get entity Alice equipment"] } },
+    {
+      "id": "test_unbreakable_sword",
+      "console": {
+        "lines": [
+          "item replace entity Alice weapon.mainhand with minecraft:wooden_sword[minecraft:unbreakable={}]"
+        ]
+      }
+    },
+    { "id": "attack_unbreakable", "attack": { "client": "Alice", "target": "minecraft:pig" } },
+    { "id": "inspect_unbreakable", "console": { "lines": ["data get entity Alice SelectedItem"] } },
+    { "id": "leave_bob", "leave": "Bob" },
+    { "id": "leave_alice", "leave": "Alice" }
+  ]
+}
