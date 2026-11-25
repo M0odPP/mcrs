@@ -1,0 +1,17 @@
+[package]
+name = "mcrs_minecraft_weather"
+description = "No-std vanilla weather cycle timers, binary32 strength ramps, command durations, and storm rules"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+doctest = false
+
+[lints]
+workspace = true
+
+[dependencies]
+
+[dev-dependencies]
+mcrs_test_alloc.workspace = true
