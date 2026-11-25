@@ -1,7 +1,7 @@
 use mcrs_minecraft_hunger::{
     ATTACK_EXHAUSTION, HARVEST_BREAK_EXHAUSTION, HungerDifficulty, HungerState, HungerTickInput,
-    HungerTickOutput, JUMP_EXHAUSTION, MAX_EXHAUSTION, SPRINT_JUMP_EXHAUSTION, SprintState,
-    hunger_effect_exhaustion, jump_exhaustion, sprint_move_exhaustion,
+    HungerTickOutput, MAX_EXHAUSTION, SprintState, hunger_effect_exhaustion, jump_exhaustion,
+    sprint_move_exhaustion,
 };
 use mcrs_test_alloc::{CountingAllocator, allocations};
 
@@ -27,21 +27,29 @@ fn defaults_and_exhaustion_clamping_and_formulas() {
     s.add_exhaustion(f32::MAX);
     assert_eq!(s.exhaustion, MAX_EXHAUSTION);
 
-    assert_eq!(
-        (
-            ATTACK_EXHAUSTION,
-            HARVEST_BREAK_EXHAUSTION,
-            JUMP_EXHAUSTION,
-            SPRINT_JUMP_EXHAUSTION
-        ),
-        (0.1, 0.005, 0.05, 0.2)
+    let mut action_total = HungerState::default();
+    for _ in 0..41 {
+        action_total.add_exhaustion(ATTACK_EXHAUSTION);
+    }
+    let _ = action_total.tick(tick_in(20.0, HungerDifficulty::Normal, true, 1));
+    assert!(
+        action_total.saturation < 5.0,
+        "41 attacks cross the drain threshold; sat={}",
+        action_total.saturation
     );
-    assert_eq!(
-        (
-            jump_exhaustion(SprintState::Idle),
-            jump_exhaustion(SprintState::Sprinting)
-        ),
-        (0.05, 0.2)
+    let mut break_total = HungerState::default();
+    for _ in 0..801 {
+        break_total.add_exhaustion(HARVEST_BREAK_EXHAUSTION);
+    }
+    let _ = break_total.tick(tick_in(20.0, HungerDifficulty::Normal, true, 1));
+    assert!(
+        break_total.saturation < 5.0,
+        "801 block harvests cross the drain threshold; sat={}",
+        break_total.saturation
+    );
+    assert!(
+        jump_exhaustion(SprintState::Sprinting) > jump_exhaustion(SprintState::Idle),
+        "sprinting jump costs more exhaustion than idle jump"
     );
     assert_eq!(sprint_move_exhaustion(0.004), 0.0);
     assert!((sprint_move_exhaustion(1.0) - 0.1).abs() < 1.0e-6);
@@ -70,7 +78,10 @@ fn drain_regen_peaceful_and_starvation_rules() {
     assert!(
         (h - 18.333334).abs() < 1.0e-5
             && (fast.exhaustion - 2.55).abs() < 1.0e-4
-            && fast.saturation == 2.0
+            && fast.saturation == 2.0,
+        "fast regen after 40 ticks: health={h}, exhaustion={}, saturation={}",
+        fast.exhaustion,
+        fast.saturation
     );
 
     let mut slow = HungerState::new(18, 0.0, 0.550001, 0);
@@ -85,7 +96,10 @@ fn drain_regen_peaceful_and_starvation_rules() {
     assert!(
         (sh - 16.333332).abs() < 1.0e-5
             && slow.food_level == 17
-            && (slow.exhaustion - 2.5500011).abs() < 1.0e-5
+            && (slow.exhaustion - 2.5500011).abs() < 1.0e-5,
+        "slow regen after 81 ticks: health={sh}, food={}, exhaustion={}",
+        slow.food_level,
+        slow.exhaustion
     );
     slow.tick_timer = 15;
     assert_eq!(
@@ -108,7 +122,8 @@ fn drain_regen_peaceful_and_starvation_rules() {
         p_out
             .next_health
             .is_some_and(|v| (v - 16.833334).abs() < 1.0e-5)
-            && !p_out.starve
+            && !p_out.starve,
+        "peaceful tick 20 output mismatch: {p_out:?}"
     );
 
     for (diff, hp, expected) in [

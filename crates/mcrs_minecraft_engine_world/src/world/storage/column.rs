@@ -526,25 +526,34 @@ mod tests {
         let Ok(cols) = state.get(&world) else {
             panic!("LoadedColumns system state should resolve");
         };
-        assert!(!cols.touches_unloaded_chunk(
-            dim,
-            DVec3::new(0.2, 10.0, 0.2),
-            DVec3::new(0.8, 12.0, 0.8),
-        ));
-        assert!(cols.touches_unloaded_chunk(
-            dim,
-            DVec3::new(-0.3, 10.0, 0.2),
-            DVec3::new(0.3, 12.0, 0.8),
-        ));
+        assert!(
+            !cols.touches_unloaded_chunk(
+                dim,
+                DVec3::new(0.2, 10.0, 0.2),
+                DVec3::new(0.8, 12.0, 0.8),
+            ),
+            "fully loaded column bounds should not report unloaded chunks"
+        );
+        assert!(
+            cols.touches_unloaded_chunk(
+                dim,
+                DVec3::new(-0.3, 10.0, 0.2),
+                DVec3::new(0.3, 12.0, 0.8),
+            ),
+            "bounds crossing into unloaded column (-1, 0) should report unloaded"
+        );
 
         world.entity_mut(s1).insert(SectionStage::Unloading);
         let Ok(cols) = state.get(&world) else {
             panic!("LoadedColumns system state should resolve");
         };
-        assert!(cols.touches_unloaded_chunk(
-            dim,
-            DVec3::new(0.2, 10.0, 0.2),
-            DVec3::new(0.8, 12.0, 0.8),
-        ));
+        assert!(
+            cols.touches_unloaded_chunk(
+                dim,
+                DVec3::new(0.2, 10.0, 0.2),
+                DVec3::new(0.8, 12.0, 0.8),
+            ),
+            "section transitioning to Unloading should report unloaded"
+        );
     }
 }

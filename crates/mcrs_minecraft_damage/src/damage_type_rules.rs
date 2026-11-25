@@ -23,7 +23,7 @@ impl DamageTypeRules {
         self.exhaustions = exhaustions
             .into_iter()
             .map(|value| {
-                if value.is_finite() && value >= 0.0 {
+                if value.is_finite() && value > 0.0 {
                     value.to_bits()
                 } else {
                     0.0_f32.to_bits()
@@ -59,11 +59,12 @@ mod tests {
     #[test]
     fn exhaustion_defaults_to_zero_and_sanitizes_invalid_values() {
         let rules = DamageTypeRules::new([DamageTags::empty(), DamageTags::IS_FIRE])
-            .with_exhaustions([0.1, f32::NAN, -1.0, f32::INFINITY]);
+            .with_exhaustions([0.1, f32::NAN, -1.0, f32::INFINITY, -0.0]);
         assert_eq!(rules.exhaustion(0), 0.1);
         assert_eq!(rules.exhaustion(1), 0.0);
         assert_eq!(rules.exhaustion(2), 0.0);
         assert_eq!(rules.exhaustion(3), 0.0);
+        assert_eq!(rules.exhaustion(4).to_bits(), 0.0_f32.to_bits());
         assert_eq!(rules.exhaustion(99), 0.0);
     }
 }

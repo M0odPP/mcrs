@@ -727,7 +727,7 @@ struct Globals {
     ops: Option<OpList>,
     whitelist: Option<Whitelist>,
     bans: Option<BanList>,
-    pub(crate) game_rules: Option<GameRules>,
+    game_rules: Option<GameRules>,
     difficulty: Option<ServerDifficulty>,
     tick_pace: Option<TickPace>,
     registries: Option<Versioned<RegistrySnapshot>>,

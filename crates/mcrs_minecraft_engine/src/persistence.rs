@@ -119,12 +119,12 @@ impl Plugin for PlayerPersistencePlugin {
                 capture_vitals,
                 apply_vitals,
             )
-            .register_persisted::<PlayerSprinting>(SPRINTING_KEYS, PersistScope::TravelOnly)
-            .register_persisted::<ShiftKey>(SHIFT_KEY_KEYS, PersistScope::TravelOnly)
             .register_persisted::<crate::player_lived_ticks::PlayerLivedTicks>(
                 LIVED_TICKS_KEYS,
                 PersistScope::TravelOnly,
-            );
+            )
+            .register_persisted::<PlayerSprinting>(SPRINTING_KEYS, PersistScope::TravelOnly)
+            .register_persisted::<ShiftKey>(SHIFT_KEY_KEYS, PersistScope::TravelOnly);
     }
 }
 

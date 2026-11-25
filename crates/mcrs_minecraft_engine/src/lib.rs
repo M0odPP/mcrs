@@ -91,7 +91,7 @@ mod random_tick_speed;
 mod replicated;
 mod respawn_packet;
 mod send_own_attributes;
-pub mod server_difficulty;
+mod server_difficulty;
 pub mod server_edit;
 mod shift_key;
 pub mod stored_column;
