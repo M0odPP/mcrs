@@ -1,0 +1,66 @@
+{
+  "target": {
+    "operators": ["Alice", "Bob"]
+  },
+  "observe": {
+    "game_event": true,
+    "sound": true,
+    "packet_order": true
+  },
+  "steps": [
+    {
+      "id": "prepare",
+      "console": {
+        "lines": [
+          "difficulty peaceful",
+          "gamerule spawn_mobs false",
+          "gamerule advance_weather true",
+          "weather clear 600"
+        ]
+      }
+    },
+    { "id": "join_alice_clear", "join": "Alice", "packet_order": true },
+    {
+      "id": "weather_rain",
+      "console": {
+        "lines": [
+          "weather rain 400"
+        ]
+      },
+      "packet_order": true
+    },
+    { "id": "join_bob_during_rain", "join": "Bob", "packet_order": true },
+    {
+      "id": "weather_thunder",
+      "console": {
+        "lines": [
+          "weather thunder 400"
+        ]
+      },
+      "packet_order": true
+    },
+    {
+      "id": "weather_clear_and_stop_advance",
+      "console": {
+        "lines": [
+          "gamerule advance_weather false",
+          "weather clear 200"
+        ]
+      },
+      "packet_order": true
+    },
+    {
+      "id": "set_thunder_for_save",
+      "console": {
+        "lines": [
+          "gamerule advance_weather true",
+          "weather thunder 400",
+          "save-all flush"
+        ]
+      }
+    },
+    { "id": "restart_world", "restart_server": {} },
+    { "id": "join_alice_after_restart", "join": "Alice", "packet_order": true },
+    { "id": "leave_alice", "leave": "Alice" }
+  ]
+}
