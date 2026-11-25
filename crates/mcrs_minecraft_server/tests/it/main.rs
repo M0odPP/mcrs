@@ -45,6 +45,7 @@ mod durability;
 mod entity_ids;
 mod entity_replication;
 mod epoch_round_trip;
+mod equipment_sync;
 mod falling_block;
 mod host_app;
 mod host_subapp_handoff;

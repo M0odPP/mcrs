@@ -71,6 +71,7 @@ mcrs_minecraft_vanilla_item_entity.workspace = true
 mcrs_minecraft_vanilla_light.workspace = true
 mcrs_minecraft_vanilla_player_attack.workspace = true
 mcrs_minecraft_vanilla_death.workspace = true
+mcrs_minecraft_vanilla_equipment.workspace = true
 mcrs_minecraft_vanilla_respawn.workspace = true
 mcrs_minecraft_vanilla_swing.workspace = true
 mcrs_minecraft_vanilla_weather.workspace = true
@@ -112,6 +113,7 @@ mcrs_minecraft_worldgen_structure.workspace = true
 mcrs_minecraft_engine_registries = { workspace = true, features = ["test-support"] }
 mcrs_minecraft_engine = { workspace = true, features = ["world-access"] }
 mcrs_minecraft_resource.workspace = true
+mcrs_minecraft_sound = { workspace = true, features = ["registry"] }
 mcrs_voxel.workspace = true
 mcrs_minecraft_game_mode = { workspace = true, features = ["bevy"] }
 mcrs_minecraft_dimension.workspace = true
