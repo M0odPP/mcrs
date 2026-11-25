@@ -10,6 +10,7 @@ use mcrs_minecraft_engine_world::tick::TickSet;
 use mcrs_minecraft_registries::CurrentRegistries;
 
 use crate::DamageSet;
+use crate::DamageTypeIds;
 use crate::Damaged;
 use crate::Died;
 use crate::PendingHits;
@@ -30,6 +31,7 @@ impl Plugin for DamagePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<PendingHits>();
         app.init_resource::<DamageTypeRules>();
+        app.init_resource::<DamageTypeIds>();
         app.init_resource::<VitalsWork>();
         app.add_observer(track_inserted_vitals);
         app.add_message::<Damaged>();

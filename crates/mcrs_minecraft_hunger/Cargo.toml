@@ -1,0 +1,23 @@
+[package]
+name = "mcrs_minecraft_hunger"
+description = "Player food level, saturation, exhaustion, natural regeneration, peaceful regeneration, and starvation rules without Bevy"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+test = false
+doctest = false
+
+[lints]
+workspace = true
+
+[dependencies]
+bevy_ecs = { workspace = true, optional = true }
+libm.workspace = true
+
+[dev-dependencies]
+mcrs_test_alloc.workspace = true
+
+[features]
+default = []
+bevy = ["dep:bevy_ecs"]

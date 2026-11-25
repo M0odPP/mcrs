@@ -18,6 +18,7 @@ use crate::movement::MovementPlugin;
 use crate::op_level::{refresh_op_levels, send_op_level};
 use crate::persistence;
 use crate::player_dimension_change::receive_transfers;
+use crate::player_lived_ticks::{PlayerLivedTicks, advance_player_lived_ticks};
 use crate::player_order::{OrderedPlayer, obey_orders};
 use crate::player_sprinting::{PlayerSprinting, handle_player_command};
 use crate::pose_systems::PoseSystems;
@@ -61,6 +62,9 @@ impl Plugin for DimPlayerPlugin {
         app.add_observer(on_client_view_distance);
         if let Err(error) = app.try_register_required_components::<Player, PlayerSprinting>() {
             tracing::error!("a player does not require its sprint state: {error}");
+        }
+        if let Err(error) = app.try_register_required_components::<Player, PlayerLivedTicks>() {
+            tracing::error!("a player does not require its lived tick count: {error}");
         }
         app.add_observer(handle_player_command);
         if let Err(error) = app.try_register_required_components::<Player, ShiftKey>() {
@@ -111,10 +115,13 @@ impl Plugin for DimPlayerPlugin {
         app.add_systems(
             FixedUpdate,
             (
-                persistence::autosave_players.run_if(resource_exists::<SaveRequest>),
-                persistence::finish_player_saves.run_if(persistence::player_saves_pending),
+                advance_player_lived_ticks.before(persistence::autosave_players),
+                (
+                    persistence::autosave_players.run_if(resource_exists::<SaveRequest>),
+                    persistence::finish_player_saves.run_if(persistence::player_saves_pending),
+                )
+                    .chain(),
             )
-                .chain()
                 .in_set(TickSet::Output),
         );
     }

@@ -39,6 +39,7 @@ use crate::persistence::PlayerSaveQueue;
 use crate::player_dimension_change;
 use crate::player_order::OrderedPlayer;
 use crate::player_roster::{ForeignPlayers, OwnPlayers, RosterRow};
+use crate::server_difficulty::ServerDifficulty;
 use crate::server_edit::ServerEdit;
 use crate::tile_events::TileEvents;
 use crate::to_muxer::ClientOutput;
@@ -71,6 +72,7 @@ pub struct DimInput {
     pub(crate) whitelist: Option<Whitelist>,
     pub(crate) bans: Option<BanList>,
     pub(crate) game_rules: Option<GameRules>,
+    pub(crate) difficulty: Option<ServerDifficulty>,
     pub(crate) tick_pace: Option<TickPace>,
     pub(crate) registries: Option<Versioned<RegistrySnapshot>>,
     pub(crate) dimensions: Option<RunningDimensions>,
@@ -186,6 +188,13 @@ fn apply_input(world: &mut World, _tick: Tick, input: DimInput) {
     }
     if let Some(game_rules) = input.game_rules {
         world.insert_resource(game_rules);
+    }
+    if let Some(difficulty) = input.difficulty {
+        if let Some(mut current) = world.get_resource_mut::<ServerDifficulty>() {
+            current.set_if_neq(difficulty);
+        } else {
+            world.insert_resource(difficulty);
+        }
     }
     if let Some(tick_pace) = input.tick_pace {
         world.insert_resource(tick_pace);
@@ -351,6 +360,7 @@ mod tests {
             whitelist: None,
             bans: None,
             game_rules: None,
+            difficulty: None,
             tick_pace: None,
             registries: None,
             dimensions: None,

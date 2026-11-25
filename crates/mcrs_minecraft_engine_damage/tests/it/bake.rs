@@ -1,5 +1,6 @@
 use mcrs_minecraft_damage::DamageTags;
 use mcrs_minecraft_damage::DamageTypeRules;
+use mcrs_minecraft_engine_damage::DamageTypeIds;
 use mcrs_minecraft_entity::damage_type::DamageType;
 use mcrs_minecraft_entity::damage_type_keys;
 use mcrs_minecraft_entity::registry_keys::DAMAGE_TYPE;
@@ -37,5 +38,34 @@ fn the_bake_sets_the_bits_of_the_damage_type_tags() {
         tags(damage_type_keys::CACTUS),
         DamageTags::NO_KNOCKBACK,
         "cactus has only no_knockback of the baked tags"
+    );
+
+    let exhaustion = |key: ResourceKey<'static, DamageType>| {
+        let id = registries
+            .id_of(DAMAGE_TYPE.location(), key.location())
+            .expect("damage type id");
+        rules.exhaustion(u32::from(id))
+    };
+    assert_eq!(exhaustion(damage_type_keys::IN_FIRE), 0.1);
+    assert_eq!(exhaustion(damage_type_keys::PLAYER_ATTACK), 0.1);
+    assert_eq!(exhaustion(damage_type_keys::STARVE), 0.0);
+    assert_eq!(exhaustion(damage_type_keys::GENERIC), 0.0);
+    assert_eq!(exhaustion(damage_type_keys::FALL), 0.0);
+
+    let ids = app.world().resource::<DamageTypeIds>();
+    assert_eq!(
+        ids.starve,
+        registries
+            .id_of(DAMAGE_TYPE.location(), damage_type_keys::STARVE.location())
+            .map(u32::from),
+    );
+    assert_eq!(
+        ids.player_attack,
+        registries
+            .id_of(
+                DAMAGE_TYPE.location(),
+                damage_type_keys::PLAYER_ATTACK.location()
+            )
+            .map(u32::from),
     );
 }

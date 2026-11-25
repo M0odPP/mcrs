@@ -76,6 +76,7 @@ mod persistence;
 mod player_bundle;
 mod player_dimension_change;
 mod player_dimensions;
+mod player_lived_ticks;
 pub mod player_order;
 pub mod player_roster;
 pub mod player_signal;
@@ -90,6 +91,7 @@ mod random_tick_speed;
 mod replicated;
 mod respawn_packet;
 mod send_own_attributes;
+mod server_difficulty;
 pub mod server_edit;
 mod shift_key;
 pub mod stored_column;
@@ -124,16 +126,19 @@ pub use block_break::{BlockBreakSet, eye_position, in_reach, reach};
 pub use consume_inbound_player_spawn::InboundPlayerSpawnSet;
 pub use held_joins::HeldJoins;
 pub use max_health::max_health;
+pub use movement::PlayerMoved;
 pub use persistence::{
     AutosaveCadence, AutosavePlugin, PlayerPersistencePlugin, UnreadablePlayerDat,
     apply_join_snapshot, load_player, save_player, write_player,
 };
 pub use player_dimension_change::{check_departure, is_own_dimension};
 pub use player_dimensions::{PlayerBody, PlayerBodyItem, player_dimensions, player_scale};
+pub use player_lived_ticks::PlayerLivedTicks;
 pub use pose_systems::PoseSystems;
 pub use publish_player_tiles::HiddenPlayer;
 pub use respawn_packet::{KeptPlayerData, respawn_packet};
 pub use send_own_attributes::OwnAttributesSet;
+pub use server_difficulty::ServerDifficulty;
 pub use shift_key::ShiftKey;
 pub use world_state::{
     SavedSpawn, WorldStatePlugin, WorldStateSources, WorldStateWrite, WorldStateWriter,

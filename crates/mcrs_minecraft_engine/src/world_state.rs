@@ -7,7 +7,7 @@ use mcrs_minecraft_environment::{AdvanceTime, WorldClock, WorldClocks};
 use mcrs_minecraft_game_rule::GameRule;
 use mcrs_minecraft_registries::CurrentRegistries;
 use mcrs_minecraft_save::{
-    LevelDat, RespawnData, SaveError, WeatherData, WorldClockStates, read_game_rules,
+    Difficulty, LevelDat, RespawnData, SaveError, WeatherData, WorldClockStates, read_game_rules,
     read_level_dat, read_weather, read_world_clocks, write_birth_clock, write_game_rules,
     write_level_dat, write_weather, write_world_clocks,
 };
@@ -18,6 +18,7 @@ use crate::background_writer::{BackgroundWriter, WriteJob};
 use crate::coordinator::birth_clock::advance_birth_clock;
 use crate::coordinator::clock::GameTime;
 use crate::persistence::{AutosavePlugin, advance_autosave_cadence, autosave_due};
+use crate::server_difficulty::ServerDifficulty;
 use crate::server_edit::Weather;
 
 pub struct WorldStatePlugin;
@@ -46,12 +47,17 @@ impl Plugin for WorldStatePlugin {
 #[derive(Resource, Debug, Clone)]
 pub struct SavedSpawn(pub RespawnData);
 
+#[expect(
+    clippy::too_many_arguments,
+    reason = "startup state loader populates each host resource in one pass"
+)]
 fn load_world_state(
     mut commands: Commands,
     save: Option<Res<WorldSave>>,
     mut time: ResMut<GameTime>,
     mut weather: ResMut<Weather>,
     mut rules: ResMut<GameRules>,
+    difficulty: Option<ResMut<ServerDifficulty>>,
     mut advance: ResMut<AdvanceTime>,
     mut clocks: ResMut<WorldClocks>,
     registries: Option<Res<CurrentRegistries>>,
@@ -61,6 +67,9 @@ fn load_world_state(
     };
     if let Some(level) = Loaded::read(read_level_dat(&save.0), "level.dat").present() {
         time.set_if_neq(GameTime(level.time));
+        if let Some(mut difficulty) = difficulty {
+            difficulty.set_if_neq(ServerDifficulty(level.difficulty_settings.difficulty));
+        }
         commands.insert_resource(SavedSpawn(level.spawn));
     }
     if let Some(saved) = Loaded::read(read_weather(&save.0), "weather").present() {
@@ -132,6 +141,7 @@ impl<T> Loaded<T> {
 pub struct WorldStateWrite {
     dir: PathBuf,
     time: Option<i64>,
+    difficulty: Option<Difficulty>,
     weather: Option<WeatherData>,
     rules: Option<mcrs_minecraft_save::GameRules>,
     clocks: Option<WorldClockStates>,
@@ -150,6 +160,7 @@ impl WorldStateWrite {
     fn absorb(&mut self, newer: Self) {
         self.dir = newer.dir;
         self.time = newer.time.or(self.time);
+        self.difficulty = newer.difficulty.or(self.difficulty);
         self.weather = newer.weather.or(self.weather.take());
         self.rules = newer.rules.or(self.rules.take());
         self.clocks = newer.clocks.or(self.clocks.take());
@@ -165,14 +176,19 @@ impl WorldStateWrite {
                 ok = false;
             }
         };
-        if let Some(time) = self.time
+        if (self.time.is_some() || self.difficulty.is_some())
             && let Some(mut level) =
                 Loaded::read(read_level_dat(dir), "level.dat").or_missing(|| LevelDat {
                     level_name: "world".to_string(),
                     ..LevelDat::default()
                 })
         {
-            level.time = time;
+            if let Some(time) = self.time {
+                level.time = time;
+            }
+            if let Some(difficulty) = self.difficulty {
+                level.difficulty_settings.difficulty = difficulty;
+            }
             report("level.dat", write_level_dat(dir, &level));
         }
         if let Some(weather) = &self.weather
@@ -243,6 +259,7 @@ impl WorldStateWriter {
 pub struct WorldStateSources<'w> {
     save: Option<Res<'w, WorldSave>>,
     time: Option<Res<'w, GameTime>>,
+    difficulty: Option<Res<'w, ServerDifficulty>>,
     weather: Option<Res<'w, Weather>>,
     rules: Option<Res<'w, GameRules>>,
     clocks: Option<Res<'w, WorldClocks>>,
@@ -254,6 +271,7 @@ impl WorldStateSources<'_> {
     pub fn snapshot(&self) -> Option<WorldStateWrite> {
         let save = self.save.as_ref()?;
         let time = self.time.as_deref().copied().unwrap_or_default();
+        let difficulty = self.difficulty.as_deref().map(|difficulty| difficulty.0);
         let weather = self.weather.as_deref().map(|weather| WeatherData {
             clear_weather_time: weather.clear_ticks.cast_signed(),
             rain_time: weather.rain_ticks.cast_signed(),
@@ -284,6 +302,7 @@ impl WorldStateSources<'_> {
         Some(WorldStateWrite {
             dir: save.0.clone(),
             time: Some(time.0),
+            difficulty,
             weather,
             rules,
             clocks,
@@ -328,6 +347,7 @@ mod tests {
         let mut world = World::new();
         world.insert_resource(WorldSave(dir.to_path_buf()));
         world.init_resource::<GameTime>();
+        world.init_resource::<ServerDifficulty>();
         world.init_resource::<Weather>();
         world.init_resource::<GameRules>();
         world.init_resource::<AdvanceTime>();
@@ -345,6 +365,10 @@ mod tests {
             level_name: "kept".to_owned(),
             time: 42,
             last_played: 9,
+            difficulty_settings: mcrs_minecraft_save::DifficultySettings {
+                difficulty: Difficulty::Hard,
+                ..Default::default()
+            },
             ..LevelDat::default()
         };
         write_level_dat(&dir, &level).unwrap();
@@ -367,6 +391,7 @@ mod tests {
         let mut world = world(&dir);
         world.run_system_once(load_world_state).unwrap();
         assert_eq!(world.resource::<GameTime>().0, 42);
+        assert_eq!(world.resource::<ServerDifficulty>().0, Difficulty::Hard);
         assert_eq!(world.resource::<Weather>().clear_ticks, 90);
         assert!(world.resource::<Weather>().raining);
         assert!(!world.resource::<GameRules>().is_on(GameRule::AdvanceTime));
@@ -378,12 +403,16 @@ mod tests {
 
         world.resource_mut::<GameTime>().set_if_neq(GameTime(77));
         world
+            .resource_mut::<ServerDifficulty>()
+            .set_if_neq(ServerDifficulty(Difficulty::Easy));
+        world
             .resource_mut::<Weather>()
             .map_unchanged(|weather| &mut weather.raining)
             .set_if_neq(false);
         world.run_system_once(autosave_world_state).unwrap();
         let read = mcrs_minecraft_save::read_level_dat(&dir).unwrap();
         assert_eq!(read.time, 77);
+        assert_eq!(read.difficulty_settings.difficulty, Difficulty::Easy);
         assert_eq!(read.level_name, "kept");
         assert_eq!(read.last_played, 9);
         assert!(!mcrs_minecraft_save::read_weather(&dir).unwrap().raining);

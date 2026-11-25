@@ -43,6 +43,7 @@ use crate::dim_tick::{DimInput, DimOutput, DimWorld, TickDimensions, TickDimensi
 use crate::persistence::AutosaveCadence;
 use crate::player_roster::RosterRow;
 use crate::player_view::PlayerView;
+use crate::server_difficulty::ServerDifficulty;
 use crate::to_coordinator::RoutedInput;
 use crate::to_muxer::{DimClosed, DimDelivered, DimOpened};
 use crate::whitelist::Whitelist;
@@ -727,6 +728,7 @@ struct Globals {
     whitelist: Option<Whitelist>,
     bans: Option<BanList>,
     game_rules: Option<GameRules>,
+    difficulty: Option<ServerDifficulty>,
     tick_pace: Option<TickPace>,
     registries: Option<Versioned<RegistrySnapshot>>,
     dimensions: Option<RunningDimensions>,
@@ -745,6 +747,7 @@ impl Globals {
             whitelist: changed(host),
             bans: changed(host),
             game_rules: changed(host),
+            difficulty: changed(host),
             tick_pace: changed(host),
             registries: changed(host),
             dimensions: changed(host),
@@ -776,6 +779,7 @@ impl Globals {
             whitelist: self.whitelist.clone(),
             bans: self.bans.clone(),
             game_rules: self.game_rules.clone(),
+            difficulty: self.difficulty,
             tick_pace: self.tick_pace.clone(),
             registries: self.registries.clone(),
             dimensions: self.dimensions.clone(),

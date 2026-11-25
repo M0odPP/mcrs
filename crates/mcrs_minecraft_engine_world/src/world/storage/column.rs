@@ -8,6 +8,8 @@ use bevy_ecs::prelude::{
     Bundle, Commands, Component, Entity, IntoScheduleConfigs, MessageReader, Query, SystemSet,
 };
 use bevy_ecs::schedule::common_conditions::on_message;
+use bevy_ecs::system::SystemParam;
+use bevy_math::DVec3;
 use mcrs_voxel::SectionPos;
 use rustc_hash::FxHashMap;
 
@@ -223,6 +225,52 @@ pub fn reconcile_columns(
 
     for (column_entity, sections) in spawned {
         commands.entity(column_entity).insert(sections);
+    }
+}
+
+pub fn chunk_loaded_for_column(
+    index: &ColumnIndex,
+    columns: &Query<&ColumnSections>,
+    stages: &Query<&SectionStage>,
+    col_pos: ColumnPos,
+) -> bool {
+    let Some(slot) = index.0.get(&col_pos) else {
+        return false;
+    };
+    let Ok(sections) = columns.get(slot.entity) else {
+        return false;
+    };
+    !sections.sections.is_empty()
+        && sections.iter().all(|lookup| {
+            matches!(lookup, SectionLookup::Loaded(s) if stages.get(s) == Ok(&SectionStage::Loaded))
+        })
+}
+
+#[derive(SystemParam)]
+pub struct LoadedColumns<'w, 's> {
+    dimensions: Query<'w, 's, &'static ColumnIndex>,
+    columns: Query<'w, 's, &'static ColumnSections>,
+    stages: Query<'w, 's, &'static SectionStage>,
+}
+
+impl LoadedColumns<'_, '_> {
+    #[must_use]
+    pub fn touches_unloaded_chunk(&self, dimension: Entity, min: DVec3, max: DVec3) -> bool {
+        if !min.is_finite() || !max.is_finite() {
+            return true;
+        }
+        let Ok(index) = self.dimensions.get(dimension) else {
+            return true;
+        };
+        let min_cx = (min.x.floor() as i32) >> SectionPos::BITS;
+        let max_cx = (max.x.floor() as i32) >> SectionPos::BITS;
+        let min_cz = (min.z.floor() as i32) >> SectionPos::BITS;
+        let max_cz = (max.z.floor() as i32) >> SectionPos::BITS;
+        (min_cz..=max_cz).any(|cz| {
+            (min_cx..=max_cx).any(|cx| {
+                !chunk_loaded_for_column(index, &self.columns, &self.stages, ColumnPos::new(cx, cz))
+            })
+        })
     }
 }
 
@@ -449,5 +497,63 @@ mod tests {
         let bp = BlockPos::new(-1, 0, 17);
         let ccp: ColumnPos = bp.into();
         assert_eq!(ccp, ColumnPos::new(-1, 1));
+    }
+
+    #[test]
+    fn loaded_columns_checks_all_touched_chunks_and_sections() {
+        use bevy_ecs::system::SystemState;
+        use bevy_ecs::world::World;
+
+        let mut world = World::new();
+        let s0 = world.spawn(SectionStage::Loaded).id();
+        let s1 = world.spawn(SectionStage::Loaded).id();
+        let mut sections = ColumnSections::new(0, 2);
+        sections.set_loaded(0, s0);
+        sections.set_loaded(1, s1);
+        let col = world.spawn(sections).id();
+
+        let mut index = ColumnIndex::default();
+        index.insert(
+            ColumnPos::new(0, 0),
+            ColumnSlot {
+                entity: col,
+                section_count: 2,
+            },
+        );
+        let dim = world.spawn((index, DimensionTypeConfig::new(0, 32))).id();
+
+        let mut state: SystemState<LoadedColumns> = SystemState::new(&mut world);
+        let Ok(cols) = state.get(&world) else {
+            panic!("LoadedColumns system state should resolve");
+        };
+        assert!(
+            !cols.touches_unloaded_chunk(
+                dim,
+                DVec3::new(0.2, 10.0, 0.2),
+                DVec3::new(0.8, 12.0, 0.8),
+            ),
+            "fully loaded column bounds should not report unloaded chunks"
+        );
+        assert!(
+            cols.touches_unloaded_chunk(
+                dim,
+                DVec3::new(-0.3, 10.0, 0.2),
+                DVec3::new(0.3, 12.0, 0.8),
+            ),
+            "bounds crossing into unloaded column (-1, 0) should report unloaded"
+        );
+
+        world.entity_mut(s1).insert(SectionStage::Unloading);
+        let Ok(cols) = state.get(&world) else {
+            panic!("LoadedColumns system state should resolve");
+        };
+        assert!(
+            cols.touches_unloaded_chunk(
+                dim,
+                DVec3::new(0.2, 10.0, 0.2),
+                DVec3::new(0.8, 12.0, 0.8),
+            ),
+            "section transitioning to Unloading should report unloaded"
+        );
     }
 }

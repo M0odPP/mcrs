@@ -245,6 +245,7 @@ Use the crate that owns the item. Do not write a second copy.
 - `mcrs_minecraft_goal_world`: The read-only block world of the goals of mobs: the ground cell of a block position, the build height, the line of sight and the straight route on walkable ground
 - `mcrs_minecraft_goals`: The goals of passive mobs for the AI stage: float, panic, random stroll, look at a player and look around, the random position searches, the goal list of the pig and the brain of each mob type with goals
 - `mcrs_minecraft_heightmap`: The four column heightmaps, the block state predicates they test, and the descent that builds them
+- `mcrs_minecraft_hunger`: Player food level, saturation, exhaustion, natural regeneration, peaceful regeneration, and starvation rules without Bevy
 - `mcrs_minecraft_instrument`: The Instrument value of the instrument registry: its sound event, use duration, range, description and durability damage.
 - `mcrs_minecraft_jukebox_song`: The JukeboxSong value of the jukebox song registry: its sound event, description, length in seconds and comparator output.
 - `mcrs_minecraft_keys`: Names of the vanilla registries no crate keys by a type, with their entries and tags

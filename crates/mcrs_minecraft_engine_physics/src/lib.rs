@@ -23,7 +23,7 @@ mod swing_mob;
 mod test_scene;
 
 pub use entity_motion_plugin::EntityMotionPlugin;
-pub use entity_physics_plugin::EntityPhysicsPlugin;
+pub use entity_physics_plugin::{CrowdHitSet, EntityPhysicsPlugin};
 pub use entity_writes::EntityWrite;
 pub use entity_writes::EntityWrites;
 #[cfg(feature = "testing")]
