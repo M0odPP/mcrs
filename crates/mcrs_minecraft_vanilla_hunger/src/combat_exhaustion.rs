@@ -1,9 +1,7 @@
-use bevy_ecs::{
-    message::{MessageCursor, Messages},
-    query::With,
-    resource::Resource,
-    system::{Query, Res, ResMut, SystemParam},
-};
+use bevy_ecs::message::{MessageCursor, Messages};
+use bevy_ecs::query::With;
+use bevy_ecs::resource::Resource;
+use bevy_ecs::system::{Query, Res, ResMut, SystemParam};
 use mcrs_minecraft_damage::{DamageTypeRules, HitOutcome};
 use mcrs_minecraft_engine::player_state::PlayerFileState;
 use mcrs_minecraft_engine_damage::{DamageTypeIds, Damaged};

@@ -3,6 +3,7 @@ name = "mcrs_minecraft_vanilla_hunger"
 description = "Server hunger plugin wiring exhaustion sources, natural and peaceful regeneration, starvation damage requests, and spectator chunk gating"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
 
 [lib]
 test = false

@@ -1,20 +1,19 @@
-use bevy_ecs::{
-    change_detection::{DetectChangesMut, Mut},
-    message::MessageReader,
-    query::With,
-    system::Query,
-};
-use mcrs_minecraft_engine::{
-    PlayerMoved, player_sprinting::PlayerSprinting, player_state::PlayerFileState,
-};
-use mcrs_minecraft_engine_world::{block_drops::BlockBroken, entity::player::Player};
+use bevy_ecs::change_detection::{DetectChangesMut, Mut};
+use bevy_ecs::message::MessageReader;
+use bevy_ecs::query::With;
+use bevy_ecs::system::Query;
+use mcrs_minecraft_engine::PlayerMoved;
+use mcrs_minecraft_engine::player_sprinting::PlayerSprinting;
+use mcrs_minecraft_engine::player_state::PlayerFileState;
+use mcrs_minecraft_engine_world::block_drops::BlockBroken;
+use mcrs_minecraft_engine_world::entity::player::Player;
 use mcrs_minecraft_game_mode::{GameMode, PlayerGameMode};
 use mcrs_minecraft_hunger::{
     HARVEST_BREAK_EXHAUSTION, HungerState, SprintState, jump_exhaustion, sprint_move_exhaustion,
 };
 
-pub(crate) fn is_invulnerable(mode: GameMode, file_state: &PlayerFileState) -> bool {
-    file_state.invulnerable || matches!(mode, GameMode::Creative | GameMode::Spectator)
+pub(crate) const fn is_invulnerable(mode: GameMode) -> bool {
+    matches!(mode, GameMode::Creative | GameMode::Spectator)
 }
 
 pub(crate) fn hunger_state_from_file(file_state: &PlayerFileState) -> HungerState {
@@ -27,7 +26,7 @@ pub(crate) fn hunger_state_from_file(file_state: &PlayerFileState) -> HungerStat
 }
 
 pub(crate) fn add_player_exhaustion(mode: GameMode, file_state: Mut<PlayerFileState>, amount: f32) {
-    if is_invulnerable(mode, &file_state) {
+    if is_invulnerable(mode) {
         return;
     }
     let mut hunger = hunger_state_from_file(&file_state);

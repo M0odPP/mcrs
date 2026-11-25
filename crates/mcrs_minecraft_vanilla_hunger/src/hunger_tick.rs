@@ -1,21 +1,19 @@
-use bevy_ecs::{
-    change_detection::DetectChangesMut,
-    entity::Entity,
-    query::With,
-    system::{Populated, Res, ResMut, SystemParam},
-};
+use bevy_ecs::change_detection::DetectChangesMut;
+use bevy_ecs::entity::Entity;
+use bevy_ecs::query::With;
+use bevy_ecs::system::{Populated, Res, ResMut, SystemParam};
 use mcrs_minecraft_damage::{DamageSource, Hit, Vitals};
+use mcrs_minecraft_engine::player_state::PlayerFileState;
 use mcrs_minecraft_engine::{
     PlayerBody, PlayerLivedTicks, ServerDifficulty, max_health, player_dimensions,
-    player_state::PlayerFileState,
 };
 use mcrs_minecraft_engine_damage::{DamageRequest, DamageTypeIds, PendingHits};
-use mcrs_minecraft_engine_world::{
-    birth_clock::BirthClock,
-    entity::{physics::Transform, player::Player},
-    game_rules::GameRules,
-    world::{dimension::InDimension, storage::column::LoadedColumns},
-};
+use mcrs_minecraft_engine_world::birth_clock::BirthClock;
+use mcrs_minecraft_engine_world::entity::physics::Transform;
+use mcrs_minecraft_engine_world::entity::player::Player;
+use mcrs_minecraft_engine_world::game_rules::GameRules;
+use mcrs_minecraft_engine_world::world::dimension::InDimension;
+use mcrs_minecraft_engine_world::world::storage::column::LoadedColumns;
 use mcrs_minecraft_entity_key::{EntityUuid, WriterKey};
 use mcrs_minecraft_game_mode::{GameMode, PlayerGameMode};
 use mcrs_minecraft_game_rule::GameRule;
@@ -108,7 +106,7 @@ pub(crate) fn hunger_tick(
             }
         }
 
-        let invulnerable = is_invulnerable(mode.0, &file_state);
+        let invulnerable = is_invulnerable(mode.0);
         let initial = hunger_state_from_file(&file_state);
         let mut next = initial;
         if !invulnerable && let Some(amplifier) = active_hunger_amplifier(&file_state) {

@@ -1,15 +1,15 @@
 use bevy_app::{App, FixedUpdate, Plugin};
-use bevy_ecs::schedule::{IntoScheduleConfigs, common_conditions::on_message};
+use bevy_ecs::schedule::IntoScheduleConfigs;
+use bevy_ecs::schedule::common_conditions::on_message;
 use mcrs_minecraft_engine::{PlayerMoved, ServerDifficulty};
-use mcrs_minecraft_engine_damage::DamageSet;
+use mcrs_minecraft_engine_damage::{DamageSet, Damaged, PendingHits};
 use mcrs_minecraft_engine_physics::CrowdHitSet;
-use mcrs_minecraft_engine_world::{block_drops::BlockBroken, tick::TickSet};
+use mcrs_minecraft_engine_world::block_drops::BlockBroken;
+use mcrs_minecraft_engine_world::tick::TickSet;
 
-use crate::{
-    combat_exhaustion::{DamagedCursor, collect_damaged_exhaustion, has_unread_damage},
-    hunger_tick::hunger_tick,
-    movement_exhaustion::{collect_block_break_exhaustion, collect_move_exhaustion},
-};
+use crate::combat_exhaustion::{DamagedCursor, collect_damaged_exhaustion, has_unread_damage};
+use crate::hunger_tick::hunger_tick;
+use crate::movement_exhaustion::{collect_block_break_exhaustion, collect_move_exhaustion};
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct VanillaHungerPlugin;
@@ -18,6 +18,10 @@ impl Plugin for VanillaHungerPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<DamagedCursor>();
         app.init_resource::<ServerDifficulty>();
+        app.init_resource::<PendingHits>();
+        app.add_message::<PlayerMoved>();
+        app.add_message::<BlockBroken>();
+        app.add_message::<Damaged>();
         app.add_systems(
             FixedUpdate,
             (
