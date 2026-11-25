@@ -1,0 +1,564 @@
+{
+  "target": {
+    "operators": ["Alice"]
+  },
+  "observe": {
+    "health": true,
+    "entity_data": true,
+    "damage_event": true,
+    "entity_event": true,
+    "sound": true,
+    "packet_order": true
+  },
+  "steps": [
+    {
+      "id": "prepare",
+      "console": {
+        "lines": [
+          "difficulty normal",
+          "gamerule spawn_mobs false",
+          "gamerule natural_health_regeneration false",
+          "kill @e[type=!minecraft:player]"
+        ]
+      }
+    },
+    { "id": "join_alice", "join": "Alice" },
+    {
+      "id": "build_arena",
+      "console": {
+        "lines": [
+          "gamemode survival Alice",
+          "effect give Alice minecraft:luck 9999 0 true",
+          "fill -12 -61 -12 12 -61 12 minecraft:stone",
+          "fill -12 -60 -12 12 -42 12 minecraft:air",
+          "setblock 2 -61 0 minecraft:hay_block",
+          "setblock 4 -61 0 minecraft:slime_block",
+          "setblock 6 -60 0 minecraft:water"
+        ]
+      }
+    },
+    {
+      "id": "seq_fall_norm",
+      "sequence": {
+        "steps": [
+          { "console": { "lines": ["tp Alice 0.5 -50 0.5 0 0"] } },
+          { "await_packet": { "client": "Alice", "packet": { "player_position": { "block_center": [0, -50, 0] } } } },
+          { "sync_position": "Alice" },
+          { "wait": { "ms": 60 } },
+          { "move_player": { "client": "Alice", "position": [0.5, -53.5, 0.5], "on_ground": false } },
+          { "wait": { "ms": 60 } },
+          { "move_player": { "client": "Alice", "position": [0.5, -57.0, 0.5], "on_ground": false } },
+          { "wait": { "ms": 60 } },
+          { "move_player": { "client": "Alice", "position": [0.5, -60.0, 0.5], "on_ground": true } },
+          { "wait": { "ms": 150 } },
+          { "console": { "lines": ["data get entity Alice Health", "effect give Alice minecraft:instant_health 1 5 true"] } }
+        ]
+      },
+      "packet_order": true
+    },
+    {
+      "id": "seq_fall_spoof",
+      "sequence": {
+        "steps": [
+          { "console": { "lines": ["tp Alice 0.5 -50 0.5 0 0"] } },
+          { "await_packet": { "client": "Alice", "packet": { "player_position": { "block_center": [0, -50, 0] } } } },
+          { "sync_position": "Alice" },
+          { "wait": { "ms": 60 } },
+          { "move_player": { "client": "Alice", "position": [0.5, -53.5, 0.5], "on_ground": true } },
+          { "wait": { "ms": 60 } },
+          { "move_player": { "client": "Alice", "position": [0.5, -57.0, 0.5], "on_ground": true } },
+          { "wait": { "ms": 60 } },
+          { "move_player": { "client": "Alice", "position": [0.5, -60.0, 0.5], "on_ground": true } },
+          { "wait": { "ms": 150 } },
+          { "console": { "lines": ["data get entity Alice Health", "effect give Alice minecraft:instant_health 1 5 true"] } }
+        ]
+      },
+      "packet_order": true
+    },
+    {
+      "id": "seq_fall_rule_false",
+      "sequence": {
+        "steps": [
+          { "console": { "lines": ["gamerule fall_damage false", "tp Alice 0.5 -50 0.5 0 0"] } },
+          { "await_packet": { "client": "Alice", "packet": { "player_position": { "block_center": [0, -50, 0] } } } },
+          { "sync_position": "Alice" },
+          { "wait": { "ms": 60 } },
+          { "move_player": { "client": "Alice", "position": [0.5, -53.5, 0.5], "on_ground": false } },
+          { "wait": { "ms": 60 } },
+          { "move_player": { "client": "Alice", "position": [0.5, -57.0, 0.5], "on_ground": false } },
+          { "wait": { "ms": 60 } },
+          { "move_player": { "client": "Alice", "position": [0.5, -60.0, 0.5], "on_ground": true } },
+          { "wait": { "ms": 150 } },
+          { "console": { "lines": ["data get entity Alice Health", "gamerule fall_damage true"] } }
+        ]
+      }
+    },
+    {
+      "id": "seq_fall_hay",
+      "sequence": {
+        "steps": [
+          { "console": { "lines": ["tp Alice 2.5 -45 0.5 0 0"] } },
+          { "await_packet": { "client": "Alice", "packet": { "player_position": { "block_center": [2, -45, 0] } } } },
+          { "sync_position": "Alice" },
+          { "wait": { "ms": 60 } },
+          { "move_player": { "client": "Alice", "position": [2.5, -48.5, 0.5], "on_ground": false } },
+          { "wait": { "ms": 60 } },
+          { "move_player": { "client": "Alice", "position": [2.5, -52.0, 0.5], "on_ground": false } },
+          { "wait": { "ms": 60 } },
+          { "move_player": { "client": "Alice", "position": [2.5, -55.5, 0.5], "on_ground": false } },
+          { "wait": { "ms": 60 } },
+          { "move_player": { "client": "Alice", "position": [2.5, -58.5, 0.5], "on_ground": false } },
+          { "wait": { "ms": 60 } },
+          { "move_player": { "client": "Alice", "position": [2.5, -60.0, 0.5], "on_ground": true } },
+          { "wait": { "ms": 150 } },
+          { "console": { "lines": ["data get entity Alice Health", "effect give Alice minecraft:instant_health 1 5 true"] } }
+        ]
+      },
+      "packet_order": true
+    },
+    {
+      "id": "seq_fall_slime",
+      "sequence": {
+        "steps": [
+          { "console": { "lines": ["tp Alice 4.5 -50 0.5 0 0"] } },
+          { "await_packet": { "client": "Alice", "packet": { "player_position": { "block_center": [4, -50, 0] } } } },
+          { "sync_position": "Alice" },
+          { "wait": { "ms": 60 } },
+          { "move_player": { "client": "Alice", "position": [4.5, -53.5, 0.5], "on_ground": false } },
+          { "wait": { "ms": 60 } },
+          { "move_player": { "client": "Alice", "position": [4.5, -57.0, 0.5], "on_ground": false } },
+          { "wait": { "ms": 60 } },
+          { "move_player": { "client": "Alice", "position": [4.5, -60.0, 0.5], "on_ground": true } },
+          { "wait": { "ms": 150 } },
+          { "console": { "lines": ["data get entity Alice Health"] } }
+        ]
+      }
+    },
+    {
+      "id": "seq_fall_water",
+      "sequence": {
+        "steps": [
+          { "console": { "lines": ["tp Alice 6.5 -50 0.5 0 0"] } },
+          { "await_packet": { "client": "Alice", "packet": { "player_position": { "block_center": [6, -50, 0] } } } },
+          { "sync_position": "Alice" },
+          { "wait": { "ms": 60 } },
+          { "move_player": { "client": "Alice", "position": [6.5, -53.5, 0.5], "on_ground": false } },
+          { "wait": { "ms": 60 } },
+          { "move_player": { "client": "Alice", "position": [6.5, -57.0, 0.5], "on_ground": false } },
+          { "wait": { "ms": 60 } },
+          { "move_player": { "client": "Alice", "position": [6.5, -60.0, 0.5], "on_ground": false } },
+          { "wait": { "ms": 150 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Health",
+                "setblock 6 -60 0 minecraft:air",
+                "effect give Alice minecraft:instant_health 1 5 true",
+                "tp Alice 0.5 -60 0.5 0 0"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "seq_drowning",
+      "sequence": {
+        "steps": [
+          {
+            "console": {
+              "lines": [
+                "fill 4 -60 4 6 -58 6 minecraft:stone",
+                "setblock 5 -60 5 minecraft:water",
+                "setblock 5 -59 5 minecraft:water",
+                "tp Alice 5.5 -60 5.5 0 0",
+                "tick sprint 320"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 300 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Air",
+                "data get entity Alice Health",
+                "tick sprint 30"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 25 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Health",
+                "tick sprint 30"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 25 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Health",
+                "gamerule drowning_damage false",
+                "tick sprint 30"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 25 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Health",
+                "gamerule drowning_damage true",
+                "tp Alice 0.5 -60 0.5 0 0",
+                "tick sprint 100"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 85 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Air",
+                "effect give Alice minecraft:instant_health 1 5 true"
+              ]
+            }
+          }
+        ]
+      },
+      "packet_order": true
+    },
+    {
+      "id": "seq_fire_lava",
+      "sequence": {
+        "steps": [
+          {
+            "console": {
+              "lines": [
+                "setblock 0 -60 3 minecraft:fire",
+                "tp Alice 0.5 -60 3.5 0 0",
+                "tick sprint 20"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 12 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Fire",
+                "data get entity Alice Health",
+                "setblock 0 -60 3 minecraft:air",
+                "fill -9 -60 7 -7 -60 9 minecraft:stone",
+                "setblock -8 -60 8 minecraft:water",
+                "tp Alice -7.5 -60 8.5 0 0",
+                "tick sprint 10"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 5 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Fire",
+                "fill 7 -60 7 9 -60 9 minecraft:stone",
+                "setblock 8 -60 8 minecraft:lava",
+                "effect give Alice minecraft:instant_health 1 5 true",
+                "tp Alice 8.5 -60 8.5 0 0",
+                "tick sprint 20"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 12 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Fire",
+                "data get entity Alice Health",
+                "gamerule fire_damage false",
+                "tick sprint 25"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 20 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Health",
+                "gamerule fire_damage true",
+                "setblock 8 -60 8 minecraft:air",
+                "tp Alice -7.5 -60 8.5 0 0",
+                "tick sprint 10"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 5 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Fire",
+                "fill 7 -60 7 9 -60 9 minecraft:air",
+                "fill -9 -60 7 -7 -60 9 minecraft:air",
+                "tp Alice 0.5 -60 0.5 0 0",
+                "effect give Alice minecraft:instant_health 1 5 true",
+                "tick sprint 10"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 5 } }
+        ]
+      },
+      "packet_order": true
+    },
+    {
+      "id": "seq_freezing",
+      "sequence": {
+        "steps": [
+          {
+            "console": {
+              "lines": [
+                "setblock -4 -60 0 minecraft:powder_snow",
+                "setblock -4 -59 0 minecraft:powder_snow",
+                "tp Alice -3.5 -60 0.5 0 0",
+                "tick sprint 170"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 150 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice TicksFrozen",
+                "data get entity Alice Health",
+                "tick sprint 60"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 50 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Health",
+                "gamerule freeze_damage false",
+                "tick sprint 60"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 50 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Health",
+                "gamerule freeze_damage true",
+                "item replace entity Alice armor.feet with minecraft:leather_boots",
+                "tick sprint 50"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 40 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice TicksFrozen",
+                "item replace entity Alice armor.feet with minecraft:air",
+                "tick sprint 35"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 25 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice TicksFrozen",
+                "setblock 0 -60 3 minecraft:fire",
+                "tp Alice 0.5 -60 3.5 0 0",
+                "tick sprint 20"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 14 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice TicksFrozen",
+                "data get entity Alice Fire",
+                "setblock 0 -60 3 minecraft:air",
+                "tp Alice -3.5 -60 0.5 0 0",
+                "tick sprint 6"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 4 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Fire",
+                "execute if block -4 -60 0 minecraft:air",
+                "setblock -4 -60 0 minecraft:air",
+                "setblock -4 -59 0 minecraft:air",
+                "tp Alice 0.5 -60 0.5 0 0",
+                "tick sprint 20"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 15 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice TicksFrozen",
+                "effect give Alice minecraft:instant_health 1 5 true"
+              ]
+            }
+          }
+        ]
+      },
+      "packet_order": true
+    },
+    {
+      "id": "seq_suffocation_cactus_campfire_magma",
+      "sequence": {
+        "steps": [
+          {
+            "console": {
+              "lines": [
+                "setblock 0 -59 6 minecraft:stone",
+                "tp Alice 0.5 -60 6.5 0 0",
+                "tick sprint 25"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 15 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Health",
+                "setblock 0 -59 6 minecraft:air",
+                "effect give Alice minecraft:instant_health 1 5 true",
+                "setblock 0 -61 8 minecraft:sand",
+                "setblock 0 -60 8 minecraft:cactus",
+                "tp Alice 0.5 -60 8.5 0 0",
+                "tick sprint 20"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 15 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Health",
+                "effect give Alice minecraft:instant_health 1 5 true",
+                "setblock 0 -60 8 minecraft:campfire",
+                "tick sprint 20"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 15 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Health",
+                "effect give Alice minecraft:instant_health 1 5 true",
+                "setblock 0 -61 8 minecraft:magma_block",
+                "setblock 0 -60 8 minecraft:air",
+                "tick sprint 20"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 15 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Health",
+                "effect give Alice minecraft:instant_health 1 5 true",
+                "tp Alice 0.5 -60 9.5 0 0"
+              ]
+            }
+          },
+          { "wait": { "ms": 200 } },
+          { "sync_position": "Alice" },
+          { "player_input": { "client": "Alice", "sneak": true } },
+          { "move_player": { "client": "Alice", "position": [0.5, -60.0, 8.5], "on_ground": true } },
+          { "console": { "lines": ["tick sprint 20"] } },
+          { "await_player_ticks": { "client": "Alice", "ticks": 15 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Health",
+                "tp Alice 0.5 -60 0.5 0 0",
+                "effect give Alice minecraft:instant_health 1 5 true"
+              ]
+            }
+          },
+          { "player_input": { "client": "Alice", "sneak": false } },
+          { "wait": { "ms": 100 } }
+        ]
+      },
+      "packet_order": true
+    },
+    {
+      "id": "seq_berry_void_border",
+      "sequence": {
+        "steps": [
+          {
+            "console": {
+              "lines": [
+                "setblock 0 -61 -4 minecraft:dirt",
+                "setblock 0 -60 -4 minecraft:sweet_berry_bush[age=2]",
+                "tp Alice 0.5 -60 -3.2 0 0"
+              ]
+            }
+          },
+          { "wait": { "ms": 200 } },
+          { "sync_position": "Alice" },
+          { "move_player": { "client": "Alice", "position": [0.5, -60.0, -3.5], "on_ground": true } },
+          { "wait": { "ms": 100 } },
+          { "move_player": { "client": "Alice", "position": [0.5, -60.0, -3.8], "on_ground": true } },
+          { "console": { "lines": ["tick sprint 20"] } },
+          { "await_player_ticks": { "client": "Alice", "ticks": 15 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Health",
+                "effect give Alice minecraft:instant_health 1 5 true",
+                "tp Alice 0.5 -129 0.5 0 0"
+              ]
+            }
+          },
+          { "wait": { "ms": 200 } },
+          { "sync_position": "Alice" },
+          { "console": { "lines": ["tick sprint 25"] } },
+          { "await_player_ticks": { "client": "Alice", "ticks": 15 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Health",
+                "effect give Alice minecraft:instant_health 1 5 true",
+                "worldborder center 0.5 0.5",
+                "worldborder set 20",
+                "worldborder damage buffer 5",
+                "worldborder damage amount 0.2",
+                "tp Alice 20.5 -60 0.5 0 0",
+                "tick sprint 35"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 25 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Health",
+                "worldborder set 59999968",
+                "tp Alice 0.5 -60 0.5 0 0",
+                "effect give Alice minecraft:instant_health 1 5 true",
+                "tick sprint 10"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 5 } }
+        ]
+      },
+      "packet_order": true
+    },
+    { "id": "leave_alice", "leave": "Alice" }
+  ]
+}
