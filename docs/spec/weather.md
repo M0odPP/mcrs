@@ -57,7 +57,6 @@ Labels follow `registry.md`, section 0.3 (`black_box_confirmed`, `documentation`
   `minecraft:lightning_bolt` `80`, `minecraft:entity.lightning_bolt.impact` `662`,
   `minecraft:entity.lightning_bolt.thunder` `663`)
 - `assets/mcrs/registry_definition/game_rule.json` (`minecraft:advance_weather` default `true`)
-- `crates/mcrs_minecraft_environment/tests/fixtures/vanilla/environment.json`
 - `tools/mcrs_minecraft_probe/scenarios/weather.json`
 - `tools/mcrs_minecraft_probe/traces/weather.json`
 
@@ -72,10 +71,11 @@ tracks **rain strength**, **thunder strength**, weather packets, and **lightning
 other dimension must keep **rain strength** `0.0` and **thunder strength** `0.0` and must send no
 weather `game_event` packet.
 
-Provenance: `black_box_confirmed`
-(`crates/mcrs_minecraft_environment/tests/fixtures/vanilla/environment.json`;
-`tools/mcrs_minecraft_probe/traces/weather.json`) for weather-dimension predicates and overworld
-packets; `documentation` for global shared state. Kind: `semantic`. Confidence: `high`.
+Provenance: `black_box_confirmed` (`tools/mcrs_minecraft_probe/traces/weather.json`:
+`join_alice_clear`, `weather_rain`, `join_bob_during_rain`) for overworld packet delivery;
+`documentation` (and `environment-attributes.md`, `ENVA-LAYER-005`) for global shared state and the
+**weather dimension** condition (`has_skylight`, no ceiling, not `minecraft:the_end`). Kind:
+`semantic`. Confidence: `high`.
 
 ### WTH-CYC-002: Clear timer override
 
@@ -109,9 +109,9 @@ advance **thunder time** and **rain time**:
 When `minecraft:advance_weather` is false, all five fields of **weather state** must stay frozen
 until a command changes them.
 
-Provenance: `black_box_confirmed` (`tools/mcrs_minecraft_probe/traces/weather.json`:
-`weather_clear_and_stop_advance`) for `advance_weather` freeze; `documentation` for uniform natural
-duration bounds. Kind: `semantic`. Confidence: `high`.
+Provenance: `documentation` (`command-gamerule.md`, `CMD-GR-004`) for natural cycle timer
+progression, uniform duration bounds, and timer freeze under `advance_weather` false. Kind:
+`semantic`. Confidence: `high`.
 
 ---
 
@@ -138,10 +138,12 @@ Provenance: `black_box_confirmed` (`tools/mcrs_minecraft_probe/traces/weather.js
 
 The strength ramp in `WTH-LVL-001` must run even when `minecraft:advance_weather` is false. After
 `gamerule advance_weather false` and `weather clear`, both strengths still ramp to `0.0` at `0.01`
-per tick. All five weather timers stay frozen.
+per tick. All five fields of **weather state** stay frozen (`WTH-CYC-003`).
 
 Provenance: `black_box_confirmed` (`tools/mcrs_minecraft_probe/traces/weather.json`:
-`weather_clear_and_stop_advance`). Kind: `semantic`. Confidence: `high`.
+`weather_clear_and_stop_advance`) for the strength ramp to `0.0` while `advance_weather` is
+false; `documentation` for the freeze of all five fields of **weather state** (`WTH-CYC-003`). Kind:
+`semantic`. Confidence: `high`.
 
 ### WTH-LVL-003: Wet threshold and world start state
 
@@ -293,8 +295,8 @@ Provenance: `black_box_confirmed` (`tools/mcrs_minecraft_probe/traces/weather.js
   4. Run `weather thunder 400` (`weather_thunder`): `Alice` and `Bob` each receive `101`
      `thunder_level_change` steps from `0.01` to `1.0` and zero `rain_level_change`.
   5. Run `gamerule advance_weather false` and `weather clear 200` (`weather_clear_and_stop_advance`):
-     both players receive `101` downward steps for rain and thunder plus the tick-`81` burst
-     `[end_raining(0.0), rain_level_change(0.19000068), thunder_level_change(0.19000068)]`.
+     both players receive `101` downward steps to `0.0` for rain and thunder plus the tick-`81`
+     burst `[end_raining(0.0), rain_level_change(0.19000068), thunder_level_change(0.19000068)]`.
   6. Run `gamerule advance_weather true`, `weather thunder 400`, and `save-all flush`
      (`set_thunder_for_save`), restart (`restart_world`), and join `Alice` (`join_alice_after_restart`):
      `Alice` receives `begin_raining(0.0)`, `rain_level_change(1.0)`, `thunder_level_change(1.0)`,
@@ -306,6 +308,8 @@ Provenance: `black_box_confirmed` (`tools/mcrs_minecraft_probe/traces/weather.js
 
 - Probe captures for omitted `<duration>` on `/weather clear`, `/weather rain`, and
   `/weather thunder`, plus `execute store result` return values (`-1` vs `d`).
-- Long-tick probe capture for natural timer rollover (`clear -> rain -> clear` and thunder overlap).
+- Probe captures beyond timer expiry (and `weather.dat` inspection) for natural rollover
+  (`clear -> rain -> clear`, thunder overlap) and timer freeze under `advance_weather` false.
+- Non-weather dimension probes (`minecraft:the_nether`, `minecraft:the_end`, `has_ceiling` types).
 - Probe capture for `lightning_bolt` spawns, `lightning_rod` interception, skeleton trap horses, and
   struck-entity damage and fire blocks (`WTH-LGT-001`..`WTH-LGT-003`).

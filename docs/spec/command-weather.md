@@ -65,8 +65,8 @@ the `gamemasters` requirement and minimum `1` tick. Kind: `wire`, `client agreem
 
 Provenance: `black_box_confirmed` (`tools/mcrs_minecraft_probe/traces/weather.json`: `prepare`,
 `weather_clear_and_stop_advance`) for explicit duration, `commands.weather.set.clear`, operator
-broadcast, and post-clear ramp; `documentation` for the `[12000, 180000]` draw and `-1` result.
-Kind: `semantic`, `wire`. Confidence: `high`.
+broadcast, and post-clear ramp; `documentation` for the `[12000, 180000]` draw, timer writes, and
+`-1` result. Kind: `semantic`, `wire`. Confidence: `high`.
 
 ---
 
@@ -86,8 +86,8 @@ Kind: `semantic`, `wire`. Confidence: `high`.
 
 Provenance: `black_box_confirmed` (`tools/mcrs_minecraft_probe/traces/weather.json`: `weather_rain`)
 for explicit duration, `commands.weather.set.rain`, operator broadcast, and strength ramp;
-`documentation` for the `[12000, 24000]` draw and `-1` result. Kind: `semantic`, `wire`. Confidence:
-`high`.
+`documentation` for the `[12000, 24000]` draw, timer writes, and `-1` result. Kind: `semantic`,
+`wire`. Confidence: `high`.
 
 ---
 
@@ -107,8 +107,8 @@ for explicit duration, `commands.weather.set.rain`, operator broadcast, and stre
 
 Provenance: `black_box_confirmed` (`tools/mcrs_minecraft_probe/traces/weather.json`:
 `weather_thunder`, `set_thunder_for_save`) for explicit duration, `commands.weather.set.thunder`,
-operator broadcast, and strength ramp; `documentation` for the `[3600, 15600]` draw and `-1`
-result. Kind: `semantic`, `wire`. Confidence: `high`.
+operator broadcast, and strength ramp; `documentation` for the `[3600, 15600]` draw, timer writes,
+and `-1` result. Kind: `semantic`, `wire`. Confidence: `high`.
 
 ---
 
@@ -129,7 +129,9 @@ result. Kind: `semantic`, `wire`. Confidence: `high`.
     (`WTH-NET-002`).
 
 Provenance: `black_box_confirmed` (`tools/mcrs_minecraft_probe/traces/weather.json`: `weather_rain`,
-`weather_thunder`, `weather_clear_and_stop_advance`, `set_thunder_for_save`). Kind: `semantic`,
+`weather_thunder`, `weather_clear_and_stop_advance`, `set_thunder_for_save`) for the `0.01` per-tick
+strength ramp (with `advance_weather` true or false) and `game_event` (`39`) delivery;
+`documentation` for the timer advance and freeze rules of global **weather state**. Kind: `semantic`,
 `wire`. Confidence: `high`.
 
 ---
