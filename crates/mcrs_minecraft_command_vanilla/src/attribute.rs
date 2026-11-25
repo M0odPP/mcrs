@@ -195,6 +195,7 @@ fn holder<'a>(
                 .get(view.entity)
                 .map_or(&NO_INSTANCES, MobAttributes::set),
         }),
+        EntityView::Item { .. } => None,
     }
 }
 

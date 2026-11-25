@@ -1,9 +1,11 @@
+use crate::item_view::ItemView;
 use crate::mob_view::MobView;
 use bevy_ecs::entity::Entity;
 use bevy_math::DVec3;
 use mcrs_minecraft_command_argument_entity::{Candidate, EntityBounds};
 use mcrs_minecraft_command_engine::{CommandTargets, PlayerEntry, SourceState};
 use mcrs_minecraft_core::Look;
+use mcrs_minecraft_entity::EntityTypeData;
 use mcrs_minecraft_entity::entity_type_keys::EntityType;
 use mcrs_minecraft_game_mode::GameMode;
 use mcrs_minecraft_protocol::uuid::Uuid;
@@ -12,7 +14,14 @@ use mcrs_minecraft_text::{IntoText, Text};
 #[derive(Clone, Copy, Debug)]
 pub(crate) enum EntityView<'c> {
     Player(&'c PlayerEntry),
-    Mob { view: MobView<'c>, dimension: usize },
+    Mob {
+        view: MobView<'c>,
+        dimension: usize,
+    },
+    Item {
+        view: ItemView<'c>,
+        dimension: usize,
+    },
 }
 
 impl EntityView<'_> {
@@ -20,6 +29,7 @@ impl EntityView<'_> {
         match self {
             Self::Player(player) => player.entity,
             Self::Mob { view, .. } => Some(view.entity),
+            Self::Item { .. } => None,
         }
     }
 
@@ -27,6 +37,7 @@ impl EntityView<'_> {
         match self {
             Self::Player(player) => player.transform.translation,
             Self::Mob { view, .. } => view.position(),
+            Self::Item { view, .. } => view.position(),
         }
     }
 
@@ -34,6 +45,7 @@ impl EntityView<'_> {
         match self {
             Self::Player(player) => f64::from(player.dimensions.eye_height),
             Self::Mob { view, .. } => f64::from(view.mob.kind.eye_height),
+            Self::Item { .. } => f64::from(EntityTypeData::ITEM.eye_height),
         }
     }
 
@@ -41,13 +53,14 @@ impl EntityView<'_> {
         match self {
             Self::Player(player) => player.transform.rotation.into(),
             Self::Mob { view, .. } => view.look(),
+            Self::Item { .. } => Look::default(),
         }
     }
 
     pub(crate) fn dimension_label(&self, targets: &CommandTargets, here: Entity) -> Entity {
         match self {
             Self::Player(player) => targets.label_of(player.dimension).unwrap_or(here),
-            Self::Mob { .. } => here,
+            Self::Mob { .. } | Self::Item { .. } => here,
         }
     }
 
@@ -55,6 +68,7 @@ impl EntityView<'_> {
         let (player, mob) = match self {
             Self::Player(player) => (Some(player.session), None),
             Self::Mob { view, .. } => (None, Some(view.source())),
+            Self::Item { view, .. } => (None, Some(view.source())),
         };
         SourceState {
             player,
@@ -67,6 +81,15 @@ impl EntityView<'_> {
         match self {
             Self::Player(player) => player.name.clone().into_text(),
             Self::Mob { view, .. } => view.display_name(),
+            Self::Item { view, .. } => view.display_name(),
+        }
+    }
+
+    pub(crate) fn is_living(&self) -> bool {
+        match self {
+            Self::Player(_) => true,
+            Self::Mob { view, .. } => view.mob.kind.is_living() && view.state.living.is_some(),
+            Self::Item { .. } => false,
         }
     }
 }
@@ -76,6 +99,7 @@ impl Candidate for EntityView<'_> {
         match self {
             Self::Player(player) => player.uuid,
             Self::Mob { view, .. } => view.uuid(),
+            Self::Item { view, .. } => view.uuid(),
         }
     }
 
@@ -83,6 +107,7 @@ impl Candidate for EntityView<'_> {
         match self {
             Self::Player(player) => &player.name,
             Self::Mob { view, .. } => view.mob.custom_name.as_deref().unwrap_or_default(),
+            Self::Item { .. } => "",
         }
     }
 
@@ -90,6 +115,7 @@ impl Candidate for EntityView<'_> {
         match self {
             Self::Player(_) => EntityType::Player,
             Self::Mob { view, .. } => view.entity_type(),
+            Self::Item { .. } => EntityType::Item,
         }
     }
 
@@ -106,6 +132,10 @@ impl Candidate for EntityView<'_> {
             Self::Mob { view, .. } => (
                 f64::from(view.mob.kind.width),
                 f64::from(view.mob.kind.height),
+            ),
+            Self::Item { .. } => (
+                f64::from(EntityTypeData::ITEM.width),
+                f64::from(EntityTypeData::ITEM.height),
             ),
         };
         let position = EntityView::position(self);
@@ -127,34 +157,34 @@ impl Candidate for EntityView<'_> {
     fn game_mode(&self) -> Option<GameMode> {
         match self {
             Self::Player(player) => Some(player.mode),
-            Self::Mob { .. } => None,
+            Self::Mob { .. } | Self::Item { .. } => None,
         }
     }
 
     fn experience_level(&self) -> Option<i32> {
         match self {
             Self::Player(_) => Some(0),
-            Self::Mob { .. } => None,
+            Self::Mob { .. } | Self::Item { .. } => None,
         }
     }
 
     fn alive(&self) -> bool {
         match self {
-            Self::Player(_) => true,
+            Self::Player(_) | Self::Item { .. } => true,
             Self::Mob { view, .. } => view.alive(),
         }
     }
 
     fn has_tag(&self, tag: &str) -> bool {
         match self {
-            Self::Player(_) => false,
+            Self::Player(_) | Self::Item { .. } => false,
             Self::Mob { view, .. } => view.mob.tags.iter().any(|held| held == tag),
         }
     }
 
     fn has_any_tag(&self) -> bool {
         match self {
-            Self::Player(_) => false,
+            Self::Player(_) | Self::Item { .. } => false,
             Self::Mob { view, .. } => !view.mob.tags.is_empty(),
         }
     }
@@ -166,7 +196,7 @@ impl Candidate for EntityView<'_> {
     fn dimension(&self) -> usize {
         match self {
             Self::Player(player) => player.dimension,
-            Self::Mob { dimension, .. } => *dimension,
+            Self::Mob { dimension, .. } | Self::Item { dimension, .. } => *dimension,
         }
     }
 }

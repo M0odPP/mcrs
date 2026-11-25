@@ -1,6 +1,7 @@
 use crate::dimension_view::DimensionView;
 use crate::entity_view::EntityView;
 use crate::execute_view::saved_data;
+use crate::item_view::ItemView;
 use crate::mob_view::MobView;
 use crate::scale_text::scale_text;
 use crate::select::{SelectionBuffers, select};
@@ -149,6 +150,7 @@ fn find_entity(
                 player_data(world, player.entity.ok_or_else(CommandFailure::failed)?)?
             }
             EntityView::Mob { view, .. } => mob_data(view),
+            EntityView::Item { view, .. } => item_data(view),
         };
         Ok(Found {
             holder: Holder::Entity(target.display_name()),
@@ -266,6 +268,20 @@ fn mob_data(view: MobView<'_>) -> NbtCompound {
     if let Some(vitals) = view.vitals {
         data.put_float("Health", vitals.health);
     }
+    data
+}
+
+fn item_data(view: ItemView<'_>) -> NbtCompound {
+    let position = view.position();
+    let mut data = NbtCompound::new();
+    data.put_list(
+        "Pos",
+        vec![
+            NbtTag::Double(position.x),
+            NbtTag::Double(position.y),
+            NbtTag::Double(position.z),
+        ],
+    );
     data
 }
 

@@ -6,13 +6,19 @@ use mcrs_command::{ArgumentHandle, BuildError, NodeId};
 use mcrs_minecraft_command::{CommandLevel, PermissionCheck};
 use mcrs_minecraft_command_argument_entity::EntityArgument;
 use mcrs_minecraft_command_engine::{
-    Call, CommandOutput, CommandRegistrar, CommandResult, EffectQueue, Feedback,
+    Call, CommandOutput, CommandRegistrar, CommandResult, EffectQueue, Feedback, Worlds,
 };
 use mcrs_minecraft_damage::{DamageSource, Hit};
+use mcrs_minecraft_item_entity::ItemEntity;
 use mcrs_minecraft_resource::rl;
 use mcrs_minecraft_text::Text;
 
 use crate::damage::damage_type_id;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct KillItem {
+    pub target: Entity,
+}
 
 #[derive(Clone, Copy)]
 pub(crate) struct KillCommand {
@@ -39,6 +45,7 @@ pub(crate) fn run(
     context: VanillaContext,
     mut output: CommandOutput,
     mut hits: ResMut<EffectQueue<HitMob>>,
+    mut items: ResMut<EffectQueue<KillItem>>,
     mut found: Local<SelectionBuffers>,
 ) -> CommandResult {
     let damage_type = damage_type_id(&context, rl!("minecraft:generic_kill"))?;
@@ -63,6 +70,14 @@ pub(crate) fn run(
                 },
             );
         }
+        for item in targets.items() {
+            output.effect(
+                &mut items,
+                KillItem {
+                    target: item.entity,
+                },
+            );
+        }
         let count = i32::try_from(targets.len()).unwrap_or(i32::MAX);
         let message = match (targets.first(), count) {
             (Some(target), 1) => {
@@ -73,4 +88,11 @@ pub(crate) fn run(
         output.success(&call.invocation, message, Feedback::SourceAndOperators);
         Ok(count)
     })
+}
+
+pub(crate) fn apply_item(worlds: &mut Worlds, KillItem { target }: KillItem) {
+    let world = worlds.world_mut();
+    if world.get::<ItemEntity>(target).is_some() {
+        world.despawn(target);
+    }
 }

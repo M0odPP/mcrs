@@ -1,5 +1,5 @@
 use bevy_ecs::entity::Entity;
-use bevy_ecs::prelude::{Query, Res};
+use bevy_ecs::prelude::{Query, Res, With, Without};
 use bevy_ecs::system::SystemParam;
 use mcrs_minecraft_block::definition::Blocks;
 use mcrs_minecraft_block::definition::schema::BlockProperty;
@@ -19,9 +19,11 @@ use mcrs_minecraft_engine_physics::MobIndex;
 use mcrs_minecraft_engine_world::world::dimension::DimensionTypeId;
 use mcrs_minecraft_entity_key::EntityUuid;
 use mcrs_minecraft_entity_key::TileKey;
+use mcrs_minecraft_item_entity::ItemEntity;
 use mcrs_minecraft_registries::CurrentRegistries;
 use mcrs_minecraft_resource::ResourceLocation;
 
+use crate::item_view::ItemView;
 use crate::mob_view::MobView;
 
 pub struct VanillaCommands;
@@ -42,6 +44,7 @@ pub struct VanillaWorld<'w, 's> {
     blocks: Option<Res<'w, Blocks>>,
     dimension_type: Query<'w, 's, &'static DimensionTypeId>,
     mobs: Query<'w, 's, MobItem>,
+    items: Query<'w, 's, DroppedItem, (With<ItemEntity>, Without<Mob>)>,
     index: Option<Res<'w, MobIndex>>,
 }
 
@@ -52,6 +55,8 @@ type MobItem = (
     Option<&'static Vitals>,
     &'static Mob,
 );
+
+type DroppedItem = (Entity, &'static MotionId, &'static MotionState);
 
 fn mob_view<'a>(
     (entity, id, state, vitals, mob): (
@@ -68,6 +73,14 @@ fn mob_view<'a>(
         state: &state.0,
         vitals,
         mob,
+    }
+}
+
+fn item_view<'a>((entity, id, state): (Entity, &MotionId, &'a MotionState)) -> ItemView<'a> {
+    ItemView {
+        entity,
+        id: id.0,
+        state: &state.0,
     }
 }
 
@@ -99,6 +112,25 @@ impl VanillaWorld<'_, '_> {
     pub(crate) fn mob_by_uuid(&self, uuid: u128) -> Option<MobView<'_>> {
         let entity = self.index.as_deref()?.get(EntityUuid::from_u128(uuid))?;
         self.mobs.get(entity).ok().map(mob_view)
+    }
+
+    pub(crate) fn items(&self) -> impl Iterator<Item = ItemView<'_>> {
+        let mut views: Vec<ItemView<'_>> = self.items.iter().map(item_view).collect();
+        views.sort_unstable_by_key(|view| (TileKey::at(view.position()), view.id));
+        views.into_iter()
+    }
+
+    pub(crate) fn item(&self, source: SourceMob) -> Option<ItemView<'_>> {
+        let view = self.items.get(source.entity).ok().map(item_view)?;
+        (view.id == source.id).then_some(view)
+    }
+
+    pub(crate) fn item_by_uuid(&self, uuid: u128) -> Option<ItemView<'_>> {
+        let target = EntityUuid::from_u128(uuid);
+        self.items
+            .iter()
+            .map(item_view)
+            .find(|view| view.state.key == target)
     }
 
     pub fn blocks(&self) -> Option<&Blocks> {

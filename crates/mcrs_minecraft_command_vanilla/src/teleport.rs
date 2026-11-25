@@ -296,7 +296,10 @@ pub(crate) fn run(
             SelfSource::Entity,
             victims,
         )?;
-        if victims.mobs().next().is_some() {
+        if victims
+            .iter()
+            .any(|target| !matches!(target, EntityView::Player(_)))
+        {
             return Err(mob_not_supported());
         }
         let destination = destination(&command, &context, &call, &mut found_entity)?;

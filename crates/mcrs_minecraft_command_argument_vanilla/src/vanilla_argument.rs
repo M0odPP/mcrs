@@ -10,14 +10,11 @@ use mcrs_command::{
 use mcrs_minecraft_block::registry_keys::BLOCK;
 use mcrs_minecraft_command::{PermissionCheck, Source, WireArgument};
 use mcrs_minecraft_command_argument::{
-    BlockPosArgument, ColumnPosArgument, PlayerNameArgument, RotationArgument, SwizzleArgument,
-    Vec3Argument,
+    BlockPosArgument, ColumnPosArgument, DimensionArgument, EntityAnchorArgument, GameModeArgument,
+    HeightmapArgument, PlayerNameArgument, ResourceArgument, ResourceLocationArgument,
+    ResourceOrTagArgument, RotationArgument, SwingAnimationArgument, SwizzleArgument, TimeArgument,
+    TimeMarkerArgument, TimelineArgument, Vec3Argument,
 };
-use mcrs_minecraft_command_argument::{
-    DimensionArgument, EntityAnchorArgument, GameModeArgument, HeightmapArgument, ResourceArgument,
-    ResourceLocationArgument, ResourceOrTagArgument,
-};
-use mcrs_minecraft_command_argument::{TimeArgument, TimeMarkerArgument, TimelineArgument};
 use mcrs_minecraft_command_argument_block::{BlockPredicateArgument, BlockStateArgument};
 use mcrs_minecraft_command_argument_entity::EntityArgument;
 use mcrs_minecraft_command_tree::{ArgumentParser, NumberRange, ParserProperties, StringMode};
@@ -50,6 +47,7 @@ pub enum VanillaArgument {
     Swizzle(SwizzleArgument),
     Heightmap(HeightmapArgument),
     BlockPredicate(BlockPredicateArgument),
+    SwingAnimation(SwingAnimationArgument),
     Time(TimeArgument),
     Resource(ResourceArgument),
     TimeMarker(TimeMarkerArgument),
@@ -101,6 +99,7 @@ variant_conversions! {
     Swizzle(SwizzleArgument)
     Heightmap(HeightmapArgument)
     BlockPredicate(BlockPredicateArgument)
+    SwingAnimation(SwingAnimationArgument)
     Time(TimeArgument)
     Resource(ResourceArgument)
     TimeMarker(TimeMarkerArgument)
@@ -154,6 +153,7 @@ impl<L: VanillaLookup> ArgumentSet<Source<'_, L>> for VanillaArgument {
             VanillaArgument::Swizzle(argument) => check(argument, reader, source),
             VanillaArgument::Heightmap(argument) => check(argument, reader, source),
             VanillaArgument::BlockPredicate(argument) => check(argument, reader, source),
+            VanillaArgument::SwingAnimation(argument) => check(argument, reader, source),
             VanillaArgument::Time(argument) => check(argument, reader, source),
             VanillaArgument::Resource(argument) => check(argument, reader, source),
             VanillaArgument::TimeMarker(argument) => check(argument, reader, source),
@@ -180,6 +180,7 @@ impl<L: VanillaLookup> ArgumentSet<Source<'_, L>> for VanillaArgument {
             VanillaArgument::ResourceOrTag(argument) => argument.suggest(source, builder),
             VanillaArgument::BlockPos(_) => BlockPosArgument::suggest(builder),
             VanillaArgument::Heightmap(_) => HeightmapArgument::suggest(builder),
+            VanillaArgument::SwingAnimation(_) => SwingAnimationArgument::suggest(builder),
             VanillaArgument::BlockPredicate(_) => BlockPredicateArgument::suggest(source, builder),
             VanillaArgument::BlockState(_) => BlockStateArgument::suggest(source, builder),
             VanillaArgument::Time(_) => TimeArgument::suggest(builder),
@@ -212,7 +213,7 @@ fn limits<T: Copy>(range: &NumberRange<T>, any: (T, T)) -> (T, T) {
     (range.min.unwrap_or(any.0), range.max.unwrap_or(any.1))
 }
 
-const UNIT_ARGUMENTS: [VanillaArgument; 14] = [
+const UNIT_ARGUMENTS: [VanillaArgument; 15] = [
     VanillaArgument::Vec3(Vec3Argument),
     VanillaArgument::Rotation(RotationArgument),
     VanillaArgument::ResourceLocationBuf(ResourceLocationArgument),
@@ -225,6 +226,7 @@ const UNIT_ARGUMENTS: [VanillaArgument; 14] = [
     VanillaArgument::Swizzle(SwizzleArgument),
     VanillaArgument::Heightmap(HeightmapArgument),
     VanillaArgument::BlockPredicate(BlockPredicateArgument),
+    VanillaArgument::SwingAnimation(SwingAnimationArgument),
     VanillaArgument::NbtCompound(NbtCompoundArgument),
     VanillaArgument::NbtPath(NbtPathArgument),
 ];
@@ -405,6 +407,7 @@ impl WireArgument for VanillaArgument {
             VanillaArgument::Swizzle(_) => (parser::SWIZZLE, ParserProperties::None),
             VanillaArgument::Heightmap(_) => (parser::HEIGHTMAP, ParserProperties::None),
             VanillaArgument::BlockPredicate(_) => (parser::BLOCK_PREDICATE, ParserProperties::None),
+            VanillaArgument::SwingAnimation(_) => (parser::SWING_ANIMATION, ParserProperties::None),
             VanillaArgument::Time(argument) => (parser::TIME, ParserProperties::Time(argument.min)),
             VanillaArgument::Resource(argument) => (parser::RESOURCE, registry(argument.registry)),
             VanillaArgument::TimeMarker(_) => (parser::RESOURCE_LOCATION, ParserProperties::None),
@@ -565,6 +568,7 @@ mod tests {
             "minecraft:swizzle",
             "minecraft:heightmap",
             "minecraft:block_predicate",
+            "minecraft:swing_animation",
             "minecraft:nbt_compound_tag",
             "minecraft:nbt_path",
         ];

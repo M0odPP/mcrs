@@ -4,7 +4,7 @@ use mcrs_command::SyntaxError;
 use mcrs_minecraft_command::ResourceError;
 use mcrs_minecraft_command_argument::{
     EntityAnchorArgument, GameModeArgument, HeightmapArgument, KeywordError,
-    ResourceLocationArgument,
+    ResourceLocationArgument, SwingAnimationArgument, SwingAnimationName,
 };
 use mcrs_minecraft_game_mode::GameMode;
 use mcrs_minecraft_resource::ResourceLocation;
@@ -85,4 +85,56 @@ fn heightmap_reads_only_the_lower_case_kept_types() {
             "{input}"
         );
     }
+}
+
+#[test]
+fn swing_animation_accepts_only_lowercase_none_whack_stab_and_suggests_case_insensitively() {
+    use mcrs_command::SuggestionBuilder;
+    use mcrs_minecraft_command::error_message;
+    use mcrs_minecraft_text::Text;
+
+    for (input, expected) in [
+        ("none", SwingAnimationName::None),
+        ("whack", SwingAnimationName::Whack),
+        ("stab", SwingAnimationName::Stab),
+    ] {
+        assert_eq!(
+            read(&SwingAnimationArgument, input, &OP),
+            (Ok(expected), input.len())
+        );
+    }
+    for bad in ["WHACK", "bad_anim"] {
+        let end = bad.len();
+        let (err, cursor) = read(&SwingAnimationArgument, bad, &OP);
+        assert_eq!(
+            err,
+            Err(SyntaxError::argument(
+                KeywordError::SwingAnimationInvalid(Span::new(0, end)),
+                end
+            ))
+        );
+        assert_eq!(cursor, end);
+    }
+    let (err, cursor) = read(&SwingAnimationArgument, "@", &OP);
+    let err = err.unwrap_err();
+    assert_eq!(cursor, 0);
+    assert_eq!(
+        error_message("@", &err),
+        Text::translate("argument.swing_animation.invalid", vec!["".into()])
+    );
+
+    let suggest = |remaining: &str| -> Vec<String> {
+        let mut out = Vec::new();
+        let mut builder = SuggestionBuilder::<()>::new(remaining, 0, &mut out);
+        SwingAnimationArgument::suggest(&mut builder);
+        out.into_iter()
+            .map(|suggestion| {
+                let text: String = suggestion.text.chars().collect();
+                text
+            })
+            .collect()
+    };
+    assert_eq!(suggest(""), vec!["none", "stab", "whack"]);
+    assert_eq!(suggest("s"), vec!["stab"]);
+    assert_eq!(suggest("S"), vec!["stab"]);
 }

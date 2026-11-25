@@ -8,7 +8,9 @@ use crate::system_message::system_message;
 use bevy_ecs::prelude::{Res, ResMut};
 use bevy_ecs::system::SystemParam;
 use mcrs_minecraft_engine::bus::OutboundPlayerPacket;
+use mcrs_minecraft_engine_world::game_rules::GameRules;
 use mcrs_minecraft_engine_world::session::PlayerSession;
+use mcrs_minecraft_game_rule::GameRule;
 use mcrs_minecraft_text::{Color, IntoText, Text};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -21,6 +23,7 @@ pub enum Feedback {
 pub struct CommandOutput<'w> {
     outbox: ResMut<'w, CommandOutbox>,
     targets: Res<'w, CommandTargets>,
+    rules: Option<Res<'w, GameRules>>,
 }
 
 impl CommandOutput<'_> {
@@ -33,6 +36,13 @@ impl CommandOutput<'_> {
     }
 
     pub fn success(&mut self, invocation: &Invocation, message: Text, feedback: Feedback) {
+        if !self
+            .rules
+            .as_deref()
+            .is_none_or(|rules| rules.is_on(GameRule::SendCommandFeedback))
+        {
+            return;
+        }
         if feedback == Feedback::Source {
             self.outbox
                 .packets

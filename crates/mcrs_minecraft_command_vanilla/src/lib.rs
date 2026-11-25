@@ -7,6 +7,7 @@ mod entity_view;
 mod execute;
 mod execute_view;
 mod gamemode;
+mod item_view;
 mod kill;
 mod list;
 #[cfg(feature = "locate")]
@@ -20,13 +21,16 @@ mod scale_text;
 mod select;
 mod set;
 mod summon;
+mod swing;
 mod teleport;
 mod time;
 mod whitelist;
 
 pub use gamemode::SetGameMode;
+pub use kill::KillItem;
 pub use mob_hit::HitMob;
 pub use plugin::VanillaCommandsPlugin;
 pub use relative_move::{DimensionChange, Pose, RelativeMove, RelativeRotation, relative_move};
 pub use set::{VanillaCommands, VanillaContext, VanillaWorld};
+pub use swing::SwingEntity;
 pub use teleport::{Facing, Teleport, TeleportPlayer};

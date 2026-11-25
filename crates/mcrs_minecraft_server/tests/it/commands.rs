@@ -243,7 +243,7 @@ fn place_block_entity(server: &mut PlayServer, entry: GeneratedBlockEntity) {
     ));
 }
 
-fn sent_tree(packets: &[PacketPayload]) -> ClientboundCommands<'_> {
+pub(crate) fn sent_tree(packets: &[PacketPayload]) -> ClientboundCommands<'_> {
     let bytes = packets
         .iter()
         .find_map(|packet| match packet {
@@ -317,6 +317,7 @@ fn an_operator_sees_completes_and_runs_a_plugin_command_that_a_guest_cannot() {
             "locate",
             "shout",
             "summon",
+            "swing",
             "teleport",
             "time",
             "tp"
@@ -1394,7 +1395,7 @@ fn time_changes_and_reads_the_overworld_clock() {
     assert_eq!((state.rate, state.paused), (2.0, false));
 }
 
-fn child<'p, 'a>(
+pub(crate) fn child<'p, 'a>(
     tree: &'p ClientboundCommands<'a>,
     node: &'p CommandNode<'a>,
     name: &str,
@@ -1410,7 +1411,7 @@ fn child<'p, 'a>(
         .unwrap_or_else(|| panic!("no child {name}"))
 }
 
-fn child_names(tree: &ClientboundCommands<'_>, node: &CommandNode<'_>) -> Vec<String> {
+pub(crate) fn child_names(tree: &ClientboundCommands<'_>, node: &CommandNode<'_>) -> Vec<String> {
     node.children
         .iter()
         .map(|child| match &tree.nodes[child.0 as usize].kind {

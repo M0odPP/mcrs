@@ -4833,6 +4833,7 @@ dependencies = [
  "mcrs_minecraft_engine",
  "mcrs_minecraft_engine_world",
  "mcrs_minecraft_game_mode",
+ "mcrs_minecraft_game_rule",
  "mcrs_minecraft_network",
  "mcrs_minecraft_pose",
  "mcrs_minecraft_protocol",

@@ -24,7 +24,8 @@ Behaviour comes from `docs/spec/arm-swing.md` (SWG), `docs/spec/block-placing.md
 | `mcrs_minecraft_replication` | 3, data | `SwingRecipients`, `PlayerData::Swing`, and `MobSignal::Swing` encoded once and delivered without backlog replay |
 | `mcrs_minecraft_engine` | 4 | `LoadedClientPlugin`, `UnloadedClient`, `PlayerSwingPlugin`, `SwingPlayer`, `SwingEligibility`, `PlayerOrder::Swing`, `MuxerStage` ordering (`views_out` -> `Entities` -> `changes_out`) |
 | `mcrs_minecraft_engine_physics`, `mcrs_minecraft_engine_entity_motion_replication` | 4 | `MobSwing`, `MobSwingSpec`, `swing_mob`, `MobChanges::swings`, `take_mob_news` and `publish_motion` swing forwarding |
-| `mcrs_minecraft_vanilla_swing`, `mcrs_minecraft_vanilla_block_place`, `mcrs_minecraft_vanilla_inventory`; planned `mcrs_minecraft_command_argument` & `mcrs_minecraft_command_vanilla` swing additions | 5 | `SwingPlugin` (`punch` and `stab`), placement swing (`PLC-PLA-007`), hand-drop swing; planned `/swing` command (`SwingEntity`, with `SwingAnimationArgument` in layer 3 `mcrs_minecraft_command_argument`) |
+| `mcrs_minecraft_command_argument`, `mcrs_minecraft_command_argument_vanilla` | 3, data | `SwingAnimationArgument`, `SwingAnimationName`, and `minecraft:swing_animation` wire parser |
+| `mcrs_minecraft_vanilla_swing`, `mcrs_minecraft_vanilla_block_place`, `mcrs_minecraft_vanilla_inventory`, `mcrs_minecraft_command_vanilla` | 5 | `SwingPlugin` (`punch` and `stab`), placement swing (`PLC-PLA-007`), hand-drop swing, and `/swing` command (`SwingEntity`) |
 | `mcrs_minecraft_server` | 7 | `VanillaSwingPlugin` in `MinecraftServerPlugins` |
 
 Reason for `mcrs_minecraft_swing`: bots, proxies, and dimension plugins share the cooldown

@@ -1,5 +1,5 @@
 use crate::entity_view::EntityView;
-use crate::mob_view::MobView;
+use crate::item_view::ItemView;
 use crate::set::VanillaContext;
 use mcrs_command::ArgumentHandle;
 use mcrs_minecraft_command::ErrorText;
@@ -55,14 +55,14 @@ impl<'c> Selection<'c> {
     pub(crate) fn players(&self) -> impl Iterator<Item = &'c PlayerEntry> + '_ {
         self.found.iter().filter_map(|found| match found {
             EntityView::Player(player) => Some(*player),
-            EntityView::Mob { .. } => None,
+            EntityView::Mob { .. } | EntityView::Item { .. } => None,
         })
     }
 
-    pub(crate) fn mobs(&self) -> impl Iterator<Item = MobView<'c>> + '_ {
+    pub(crate) fn items(&self) -> impl Iterator<Item = ItemView<'c>> + '_ {
         self.found.iter().filter_map(|found| match found {
-            EntityView::Player(_) => None,
-            EntityView::Mob { view, .. } => Some(*view),
+            EntityView::Item { view, .. } => Some(*view),
+            EntityView::Player(_) | EntityView::Mob { .. } => None,
         })
     }
 }
@@ -99,7 +99,13 @@ fn select_if_present<'c>(
         (None, Some(mob)) => context
             .lookup()
             .mob(mob)
-            .map(|view| EntityView::Mob { view, dimension }),
+            .map(|view| EntityView::Mob { view, dimension })
+            .or_else(|| {
+                context
+                    .lookup()
+                    .item(mob)
+                    .map(|view| EntityView::Item { view, dimension })
+            }),
         (None, None) => None,
     };
     let mut random = |bound: usize| rand::random_range(0..bound.max(1));
@@ -114,6 +120,12 @@ fn select_if_present<'c>(
                     .mob_by_uuid(uuid.as_u128())
                     .map(|view| EntityView::Mob { view, dimension }),
             );
+            candidates.extend(
+                context
+                    .lookup()
+                    .item_by_uuid(uuid.as_u128())
+                    .map(|view| EntityView::Item { view, dimension }),
+            );
         }
         Target::Name(_) => {
             candidates.extend(targets.players().iter().map(EntityView::Player));
@@ -126,6 +138,12 @@ fn select_if_present<'c>(
                         .lookup()
                         .mobs()
                         .map(|view| EntityView::Mob { view, dimension }),
+                );
+                candidates.extend(
+                    context
+                        .lookup()
+                        .items()
+                        .map(|view| EntityView::Item { view, dimension }),
                 );
             }
         }
@@ -184,13 +202,19 @@ pub(crate) fn targets_or_self<'c>(
         let session = call.source.player;
         let player = session.and_then(|session| context.targets().player(session));
         out.found.extend(player.map(EntityView::Player));
-        if let Some(view) = call.source.mob.and_then(|mob| context.lookup().mob(mob)) {
+        if let Some(source) = call.source.mob {
             let dimension = context
                 .targets()
                 .dimension_of(call.source.dimension)
                 .unwrap_or_default();
-            out.found.push(EntityView::Mob { view, dimension });
-            return Ok(());
+            if let Some(view) = context.lookup().mob(source) {
+                out.found.push(EntityView::Mob { view, dimension });
+                return Ok(());
+            }
+            if let Some(view) = context.lookup().item(source) {
+                out.found.push(EntityView::Item { view, dimension });
+                return Ok(());
+            }
         }
         return needs.require(session, player);
     }

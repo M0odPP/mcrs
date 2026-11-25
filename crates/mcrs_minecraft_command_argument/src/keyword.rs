@@ -106,3 +106,42 @@ impl<S> Argument<S> for HeightmapArgument {
         ))
     }
 }
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum SwingAnimationName {
+    None,
+    Whack,
+    Stab,
+}
+
+const SWING_ANIMATIONS: [(&str, SwingAnimationName); 3] = [
+    ("none", SwingAnimationName::None),
+    ("stab", SwingAnimationName::Stab),
+    ("whack", SwingAnimationName::Whack),
+];
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct SwingAnimationArgument;
+
+impl SwingAnimationArgument {
+    pub fn suggest<T>(builder: &mut SuggestionBuilder<'_, '_, T>) {
+        builder.suggest_matching(SWING_ANIMATIONS.map(|(name, _)| name), text_matches);
+    }
+}
+
+impl<S> Argument<S> for SwingAnimationArgument {
+    type Value<'a> = SwingAnimationName;
+    type Error = KeywordError;
+
+    fn parse<'a>(
+        &self,
+        reader: &mut Reader<'a>,
+        _: &S,
+    ) -> Result<SwingAnimationName, SyntaxError<KeywordError>> {
+        let word = reader.read_unquoted();
+        by_name(&SWING_ANIMATIONS, word.text(reader.input())).ok_or(SyntaxError::argument(
+            KeywordError::SwingAnimationInvalid(word),
+            reader.cursor(),
+        ))
+    }
+}

@@ -1,8 +1,8 @@
 #[cfg(feature = "locate")]
 use crate::locate;
 use crate::{
-    attribute, ban, damage, data, execute, gamemode, kill, list, mob_hit, op, summon, teleport,
-    time, whitelist,
+    attribute, ban, damage, data, execute, gamemode, kill, list, mob_hit, op, summon, swing,
+    teleport, time, whitelist,
 };
 use bevy_app::{App, Plugin};
 use core::fmt::Display;
@@ -21,6 +21,8 @@ impl Plugin for VanillaCommandsPlugin {
             .add_command_effect(op::apply)
             .add_command_effect(summon::apply)
             .add_command_effect(summon::apply_item)
+            .add_command_effect(kill::apply_item)
+            .add_command_effect(swing::apply)
             .add_command_effect(mob_hit::apply)
             .add_command_effect(attribute::apply);
         report(
@@ -38,6 +40,7 @@ impl Plugin for VanillaCommandsPlugin {
             "attribute",
             app.add_command(attribute::build, attribute::run),
         );
+        report("swing", app.add_command(swing::build, swing::run));
         report("data", app.add_command(data::build, data::run));
         report("time", app.add_command(time::build, time::run));
         report("ban", app.add_command(ban::build, ban::run));

@@ -3,7 +3,9 @@ use bevy_ecs::world::World;
 use mcrs_minecraft_engine::coordinator::clock::EditClock;
 use mcrs_minecraft_engine::dim_mail::{self, DimMail};
 use mcrs_minecraft_engine::dimension_change::{Arrival, DimensionChangeError};
-use mcrs_minecraft_engine::player_order::{self, OrderedPlayer, PlayerOrder, TeleportOrder};
+use mcrs_minecraft_engine::player_order::{
+    self, OrderedPlayer, PlayerOrder, SwingOrder, TeleportOrder,
+};
 use mcrs_minecraft_engine_world::session::PlayerSession;
 use mcrs_minecraft_game_mode::GameMode;
 
@@ -84,6 +86,26 @@ impl Worlds<'_> {
 
     pub fn edit_clock(&mut self, edit: EditClock) {
         dim_mail::edit_clock(self.world, edit);
+    }
+
+    pub fn swing(
+        &mut self,
+        player: PlayerSession,
+        order: SwingOrder,
+    ) -> Result<(), PlayerChangeError> {
+        let entry = self
+            .targets
+            .player(player)
+            .ok_or(PlayerChangeError::NotOnline)?;
+        match entry.entity {
+            Some(entity) => {
+                player_order::swing(self.world, entity, order).map_err(PlayerChangeError::Change)
+            }
+            None => {
+                send(self.world, player, PlayerOrder::Swing(order));
+                Ok(())
+            }
+        }
     }
 }
 
