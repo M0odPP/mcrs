@@ -1,6 +1,6 @@
 # Item Durability Design Note (`#118`)
 
-Wave-1 player item durability spans three layers and implements
+Wave-1 player item durability spans Layers 3–5 and implements
 [docs/spec/durability.md](spec/durability.md) plus `STK-DMG-001`..`STK-DMG-008` in
 [docs/spec/item-stack.md](spec/item-stack.md).
 
@@ -8,126 +8,134 @@ Wave-1 player item durability spans three layers and implements
 
 | State | Kind | Owner / Lifetime |
 | :--- | :--- | :--- |
-| `ItemStack` (`kind`, `count`, `patch`) | Authoritative truth | `mcrs_minecraft_item_stack` (`PatchEntry` holds `Damage`, `MaxDamage`, `Unbreakable`, `Tool`, `Equippable`, `Weapon`, `Enchantments`) |
-| Stack entity `Effective<T>`, `Stacks`, `InSlot`, `Equipped` | Materialized derived | `mcrs_minecraft_engine_item`; synced from `ItemStack` patches |
+| `ItemStack` (`kind`, `count`, `patch`) | Authoritative truth | `mcrs_minecraft_item_stack` (`Damage`, `MaxDamage`, `Unbreakable`, `Tool`, `Equippable`, `Weapon`, `Enchantments`) |
+| Stack entity `Effective<T>`, `Stacks`, `InSlot`, `Slots`, `Equipped` | Materialized derived | `mcrs_minecraft_engine_item`; `Equipped` marks only the holder's `Selected` stack |
 | `PlayerGameMode`, `Blocks` hardness, `DamageTypeRules` | Authoritative truth | `mcrs_minecraft_game_mode`, `mcrs_minecraft_block`, `mcrs_minecraft_damage` |
-| `BlockBroken`, `Damaged`, melee hit event, `DurabilityExtraUse` | Temporal tick fact | Emitted in `TickSet::Simulate`; consumed in the same tick |
-| `SlotChanged`, `PlayerSignal` / `MobSignal` via `TileEvents` | Temporal output fact | Emitted on mutation/break; flushed in `TickSet::Output` |
+| `BlockBroken`, melee hit trigger, `Damaged`, `DurabilityExtraUse` | Temporal tick fact | Produced in `ClientInput`, `PacketReport`, `WorldWrite`/`DamageSet::Apply`, consumed same tick |
+| `MenuSync` diffs -> `ClientboundContainerSetSlot`, `PlayerSignal` / `TileEvents` | Temporal output fact | Synced in `InventoryServerSet::Sync` / `FixedPostUpdate` -> `take_output` |
 
-No long-lived durability accumulator component exists on players or items. Wear resolves
-immediately within the tick that caused it.
+No long-lived wear accumulator component exists on players or stacks; wear resolves in the same
+tick that emits the triggering message.
 
 ## Layer and Crate Map
 
 ```text
-Layer 1  mcrs_minecraft_item_stack (#![no_std])   -- STK-DMG-001..008 stack helpers + Weapon promotion
-Layer 3  mcrs_minecraft_durability  (#![no_std])   -- pure wear formulas, Unbreaking RNG, SlotBreakEvent
-Layer 5  mcrs_minecraft_vanilla_durability        -- sparse event-driven plugin + mcrs:durability_extra_use
-Layer 7  mcrs_minecraft_server                    -- registers VanillaDurabilityPlugin per dimension
+Layer 3  mcrs_minecraft_item_stack          -- STK-DMG-001..008 stack helpers + Weapon promotion (alloc + std::io)
+Layer 3  mcrs_minecraft_durability          -- #![no_std] scalar kernel: wear formulas, Unbreaking RNG, SlotBreakEvent
+Layer 4  mcrs_minecraft_engine_damage       -- pre-reduction raw_amount on HitReport/Damaged + melee wear trigger msg
+Layer 5  mcrs_minecraft_vanilla_durability  -- sparse message-driven plugin + mcrs:durability_extra_use
+Layer 7  mcrs_minecraft_server              -- registers VanillaDurabilityPlugin per dimension
 ```
 
-This layout preserves the strict layer DAG in `AGENTS.md`: `mcrs_minecraft_item_table` already
-depends on `mcrs_minecraft_item_stack`, Layer 3 never depends on ECS, world, or network crates,
-and Layer 5 owns all queries, entity commands, and `TileEvents` emission.
+This keeps the layer DAG in `AGENTS.md` strictly acyclic: `#![no_std]` `mcrs_minecraft_durability`
+depends only on `mcrs_minecraft_entity_key` (`KeyedStream::unit(&self, draw: u64)`), never on
+`mcrs_minecraft_item_stack`, and Layer-5 `mcrs_minecraft_vanilla_durability` depends on Layer-4
+messages rather than Layer-5 `mcrs_minecraft_vanilla_player_attack`.
 
 ## 1. Stack-Level API (`mcrs_minecraft_item_stack`)
 
-`ItemStack` already parses and patches `MaxDamage` (`>= 1`), `Damage` (`>= 0`), `Unbreakable`,
-`Tool`, `Equippable`, and `Enchantments` via `for_each_builtin!`.
+`mcrs_minecraft_item_stack` (Layer 3, `extern crate alloc`, `std::io`) already models `MaxDamage`,
+`Damage`, `Unbreakable`, `Tool`, `Equippable`, and `Enchantments` via `for_each_builtin!`.
 
-Proposed `STK-DMG-001`..`STK-DMG-008` helpers on `mcrs_minecraft_item_stack::ItemStack` take a
-lightweight effective-defaults lookup trait implemented in `mcrs_minecraft_item_table` for
-`Prototype` (keeping `mcrs_minecraft_item_table -> mcrs_minecraft_item_stack` acyclic), plus a
-proposed `BreakBehavior { BreakAtMax, ClampBelowMax }` enum instead of a bare `bool`:
+Proposed `STK-DMG-001`..`STK-DMG-008` helpers on `mcrs_minecraft_item_stack::ItemStack` take an
+effective-defaults lookup trait implemented in `mcrs_minecraft_item_table` for `Prototype` (keeping
+`mcrs_minecraft_item_table -> mcrs_minecraft_item_stack` acyclic) and a proposed `BreakBehavior`
+enum `{ BreakAtMax, ClampBelowMax }` instead of a bare `bool`:
 
-- `is_damageable`: true when effective `MaxDamage` and `Damage` exist and `Unbreakable` is absent
-  (`STK-DMG-001`).
-- `damage_value`: effective `Damage` clamped to `0..=max_damage` (`STK-DMG-002`).
-- `set_damage`: clamps `value` to `0..=max_damage` and writes `Damage` patch (`STK-DMG-003`).
-- `is_damaged`, `is_broken`, `will_break_on_next_damage`: (`STK-DMG-004`, `STK-DMG-008`).
-- `apply_damage`: executes `STK-DMG-005`..`STK-DMG-007`; `BreakAtMax` decrements `count` on
-  reaching `max_damage` and returns a `BreakOutcome`, whereas `ClampBelowMax` clamps to
-  `max_damage - 1` (`STK-DMG-007`).
+- `is_damageable`, `damage_value`, `set_damage`, `is_damaged`, `is_broken`,
+  `will_break_on_next_damage` (`STK-DMG-001`..`STK-DMG-004`, `STK-DMG-008`).
+- `apply_damage`: executes `STK-DMG-005`..`STK-DMG-007`, returning a break outcome when
+  `BreakAtMax` reaches `max_damage` and clamping to `max_damage - 1` under `ClampBelowMax`.
 
 ### ECS `Damage` Write Rule
 
-On stack entities inside `mcrs_minecraft_engine_item`, `Effective<Damage>` holds `0` when no
-`Damage` patch exists on the stack archetype. Mutating via `Query<&mut Damage>` misses fresh
-items (such as `golden_pickaxe` or `iron_sword` at `damage = 0`).
+Inside `mcrs_minecraft_engine_item`, `Effective<Damage>` defaults to `0` when `Damage` is absent
+from the stack entity's archetype (`Query<&mut Damage>` misses fresh items at `damage = 0`).
 
-Write mutations in Layer 5 with this exact rule:
+Write stack wear in Layer 5 with this exact rule:
 
-1. If `Damage` is present on the stack entity (`Query<&mut Damage>` matches), update it in place and
-   call `commands.entity(stack_entity).touch()` so `mcrs_minecraft_engine_item` detects the edit and
-   emits `SlotChanged`.
+1. If `Damage` exists on the stack entity (`Query<&mut Damage>` matches), mutate it in place and
+   call `commands.entity(stack_entity).touch()`.
 2. Otherwise, call `commands.entity(stack_entity).set(Damage(new_damage))` (`StackCommandsExt::set`).
 3. If `new_damage >= max_damage`, call `commands.entity(stack_entity).consume(1)`
-   (`StackCommandsExt::consume`) and emit the slot break signal.
+   (`StackCommandsExt::consume`) and emit the slot break event.
 
 ## 2. `#![no_std]` Kernel (`mcrs_minecraft_durability`)
 
-Proposed `mcrs_minecraft_durability` depends only on `mcrs_minecraft_item_stack`,
-`mcrs_minecraft_damage`, and `mcrs_minecraft_entity_key`:
+Following `mcrs_minecraft_block_break` and `mcrs_minecraft_swing`, `#![no_std]`
+`mcrs_minecraft_durability` operates purely on scalar inputs and typed enums (no bare `bool`
+parameters, no `ItemStack` dependency):
 
-- Proposed `WearKind` enum `{ Tool, Armour }`: selects Unbreaking retention probability without a
-  bare `bool` (`1.0 / (level + 1) as f64` for `Tool`; `0.6 + 0.4 / (level + 1) as f64` for `Armour`).
-- Proposed `roll_unbreaking(amount: i32, unbreaking_level: i32, kind: WearKind, stream: &mut KeyedStream) -> i32`:
-  returns `amount` unchanged when `unbreaking_level <= 0`; otherwise evaluates `amount` draws via
-  `KeyedStream::unit(draw)` (`[0.0, 1.0)`) and counts retained points.
-- Proposed `block_break_wear(tool: &Tool, block_hardness: f32) -> i32` (`damage_item_on_block_break`):
-  returns `0` when `block_hardness <= 0.0`, else `tool.damage_per_block.max(0)`.
-- Proposed `attack_wear(weapon: &Weapon) -> i32`: returns `weapon.item_damage_per_attack`.
-- Proposed `armour_hit_wear(raw_amount: f32, equ: &Equippable, tags: DamageTags) -> i32`: returns
-  `0` when `!equ.damage_on_hurt`, `tags.contains(DamageTags::BYPASSES_ARMOR)`, or
-  `raw_amount <= 0.0`; else `(raw_amount / 4.0).floor().max(1.0) as i32`.
-- Proposed `SlotBreakEvent` enum with exact wire discriminants (`MainHand = 47`, `OffHand = 48`,
-  `Feet = 49`, `Legs = 50`, `Chest = 51`, `Head = 52`).
+- `WearKind` `{ Tool, Armour }`: selects retention probability (`1.0 / (level + 1) as f64` for
+  `Tool`, `0.6 + 0.4 / (level + 1) as f64` for `Armour`).
+- `DurabilityFlag` `{ Damageable, Unbreakable }`, `ArmourBypass` `{ Normal, BypassesArmour }`,
+  `SlotBreakEvent` `{ MainHand = 47, OffHand = 48, Feet = 49, Legs = 50, Chest = 51, Head = 52 }`.
+- `roll_unbreaking(amount: i32, unbreaking_level: i32, kind: WearKind, stream: &KeyedStream) -> i32`:
+  returns `amount` unchanged when `unbreaking_level <= 0`; else samples `stream.unit(draw)` (`[0, 1)`)
+  for each unit of `amount`.
+- `block_break_wear(damage_per_block: i32, block_hardness: f32) -> i32`: returns `0` when
+  `block_hardness <= 0.0`, else `damage_per_block.max(0)`.
+- `attack_wear(item_damage_per_attack: i32) -> i32`: returns `item_damage_per_attack.max(0)`.
+- `armour_hit_wear(raw_amount: f32, hurt_policy: HurtWearPolicy, bypass: ArmourBypass) -> i32`:
+  returns `0` on `BypassesArmour`, disabled `hurt_policy`, or `raw_amount <= 0.0`; else
+  `(raw_amount / 4.0).floor().max(1.0) as i32`.
 
-## 3. Sparse Layer-5 Plugin (`mcrs_minecraft_vanilla_durability`)
+## 3. Sparse Layer-5 Plugin & Tick Schedule
 
-Proposed `VanillaDurabilityPlugin` (registered on `MinecraftServerPlugins` via
-`add_dimension_plugin`) has zero dense per-player or per-item `tick` loops. It processes four
-sparse message streams in `TickSet::Simulate` (after block-break, attack, and damage systems,
-before `TickSet::WorldWrite`):
+`VanillaDurabilityPlugin` uses zero per-player or per-item `tick` iteration, scheduling four
+sparse `MessageReader` systems in `FixedUpdate`:
 
-1. **Block break (`on_block_broken`)**: reads `BlockBroken`, skips `PlayerGameMode(GameMode::Creative)`,
-   resolves `Blocks::state(msg.state).hardness` and `breaker`'s `Selected` stack (`Effective<Tool>`),
-   applies `block_break_wear`, and sends `SlotBreakEvent::MainHand` (`47`) on break.
-2. **Melee attack (`on_melee_attack`)**: reads accepted primary hit events from
-   `mcrs_minecraft_vanilla_player_attack` (`ATK-DMG-004`), skips `PlayerGameMode(GameMode::Creative)`,
-   inspects the attacker's `Selected` stack (`Effective<Weapon>`), and applies `attack_wear`.
-3. **Armour hit (`on_entity_damaged`)**: reads `Damaged` (`mcrs_minecraft_engine_damage`), skips
-   rejected hits and `PlayerGameMode(GameMode::Creative)`, reads `DamageTypeRules::tags`, and
-   iterates `ArmourSlot::{Feet, Legs, Chest, Head}` (`36..=39`) via `Equipped` / `Slots`. Each
-   eligible armour stack applies `armour_hit_wear` independently and emits its `SlotBreakEvent`
-   (`49..=52`) on break.
-4. **Extension hook (`DurabilityExtraUse`)**: proposed message representing `mcrs:durability_extra_use`
-   (`entity: Entity`, slot selector, `base_amount: i32`) for Wave-2 callers such as shields and
-   tools; runs the shared `apply_slot_wear` helper.
+1. **`on_block_broken` (`TickSet::Simulate`)**: reads `BlockBroken` (written in
+   `TickSet::ClientInput` by `break_blocks` / `advance_digs`), skips `GameMode::Creative`, checks
+   `Blocks::state(msg.state).hardness` and the holder's `Selected` stack (`Effective<Tool>`),
+   applies `block_break_wear`, and emits `SlotBreakEvent::MainHand` (`47`) on break.
+2. **`on_melee_attack` (`TickSet::Simulate`)**: reads the Layer-4 accepted melee-hit trigger
+   emitted by `mcrs_minecraft_vanilla_player_attack` (`DamageSet::PacketReport`), skips
+   `GameMode::Creative`, inspects the attacker's `Selected` stack (`Effective<Weapon>`), and
+   applies `attack_wear`.
+3. **`on_entity_damaged` (`TickSet::Project.after(DamageSet::Report)`)**: `DamagePlugin` runs
+   `DamageSet::Apply..Report` in `TickSet::WorldWrite.after(MotionPass)`, so armour wear MUST run in
+   `TickSet::Project.after(DamageSet::Report)` alongside `PlayerVitalsPlugin::signal_player_hits`.
+   Skips rejected hits and `GameMode::Creative`, checks `DamageTypeRules::tags` for
+   `BYPASSES_ARMOR`, iterates **`Slots`** indices `ArmourSlot::{Feet, Legs, Chest, Head}` (`36..=39`,
+   since `Equipped` tracks only `Selected`), checks `Effective<Equippable>` (`damage_on_hurt`),
+   and emits `SlotBreakEvent` (`49..=52`) on break.
+4. **`on_extra_use` (`TickSet::Project.after(DamageSet::Report)`)**: consumes `DurabilityExtraUse`
+   (`mcrs:durability_extra_use`) from both `Simulate` and `WorldWrite` callers in the same tick.
 
-### Broadcast-Once Wire Emission
+### Wire Sync & Break Event Ordering Seam (`DUR-NET-002`)
 
-When a stack breaks, the plugin emits `PlayerSignal::new(holder, MobSignal::ItemBreak(event))`
-(proposed `MobSignal` variant carrying `SlotBreakEvent`) into `TileEvents`
-(`EntityEvent::Data(PlayerData::Signal(_))`).
+`InventoryServerSet::Sync` (`sync_menus`) runs `.after(TickSet::Project).before(TickSet::Output)`
+and diffs `MenuSync` against `Slots`/`Stacks` to emit `ClientboundContainerSetSlot` (`20`) to the
+holder. (`SlotChanged` currently serves only `mcrs_minecraft_client_gui` and has no server sync
+consumer; observer `ClientboundSetEquipment` (`104`) belongs to `#115`.)
 
-In `mcrs_minecraft_replication::EntityCodec::send_signals`, `MobSignal` is already encoded into
-`Bytes` once per frame and sent to every tracking client, while `to_owner` includes the holder
-client for `MobSignal::Hurt { .. }`. Extending `to_owner` to include `MobSignal::ItemBreak(_)`
-delivers `ClientboundEntityEvent` (`34`, status `47..=52`) once to both holder and observers
-before world/damage updates, while `SlotChanged` drives `minecraft:container_set_slot` (`20`) and
-`minecraft:set_equipment` (`104`).
+For break events (`ClientboundEntityEvent` `34`, status `47`, `49..=52`): `publish_player_signals`
+writes `PlayerSignal` into `TileEvents` in `FixedPostUpdate`, `take_output` extracts
+`OutboundPlayerPacket` into `output.client.packets` and `TileEvents::take()` into
+`output.client.tiles`, and `dim_outputs::receive` currently runs **`deliver_all(world, packets)`
+before `entity_replication::publish(world, dim, tiles)`**.
+
+Sending break `entity_event` solely via `PlayerSignal` -> `TileEvents` would therefore arrive
+**after** `ClientboundSetHealth`, `ClientboundDamageEvent`, and `ClientboundContainerSetSlot`,
+violating `DUR-NET-002`. Fixing that seam requires either flushing pre-update break `TileEvents`
+before `deliver_all` in `dim_outputs::receive` or queuing holder break `ClientboundEntityEvent`
+ahead of `send_health` / `sync_menus` while preserving broadcast-once `EntityCodec::send_signals`
+encoding (`to_owner` extended alongside `MobSignal::Hurt { .. }`) for observers.
 
 ## Open Prerequisites and Follow-Up Seams
 
+- **Deduplicate `stack_view.rs`**: migrate `crates/mcrs_minecraft_model/src/stack_view.rs:111-135`
+  (`is_damageable`, `max_damage`, `damage_value`, `is_damaged`, `next_damage_will_break`) onto shared
+  `STK-DMG-001`..`008` helpers in `mcrs_minecraft_item_stack`.
 - **Promote `Weapon` component**: move `Weapon` (`item_damage_per_attack`,
-  `disable_blocking_for_seconds`) from `mcrs_minecraft_item::component::simple` into
-  `mcrs_minecraft_item_stack::for_each_builtin!` and remove `DataComponentType::Weapon` from
-  `skip_value.rs`.
-- **Expose pre-reduction hit amount**: `HitReport` and `Damaged` currently carry only
-  post-reduction fields (`armor`, `absorption`, `health`, `died`). Add `raw_amount: f32` to
-  `Damaged` (or `HitReport`) so `on_entity_damaged` computes `floor(raw_amount / 4)`.
-- **Emit melee hit trigger**: emit an accepted melee hit message from
-  `mcrs_minecraft_vanilla_player_attack` at the `ATK-DMG-004` hook point after `DamageSet::PacketReport`.
-- **Deferred Wave-2 consumers**: shield blocking (`minecraft:blocks_attacks`), shear/flint-and-steel
-  extra uses via `DurabilityExtraUse`, Mending repair, and non-player mob armour wear.
+  `disable_blocking_for_seconds`) into `mcrs_minecraft_item_stack::for_each_builtin!` and stop
+  skipping `DataComponentType::Weapon` in `skip_value.rs`.
+- **Expose pre-reduction `raw_amount` and melee trigger in Layer 4**: add `raw_amount: f32` to
+  `HitReport`/`Damaged` and add the accepted melee-hit durability message in `mcrs_minecraft_engine_damage`
+  (emitted from `mcrs_minecraft_vanilla_player_attack` in `DamageSet::PacketReport`).
+- **Break `entity_event` packet ordering & `#115`**: ensure holder `ClientboundEntityEvent` (`47`,
+  `49..=52`) flushes before `block_update`, `damage_event`, `set_entity_data`, and `set_health`
+  (`DUR-NET-002`), and wire observer `ClientboundSetEquipment` under `#115`.
+- **Deferred Wave-2 triggers**: shield blocking (`minecraft:blocks_attacks`), shears/flint via
+  `DurabilityExtraUse`, Mending repair, and non-player mob armour wear.
