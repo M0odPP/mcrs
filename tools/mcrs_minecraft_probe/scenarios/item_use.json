@@ -4,6 +4,8 @@
   },
   "observe": {
     "entity_data": true,
+    "entity_event": true,
+    "equipment": true,
     "sound": true,
     "health": true,
     "inventory": true,
@@ -45,20 +47,65 @@
     { "id": "start_use_main_then_swap_slot", "use_item": { "client": "Alice", "hand": "main", "sequence": 2 }, "packet_order": true },
     { "id": "wait_before_slot_cancel", "wait": { "ms": 150 } },
     { "id": "switch_slot_cancels_use", "select_slot": { "client": "Alice", "slot": 1 }, "packet_order": true },
+    { "id": "try_use_stick_inert", "use_item": { "client": "Alice", "hand": "main", "sequence": 3 }, "packet_order": true },
+    {
+      "id": "setup_offhand_shield",
+      "console": {
+        "lines": [
+          "item replace entity Alice weapon.offhand with minecraft:shield"
+        ]
+      }
+    },
+    { "id": "use_offhand_shield", "use_item": { "client": "Alice", "hand": "off", "sequence": 4 }, "packet_order": true },
+    { "id": "wait_offhand", "wait": { "ms": 150 } },
+    { "id": "release_offhand_shield", "player_action": { "client": "Alice", "status": "release_use_item" }, "packet_order": true },
     {
       "id": "test_full_hunger_food_and_adventure",
       "console": {
         "lines": [
+          "item replace entity Alice weapon.offhand with minecraft:air",
           "item replace entity Alice hotbar.0 with minecraft:apple",
           "item replace entity Alice hotbar.2 with minecraft:golden_apple"
         ]
       }
     },
     { "id": "select_apple", "select_slot": { "client": "Alice", "slot": 0 } },
-    { "id": "try_apple_at_full_food", "use_item": { "client": "Alice", "hand": "main", "sequence": 3 }, "packet_order": true },
+    { "id": "try_apple_at_full_food", "use_item": { "client": "Alice", "hand": "main", "sequence": 5 }, "packet_order": true },
     { "id": "select_golden_apple", "select_slot": { "client": "Alice", "slot": 2 } },
-    { "id": "use_golden_apple_always_eat", "use_item": { "client": "Alice", "hand": "main", "sequence": 4 }, "packet_order": true },
+    {
+      "id": "cancel_gapple_via_slot",
+      "sequence": {
+        "steps": [
+          { "use_item": { "client": "Alice", "hand": "main", "sequence": 6 } },
+          { "wait": { "ms": 200 } },
+          { "select_slot": { "client": "Alice", "slot": 1 } }
+        ]
+      },
+      "packet_order": true
+    },
+    { "id": "select_gapple_finish", "select_slot": { "client": "Alice", "slot": 2 } },
+    { "id": "use_golden_apple_always_eat", "use_item": { "client": "Alice", "hand": "main", "sequence": 7 }, "packet_order": true },
     { "id": "wait_consume_finish", "wait": { "ms": 1900 } },
+    {
+      "id": "creative_eat_setup",
+      "console": {
+        "lines": [
+          "gamemode creative Alice"
+        ]
+      }
+    },
+    { "id": "select_apple_creative", "select_slot": { "client": "Alice", "slot": 0 } },
+    {
+      "id": "creative_eat_and_release",
+      "sequence": {
+        "steps": [
+          { "use_item": { "client": "Alice", "hand": "main", "sequence": 8 } },
+          { "wait": { "ms": 200 } },
+          { "player_action": { "client": "Alice", "status": "release_use_item" } }
+        ]
+      },
+      "packet_order": true
+    },
     {
       "id": "adventure_mode_setup",
       "console": {
@@ -70,7 +117,7 @@
       }
     },
     { "id": "select_shield_adv", "select_slot": { "client": "Alice", "slot": 0 } },
-    { "id": "use_shield_adventure", "use_item": { "client": "Alice", "hand": "main", "sequence": 5 }, "packet_order": true },
+    { "id": "use_shield_adventure", "use_item": { "client": "Alice", "hand": "main", "sequence": 9 }, "packet_order": true },
     { "id": "wait_adv", "wait": { "ms": 200 } },
     { "id": "release_adv", "player_action": { "client": "Alice", "status": "release_use_item" }, "packet_order": true },
     { "id": "leave_bob", "leave": "Bob" },
