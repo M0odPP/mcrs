@@ -1,5 +1,7 @@
 use crate::{
-    AnimateObserved, CommandTree, ExpectedPacket, MenuEvent, PlayerBan, SoundPlayed, SwingObserved,
+    AnimateObserved, CommandTree, DamageEventObserved, EntityDataObserved, EntityEventObserved,
+    EquipmentObserved, ExpectedPacket, GameEventObserved, HealthObserved, MenuEvent, PlayerBan,
+    SoundPlayed, SwingObserved,
 };
 use mcrs_minecraft_text::Text;
 use serde::{Deserialize, Serialize};
@@ -36,6 +38,18 @@ pub struct StepTrace {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub animates: Option<Vec<AnimateObserved>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub equipment: Option<Vec<EquipmentObserved>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub entity_data: Option<Vec<EntityDataObserved>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub health: Option<Vec<HealthObserved>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub damage_events: Option<Vec<DamageEventObserved>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub entity_events: Option<Vec<EntityEventObserved>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub game_events: Option<Vec<GameEventObserved>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub packets: Option<Vec<PacketObserved>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub checkpoints: Vec<Checkpoint>,
@@ -59,17 +73,23 @@ pub enum Checkpoint {
     },
 }
 
+fn sort_by_client<T>(items: &mut Option<Vec<T>>, client: fn(&T) -> &str) {
+    if let Some(entries) = items {
+        entries.sort_by(|left, right| client(left).cmp(client(right)));
+    }
+}
+
 impl StepTrace {
     pub fn normalize_per_client(&mut self) {
-        if let Some(swings) = &mut self.swings {
-            swings.sort_by(|left, right| left.client.cmp(&right.client));
-        }
-        if let Some(animates) = &mut self.animates {
-            animates.sort_by(|left, right| left.client.cmp(&right.client));
-        }
-        if let Some(packets) = &mut self.packets {
-            packets.sort_by(|left, right| left.client.cmp(&right.client));
-        }
+        sort_by_client(&mut self.swings, |item| &item.client);
+        sort_by_client(&mut self.animates, |item| &item.client);
+        sort_by_client(&mut self.equipment, |item| &item.client);
+        sort_by_client(&mut self.entity_data, |item| &item.client);
+        sort_by_client(&mut self.health, |item| &item.client);
+        sort_by_client(&mut self.damage_events, |item| &item.client);
+        sort_by_client(&mut self.entity_events, |item| &item.client);
+        sort_by_client(&mut self.game_events, |item| &item.client);
+        sort_by_client(&mut self.packets, |item| &item.client);
         match &mut self.observed {
             Observed::Command { chat, .. } | Observed::Console { chat, .. } => {
                 chat.sort_by(|left, right| left.client.cmp(&right.client));
@@ -140,6 +160,10 @@ pub enum PacketKind {
     SectionBlocksUpdate,
     SetEquipment,
     SetEntityData,
+    SetHealth,
+    DamageEvent,
+    EntityEvent,
+    GameEvent,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]

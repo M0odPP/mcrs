@@ -2,6 +2,7 @@ mod click;
 mod client;
 mod command_tree;
 mod frozen_ticks;
+mod gameplay;
 mod host;
 mod known_difference;
 mod menu_packet;
@@ -19,6 +20,11 @@ mod trace;
 
 pub use click::{Click, ClickMode, PredictedSlot, PredictedStack};
 pub use command_tree::{CommandTree, TreeNode, TreeNodeKind};
+pub use gameplay::{
+    DamageEventObserved, EntityDataEntry, EntityDataObserved, EntityDataValue, EntityEventObserved,
+    EquipmentObserved, EquipmentSlotEntry, EquipmentStack, GameEventObserved, HealthObserved,
+    ProbePlayerCommand,
+};
 pub use host::Host;
 pub use known_difference::KnownDifference;
 pub use mcrs_minecraft_protocol_game::{Direction, SwingAnimationKind};

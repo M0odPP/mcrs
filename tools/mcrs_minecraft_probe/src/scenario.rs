@@ -1,11 +1,13 @@
 use crate::run::is_sequence_step;
-use crate::{Click, Direction, PlayerActionStatus, PlayerBan, PredictedStack, ProbeHand};
+use crate::{
+    Click, Direction, PlayerActionStatus, PlayerBan, PredictedStack, ProbeHand, ProbePlayerCommand,
+};
 use mcrs_minecraft_protocol::setting::MainArm;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fmt;
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(try_from = "ScenarioFields")]
 pub struct Scenario {
     #[serde(default)]
@@ -138,6 +140,8 @@ impl fmt::Display for ScenarioError {
                 formatter,
                 "the step {step} uses `sync_position`, which requires world acknowledgements; \
                  set at least one of `observe.inventory`, `observe.swing`, `observe.animate`, \
+                 `observe.equipment`, `observe.entity_data`, `observe.health`, \
+                 `observe.damage_event`, `observe.entity_event`, `observe.game_event`, \
                  or `observe.packet_order` to true"
             ),
             Self::SwingObservationNeeded { step } => write!(
@@ -188,6 +192,18 @@ pub struct Observe {
     #[serde(default, skip_serializing_if = "is_false")]
     pub animate: bool,
     #[serde(default, skip_serializing_if = "is_false")]
+    pub equipment: bool,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub entity_data: bool,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub health: bool,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub damage_event: bool,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub entity_event: bool,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub game_event: bool,
+    #[serde(default, skip_serializing_if = "is_false")]
     pub packet_order: bool,
     #[serde(default, skip_serializing_if = "is_false")]
     pub chat: bool,
@@ -201,7 +217,7 @@ impl Observe {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Step {
     pub id: String,
     #[serde(flatten)]
@@ -236,7 +252,7 @@ pub struct PlayerFileRead {
     pub fields: Vec<String>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Action {
     Join(String),
@@ -318,6 +334,36 @@ pub enum Action {
         #[serde(default, skip_serializing_if = "is_false")]
         secondary: bool,
     },
+    MovePlayer {
+        client: String,
+        position: [f64; 3],
+        on_ground: bool,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        look: Option<[f32; 2]>,
+    },
+    PlayerCommand {
+        client: String,
+        action: ProbePlayerCommand,
+        #[serde(default)]
+        data: i32,
+    },
+    PlayerInput {
+        client: String,
+        #[serde(default, skip_serializing_if = "is_false")]
+        forward: bool,
+        #[serde(default, skip_serializing_if = "is_false")]
+        backward: bool,
+        #[serde(default, skip_serializing_if = "is_false")]
+        left: bool,
+        #[serde(default, skip_serializing_if = "is_false")]
+        right: bool,
+        #[serde(default, skip_serializing_if = "is_false")]
+        jump: bool,
+        #[serde(default, skip_serializing_if = "is_false")]
+        sneak: bool,
+        #[serde(default, skip_serializing_if = "is_false")]
+        sprint: bool,
+    },
     Wait {
         ms: u64,
     },
@@ -365,6 +411,7 @@ fn action_uses_pose(action: &Action) -> bool {
         Action::Attack { .. }
         | Action::Interact { .. }
         | Action::UseItem { .. }
+        | Action::MovePlayer { .. }
         | Action::AwaitPacket {
             packet: ExpectedPacket::PlayerPosition { .. },
             ..
@@ -410,6 +457,15 @@ mod tests {
         assert!(
             needs_pose(&nested.steps),
             "interact needs the current position"
+        );
+
+        let move_player: Scenario = serde_json::from_str(
+            r#"{"steps":[{"id":"move","move_player":{"client":"Alice","position":[0.0,0.0,0.0],"on_ground":true}}]}"#,
+        )
+        .unwrap();
+        assert!(
+            needs_pose(&move_player.steps),
+            "move_player sends accepted pose state and requires pose tracking"
         );
     }
 }
