@@ -27,8 +27,10 @@ and the `apply_exhaustion` enchantment effect stay deferred.
 | Crate | Layer | Content |
 |-------|-------|---------|
 | `mcrs_minecraft_hunger` (`#![no_std]`, new) | 3, rules | `HungerState`, `HungerDifficulty`, `HungerTickInput`, `HungerTickOutput`, pure exhaustion formulas (`sprint_move_exhaustion`, `jump_exhaustion`, `hunger_effect_exhaustion`, `ATTACK_EXHAUSTION`, `HARVEST_BREAK_EXHAUSTION`) and `HungerState::tick` |
-| `mcrs_minecraft_engine` | 4 | `PlayerFileState` (`food_level`, `food_tick_timer`, `food_saturation_level`, `food_exhaustion_level`, `active_effects`), `PlayerPersistencePlugin`, `PlayerSprinting`, `ClientOnGround` |
-| `mcrs_minecraft_engine_damage` | 4 | `DamageSet::{PacketCollect..PacketReport, Collect..Report}`, `PendingHits`, `DamageRequest`, `Damaged`, `DamageTypeRules` |
+| `mcrs_minecraft_damage` | 3, rules | `Vitals`, `Hit`, `DamageSource`, `DamageTypeRules` (`crates/mcrs_minecraft_damage/src/damage_type_rules.rs`) |
+| `mcrs_minecraft_engine_world` | 4 | `Player`, `ColumnIndex`, `SectionStage`, `GameRules`, `ServerDifficulty` resource (wrapping `mcrs_minecraft_save::Difficulty`) |
+| `mcrs_minecraft_engine` | 4 | `PlayerFileState` (`food_level`, `food_tick_timer`, `food_saturation_level`, `food_exhaustion_level`, `active_effects`), `PlayerPersistencePlugin`, `PlayerSprinting`, `ClientOnGround`, player lived tick counter (`HNG-REG-004`) |
+| `mcrs_minecraft_engine_damage` | 4 | `DamageSet::{PacketCollect..PacketReport, Collect..Report}`, `PendingHits`, `DamageRequest`, `Damaged`, `bake_damage_types` |
 | `mcrs_minecraft_engine_player_vitals` | 4 | `PlayerVitalsPlugin`, `send_health` (`SentHealth::set_if_neq` -> `ClientboundSetHealth`), `respawn_players` |
 | `mcrs_minecraft_vanilla_hunger` (new) | 5 | `VanillaHungerPlugin`: exhaustion collectors, `PlayerFileState` <-> `HungerState` bridge, `Vitals` heal sync, `PendingHits` starvation emitter in `DamageSet::Collect` |
 | `mcrs_minecraft_server` | 7 | adds `VanillaHungerPlugin` as a dimension plugin in `MinecraftServerPlugins` |
@@ -86,13 +88,15 @@ or server persistence.
 2. **Tick step in `DamageSet::Collect`**:
    - Runs in `TickSet::WorldWrite` after `MotionPass` and before `DamageSet::Filter` /
      `DamageSet::Apply`. Reads `PlayerFileState`, `Vitals`, `AttributeInstances` (`max_health`),
-     `PlayerGameMode`, `GameRules` (`GameRule::NaturalHealthRegeneration`), `Difficulty` and lived
-     tick count (skips spectators touching unloaded chunks, `HNG-TICK-001`).
-   - Calls `HungerState::tick` and applies `set_food` / `set_health` sync:
-     - Writes the four hunger fields back into `PlayerFileState` only on change (`set_if_neq` semantics
-       so idle ticks never mark `PlayerFileState` changed).
-     - On `next_health`, mutates `vitals.health` via `set_if_neq` (`HNG-REG-003`: no `PendingHits`,
-       no `Damaged`, no `damage_event`, no hurt sound/animation, `absorption` unchanged).
+     `PlayerGameMode`, `GameRules` (`GameRule::NaturalHealthRegeneration`), `ServerDifficulty`
+     (a `Resource` wrapper around `mcrs_minecraft_save::Difficulty`) and the new player lived tick
+     count (skipping spectators touching unloaded chunks via the new `HNG-TICK-001` check).
+   - Calls `HungerState::tick` and applies `set_if_neq` on `PlayerFileState` and `Vitals`
+     (`send_health`):
+     - Updates `PlayerFileState` with `set_if_neq` only when the four hunger fields change, so idle
+       ticks never mark `PlayerFileState` changed.
+     - On `next_health`, updates `Vitals` (`vitals.set_if_neq`) (`HNG-REG-003`: no `PendingHits`, no
+       `Damaged`, no `damage_event`, no hurt sound/animation, `absorption` unchanged).
      - On `starve`, pushes `DamageRequest::new(player, Hit::new(1.0, DamageSource::of(starve_id)), ...)`
        into `PendingHits` so `DamageSet::Filter` and `DamageSet::Apply` (`apply_hits`) enforce
        invulnerability, absorption, cooldown, death and `damage_event` (`HNG-STV-001`, `HNG-STV-002`).
@@ -109,12 +113,22 @@ or server persistence.
 
 ## 5. Prerequisite engine touchpoints
 
-- **World `Difficulty` resource**: expose `mcrs_minecraft_save::Difficulty` from `LevelDat` into
-  `DimInput` / dimension worlds alongside `GameRules`.
+- **World `Difficulty` resource**: `mcrs_minecraft_save::Difficulty` has no `Resource` derive
+  (`mcrs_minecraft_save` has no `bevy_ecs` dependency); define a Layer-4 `ServerDifficulty`
+  `Resource` wrapper (`mcrs_minecraft_engine_world`) and expose it from `LevelDat` through
+  `DimInput` into dimension worlds alongside `GameRules`.
+- **Player lived tick count (`t` in `HNG-REG-004`)**: add a Layer-4 per-player tick counter
+  component (distinct from world `GameTime`) initialized to `0` on join/respawn and incremented once
+  per server tick.
+- **Spectator unloaded-chunk check (`HNG-TICK-001`)**: add a Layer-4 check in
+  `mcrs_minecraft_engine_world` (over `ColumnIndex` / `SectionStage`) testing whether a
+  spectator's bounding box intersects an unloaded chunk so `VanillaHungerPlugin` skips its hunger
+  tick.
 - **Respawn timer reset**: extend `reset_file_state` in
   `crates/mcrs_minecraft_engine_player_vitals/src/respawn_players.rs` to reset `food_tick_timer`
   to `0` (`HNG-STA-001`).
 - **Damage exhaustion lookup & `starve` id**: bake per-type `exhaustion` values and cache the
-  `minecraft:starve` id alongside `DamageTypeRules` in `bake_damage_types`.
+  `minecraft:starve` id alongside `DamageTypeRules` (`mcrs_minecraft_damage`) in
+  `bake_damage_types` (`mcrs_minecraft_engine_damage`).
 - **Accepted player move delta**: expose per-tick accepted displacement and prior `ClientOnGround`
   from `process_movement` (`TickSet::ClientInput`) so teleports and rejected moves add no exhaustion.
