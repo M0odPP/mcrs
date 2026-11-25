@@ -352,7 +352,9 @@ fn entity_data(entity: DataEntity, r: &mut &[u8]) -> Vec<Event> {
         };
         let undecoded = matches!(
             value,
-            MetaDataValue::Particle | MetaDataValue::Particles | MetaDataValue::ResolvableProfile
+            MetaDataValue::Particle(_)
+                | MetaDataValue::Particles(_)
+                | MetaDataValue::ResolvableProfile
         );
         events.push(Event::EntityData(EntityData {
             entity,

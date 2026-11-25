@@ -491,4 +491,31 @@ mod tests {
         let game_ok = game_event.event == "rain_level_change" && game_event.param == 0.75;
         assert!(game_ok, "game event fields");
     }
+
+    #[test]
+    fn wire_decode_entity_data_particles_followed_by_entry() {
+        let mut names = EntityNames::default();
+        names.record_login("Alice", 5);
+
+        let mut raw = vec![5];
+        raw.extend_from_slice(&[
+            8, 16, 0x15, 0xFF, 0xFF, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00, 9, 17, 2, 0x00, 0x1C,
+            0x80, 0xFF, 0x80, 0x00, 0, 0, 0x2A, 0xFF,
+        ]);
+
+        let meta = EntityDataObserved::read("Alice", &names, &raw).unwrap();
+        assert_eq!(meta.entries.len(), 3);
+        assert_eq!(meta.entries[0].index, 8);
+        assert!(
+            matches!(meta.entries[0].value, EntityDataValue::Other(_)),
+            "particle entry should decode as EntityDataValue::Other"
+        );
+        assert_eq!(meta.entries[1].index, 9);
+        assert!(
+            matches!(meta.entries[1].value, EntityDataValue::Other(_)),
+            "particles entry should decode as EntityDataValue::Other"
+        );
+        assert_eq!(meta.entries[2].index, 0);
+        assert_eq!(meta.entries[2].value, EntityDataValue::Byte(0x2A));
+    }
 }

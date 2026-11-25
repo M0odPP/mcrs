@@ -24,8 +24,8 @@ impl Encode for GameEventKind {
     fn encode(&self, mut w: impl Write) -> Result<()> {
         let a = match self {
             GameEventKind::NoRespawnBlockAvailable => (0, 0f32),
-            GameEventKind::EndRaining => (1, 0f32),
-            GameEventKind::BeginRaining => (2, 0f32),
+            GameEventKind::BeginRaining => (1, 0f32),
+            GameEventKind::EndRaining => (2, 0f32),
             GameEventKind::ChangeGameMode(mode) => (3, *mode as u8 as f32),
             GameEventKind::WinGame(credits) => (
                 4,
@@ -67,8 +67,8 @@ impl<'a> Decode<'a> for GameEventKind {
         let param = f32::decode(r)?;
         match event_id {
             0 => Ok(GameEventKind::NoRespawnBlockAvailable),
-            1 => Ok(GameEventKind::EndRaining),
-            2 => Ok(GameEventKind::BeginRaining),
+            1 => Ok(GameEventKind::BeginRaining),
+            2 => Ok(GameEventKind::EndRaining),
             3 => {
                 let mode = match param as i32 {
                     0 => GameMode::Survival,
@@ -138,4 +138,38 @@ pub enum DemoMessage {
 pub enum EnterCredits {
     SeenBefore,
     FirstTime,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rain_events_round_trip_with_wire_ids() {
+        let mut begin = Vec::new();
+        GameEventKind::BeginRaining.encode(&mut begin).unwrap();
+        assert_eq!(begin, [1, 0, 0, 0, 0]);
+        let mut r = begin.as_slice();
+        assert!(
+            matches!(
+                GameEventKind::decode(&mut r).unwrap(),
+                GameEventKind::BeginRaining
+            ),
+            "wire id 1 must decode as BeginRaining"
+        );
+        assert!(r.is_empty(), "BeginRaining must leave no trailing bytes");
+
+        let mut end = Vec::new();
+        GameEventKind::EndRaining.encode(&mut end).unwrap();
+        assert_eq!(end, [2, 0, 0, 0, 0]);
+        let mut r = end.as_slice();
+        assert!(
+            matches!(
+                GameEventKind::decode(&mut r).unwrap(),
+                GameEventKind::EndRaining
+            ),
+            "wire id 2 must decode as EndRaining"
+        );
+        assert!(r.is_empty(), "EndRaining must leave no trailing bytes");
+    }
 }

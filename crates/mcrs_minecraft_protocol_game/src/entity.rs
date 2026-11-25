@@ -11,8 +11,8 @@ use mcrs_minecraft_entity::variant::{
     FrogVariant, PigSoundVariant, PigVariant, WolfSoundVariant, WolfVariant, ZombieNautilusVariant,
 };
 pub use mcrs_minecraft_entity::villager::VillagerData;
-use mcrs_minecraft_item::PaintingVariantValue;
-use mcrs_minecraft_item::ProtoStack;
+use mcrs_minecraft_item::{PaintingVariantValue, ProtoStack, Template};
+use mcrs_minecraft_particle::ParticleOptions;
 use mcrs_minecraft_pose::Pose;
 use mcrs_minecraft_protocol::{Result, VarInt, VarLong};
 use mcrs_minecraft_registries::Registries;
@@ -92,9 +92,22 @@ impl Metadata<'_> {
         fn named<R: Registered>(lookup: &WireLookup<'_>, id: Id<R>) -> Result<(), ResolveError> {
             Id::<R>::from_wire(WireId::new(id.number()), lookup).map(drop)
         }
+        fn particle(
+            lookup: &WireLookup<'_>,
+            value: ParticleOptions<Wire>,
+        ) -> Result<(), ResolveError> {
+            match value {
+                ParticleOptions::Item(item) => Template::from_wire(item.item, lookup).map(drop),
+                _ => Ok(()),
+            }
+        }
         let lookup = WireLookup::new(registries);
         self.0.into_iter().try_for_each(|entry| match entry.value {
             MetaDataValue::Slot(stack) => ProtoStack::from_wire(stack, &lookup).map(drop),
+            MetaDataValue::Particle(value) => particle(&lookup, *value),
+            MetaDataValue::Particles(values) => values
+                .into_iter()
+                .try_for_each(|value| particle(&lookup, value)),
             MetaDataValue::CatVariant(id) => named(&lookup, id),
             MetaDataValue::CatSoundVariant(id) => named(&lookup, id),
             MetaDataValue::CowVariant(id) => named(&lookup, id),
@@ -131,8 +144,8 @@ pub enum MetaDataValue<'a> {
     OptionalLivingEntityReference(Option<Uuid>),
     BlockState(BlockStateNumber),
     OptionalBlockState(OptionalBlockState),
-    Particle,
-    Particles,
+    Particle(Box<ParticleOptions<Wire>>),
+    Particles(Vec<ParticleOptions<Wire>>),
     VillagerData(VillagerData),
     OptionalUnsignedInt(OptionalUnsignedInt),
     Pose(Pose),
