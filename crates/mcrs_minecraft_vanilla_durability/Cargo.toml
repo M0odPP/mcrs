@@ -1,0 +1,37 @@
+[package]
+name = "mcrs_minecraft_vanilla_durability"
+description = "Vanilla item durability wear and breakage in dimension worlds for block breaks, melee hits, hurt armour and extra uses"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+test = false
+doctest = false
+
+[lints]
+workspace = true
+
+[dependencies]
+bevy_app.workspace = true
+bevy_ecs.workspace = true
+mcrs_minecraft_block = { workspace = true, features = ["bevy"] }
+mcrs_minecraft_damage = { workspace = true, features = ["bevy"] }
+mcrs_minecraft_durability.workspace = true
+mcrs_minecraft_engine.workspace = true
+mcrs_minecraft_engine_damage.workspace = true
+mcrs_minecraft_engine_item.workspace = true
+mcrs_minecraft_engine_player_vitals.workspace = true
+mcrs_minecraft_engine_world.workspace = true
+mcrs_minecraft_entity_key = { workspace = true, features = ["bevy"] }
+mcrs_minecraft_game_mode = { workspace = true, features = ["bevy"] }
+mcrs_minecraft_inventory_player.workspace = true
+mcrs_minecraft_item = { workspace = true }
+mcrs_minecraft_item_stack = { workspace = true, features = ["bevy"] }
+mcrs_minecraft_protocol_game.workspace = true
+mcrs_minecraft_registries = { workspace = true, features = ["bevy"] }
+mcrs_minecraft_replication.workspace = true
+
+[dev-dependencies]
+mcrs_minecraft_item_table = { workspace = true, features = ["bevy"] }
+mcrs_voxel.workspace = true

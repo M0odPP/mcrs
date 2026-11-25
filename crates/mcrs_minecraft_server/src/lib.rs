@@ -9,7 +9,8 @@ mod vanilla_death_drops;
 mod vanilla_death_messages;
 mod vanilla_swing;
 
-use bevy_app::{App, Plugin, PluginGroup, PluginGroupBuilder};
+use bevy_app::{App, FixedUpdate, Plugin, PluginGroup, PluginGroupBuilder};
+use bevy_ecs::schedule::IntoScheduleConfigs;
 use mcrs_minecraft_chat_server::ChatPlugin;
 use mcrs_minecraft_command_engine::CommandPlugin;
 use mcrs_minecraft_command_vanilla::{VanillaCommands, VanillaCommandsPlugin};
@@ -27,12 +28,15 @@ use mcrs_minecraft_engine_world::world::sub_app::AddDimensionPlugins;
 use mcrs_minecraft_entity::damage_type_tag_keys::PANIC_CAUSES;
 use mcrs_minecraft_vanilla_attributes::{CreativeRangePlugin, SprintAttributePlugin};
 use mcrs_minecraft_vanilla_block_place::BlockPlacePlugin;
+use mcrs_minecraft_vanilla_durability::{DurabilityPlugin, DurabilityProjectSet};
 use mcrs_minecraft_vanilla_hunger::VanillaHungerPlugin as DimensionHungerPlugin;
 use mcrs_minecraft_vanilla_inventory::InventoryPersistencePlugin;
 use mcrs_minecraft_vanilla_light::LightingPlugin;
 use mcrs_minecraft_vanilla_player_attack::PlayerAttackPlugin;
 use mcrs_minecraft_vanilla_respawn::RespawnPlugin;
-use mcrs_minecraft_vanilla_weather::{VanillaWeatherDimensionPlugin, VanillaWeatherHostPlugin};
+use mcrs_minecraft_vanilla_weather::{
+    VanillaWeatherDimensionPlugin, VanillaWeatherHostPlugin, WeatherDimensionSet,
+};
 
 pub use falling_blocks::VanillaFallingBlockPlugin;
 pub use item_entities::VanillaItemEntityPlugin;
@@ -106,6 +110,7 @@ impl PluginGroup for MinecraftServerPlugins {
             .add(VanillaPlayerAttackPlugin)
             .add(VanillaHungerPlugin)
             .add(VanillaWeatherPlugin)
+            .add(VanillaDurabilityPlugin)
             .add(self.world_gen)
             .add(LightingPlugin)
             .add(self.network)
@@ -205,6 +210,21 @@ pub struct VanillaHungerPlugin;
 impl Plugin for VanillaHungerPlugin {
     fn build(&self, app: &mut App) {
         app.add_dimension_plugin(DimensionHungerPlugin);
+    }
+}
+
+pub struct VanillaDurabilityPlugin;
+
+impl Plugin for VanillaDurabilityPlugin {
+    fn build(&self, app: &mut App) {
+        fn order_durability(app: &mut App) {
+            app.configure_sets(
+                FixedUpdate,
+                DurabilityProjectSet.before(WeatherDimensionSet),
+            );
+        }
+        app.add_dimension_plugin(DurabilityPlugin)
+            .add_dimension_plugin(order_durability);
     }
 }
 
