@@ -27,6 +27,7 @@ use mcrs_minecraft_engine_world::world::sub_app::AddDimensionPlugins;
 use mcrs_minecraft_entity::damage_type_tag_keys::PANIC_CAUSES;
 use mcrs_minecraft_vanilla_attributes::{CreativeRangePlugin, SprintAttributePlugin};
 use mcrs_minecraft_vanilla_block_place::BlockPlacePlugin;
+use mcrs_minecraft_vanilla_hunger::VanillaHungerPlugin as DimensionHungerPlugin;
 use mcrs_minecraft_vanilla_inventory::InventoryPersistencePlugin;
 use mcrs_minecraft_vanilla_light::LightingPlugin;
 use mcrs_minecraft_vanilla_player_attack::PlayerAttackPlugin;
@@ -102,6 +103,7 @@ impl PluginGroup for MinecraftServerPlugins {
             .add(VanillaBlockPlacePlugin)
             .add(VanillaSwingPlugin)
             .add(VanillaPlayerAttackPlugin)
+            .add(VanillaHungerPlugin)
             .add(self.world_gen)
             .add(LightingPlugin)
             .add(self.network)
@@ -193,6 +195,14 @@ pub struct VanillaPlayerAttackPlugin;
 impl Plugin for VanillaPlayerAttackPlugin {
     fn build(&self, app: &mut App) {
         app.add_dimension_plugin(PlayerAttackPlugin);
+    }
+}
+
+pub struct VanillaHungerPlugin;
+
+impl Plugin for VanillaHungerPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_dimension_plugin(DimensionHungerPlugin);
     }
 }
 

@@ -48,6 +48,7 @@ mod falling_block;
 mod host_app;
 mod host_subapp_handoff;
 mod hostile_commands;
+mod hunger;
 mod inventory;
 mod item_summon;
 mod light_engine_e2e;
