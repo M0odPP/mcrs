@@ -7084,6 +7084,7 @@ dependencies = [
  "mcrs_minecraft_vanilla_block_place",
  "mcrs_minecraft_vanilla_death",
  "mcrs_minecraft_vanilla_falling_block",
+ "mcrs_minecraft_vanilla_hunger",
  "mcrs_minecraft_vanilla_inventory",
  "mcrs_minecraft_vanilla_item_entity",
  "mcrs_minecraft_vanilla_light",
@@ -7360,6 +7361,33 @@ dependencies = [
  "mcrs_voxel",
  "serde_json",
  "tracing",
+]
+
+[[package]]
+name = "mcrs_minecraft_vanilla_hunger"
+version = "0.5.8"
+dependencies = [
+ "bevy_app",
+ "bevy_ecs",
+ "bevy_math",
+ "bevy_tasks",
+ "mcrs_minecraft_damage",
+ "mcrs_minecraft_engine",
+ "mcrs_minecraft_engine_damage",
+ "mcrs_minecraft_engine_physics",
+ "mcrs_minecraft_engine_player_vitals",
+ "mcrs_minecraft_engine_world",
+ "mcrs_minecraft_entity",
+ "mcrs_minecraft_entity_key",
+ "mcrs_minecraft_game_mode",
+ "mcrs_minecraft_game_registries",
+ "mcrs_minecraft_game_rule",
+ "mcrs_minecraft_hunger",
+ "mcrs_minecraft_physics",
+ "mcrs_minecraft_pose",
+ "mcrs_minecraft_registries",
+ "mcrs_minecraft_save",
+ "mcrs_voxel",
 ]
 
 [[package]]
