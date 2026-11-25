@@ -1,0 +1,2434 @@
+{
+  "version": {
+    "name": "26.4 Snapshot 7",
+    "protocol": 1073742169
+  },
+  "steps": [
+    {
+      "id": "prepare",
+      "observed": {
+        "console": {
+          "output": [
+            "The difficulty has been set to Normal",
+            "Game rule spawn_mobs is now set to false",
+            "Game rule natural_health_regeneration is already set to true",
+            "No entity was found"
+          ]
+        }
+      },
+      "entity_data": [],
+      "health": [],
+      "damage_events": []
+    },
+    {
+      "id": "join_alice",
+      "observed": "joined",
+      "entity_data": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 20.0
+            },
+            {
+              "index": 16,
+              "kind": "byte",
+              "value": 127
+            }
+          ]
+        }
+      ],
+      "health": [
+        {
+          "client": "Alice",
+          "health": 20.0,
+          "food": 20,
+          "saturation": 5.0
+        }
+      ],
+      "damage_events": []
+    },
+    {
+      "id": "setup_alice",
+      "observed": {
+        "console": {
+          "output": [
+            "Applied 1 effect(s) to Alice",
+            "Teleported Alice to 0.500000, -60.000000, 0.500000",
+            "Successfully filled 441 block(s)",
+            "No blocks were filled",
+            "Alice has the following entity data: 20",
+            "Alice has the following entity data: 5.0f",
+            "Alice has the following entity data: 0.0f",
+            "Alice has the following entity data: 0",
+            "Alice has the following entity data: 20.0f"
+          ],
+          "chat": [
+            {
+              "client": "Alice",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.effect.give.success.single",
+                    "with": [
+                      1,
+                      {
+                        "text": "Alice",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Alice "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            278005000,
+                            -707248403,
+                            -1814916367,
+                            -1817188393
+                          ],
+                          "name": "Alice"
+                        },
+                        "insertion": "Alice"
+                      }
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            },
+            {
+              "client": "Alice",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.teleport.success.location.single",
+                    "with": [
+                      {
+                        "text": "Alice",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Alice "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            278005000,
+                            -707248403,
+                            -1814916367,
+                            -1817188393
+                          ],
+                          "name": "Alice"
+                        },
+                        "insertion": "Alice"
+                      },
+                      "0.500000",
+                      "-60.000000",
+                      "0.500000"
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            },
+            {
+              "client": "Alice",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.fill.success",
+                    "with": [
+                      441
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            }
+          ]
+        }
+      },
+      "entity_data": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 11,
+              "kind": "boolean",
+              "value": true
+            }
+          ]
+        }
+      ],
+      "health": [],
+      "damage_events": []
+    },
+    {
+      "id": "wait_setup",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "entity_data": [],
+      "health": [],
+      "damage_events": []
+    },
+    {
+      "id": "sync_alice",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "entity_data": [],
+      "health": [],
+      "damage_events": []
+    },
+    {
+      "id": "sprint_on",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "entity_data": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 0,
+              "kind": "byte",
+              "value": 8
+            }
+          ]
+        }
+      ],
+      "health": [],
+      "damage_events": []
+    },
+    {
+      "id": "sprint_move_1",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "entity_data": [],
+      "health": [],
+      "damage_events": []
+    },
+    {
+      "id": "sprint_move_2",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "entity_data": [],
+      "health": [],
+      "damage_events": []
+    },
+    {
+      "id": "sprint_off",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "entity_data": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 0,
+              "kind": "byte",
+              "value": 0
+            }
+          ]
+        }
+      ],
+      "health": [],
+      "damage_events": []
+    },
+    {
+      "id": "jump_move",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "entity_data": [],
+      "health": [],
+      "damage_events": []
+    },
+    {
+      "id": "jump_land",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "entity_data": [],
+      "health": [],
+      "damage_events": []
+    },
+    {
+      "id": "read_move_exhaustion",
+      "observed": {
+        "console": {
+          "output": [
+            "Alice has the following entity data: 0.45f",
+            "Teleported Alice to 0.500000, -60.000000, 0.500000",
+            "Changed the block at 0, -60, 2"
+          ],
+          "chat": [
+            {
+              "client": "Alice",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.teleport.success.location.single",
+                    "with": [
+                      {
+                        "text": "Alice",
+                        "click_event": {
+                          "action": "suggest_command",
+                          "command": "/tell Alice "
+                        },
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:player",
+                          "uuid": [
+                            278005000,
+                            -707248403,
+                            -1814916367,
+                            -1817188393
+                          ],
+                          "name": "Alice"
+                        },
+                        "insertion": "Alice"
+                      },
+                      "0.500000",
+                      "-60.000000",
+                      "0.500000"
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            },
+            {
+              "client": "Alice",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.setblock.success",
+                    "with": [
+                      0,
+                      -60,
+                      2
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            }
+          ]
+        }
+      },
+      "entity_data": [],
+      "health": [],
+      "damage_events": []
+    },
+    {
+      "id": "wait_tp2",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "entity_data": [],
+      "health": [],
+      "damage_events": []
+    },
+    {
+      "id": "sync_for_mine_attack",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "entity_data": [],
+      "health": [],
+      "damage_events": []
+    },
+    {
+      "id": "mine_start",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "entity_data": [],
+      "health": [],
+      "damage_events": []
+    },
+    {
+      "id": "wait_mine",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "entity_data": [],
+      "health": [],
+      "damage_events": []
+    },
+    {
+      "id": "mine_stop",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "entity_data": [],
+      "health": [],
+      "damage_events": []
+    },
+    {
+      "id": "attack_exhaustion_setup",
+      "observed": {
+        "console": {
+          "output": [
+            "Alice has the following entity data: 0.45f",
+            "Summoned new Pig"
+          ],
+          "chat": [
+            {
+              "client": "Alice",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.summon.success",
+                    "with": [
+                      {
+                        "translate": "entity.minecraft.pig",
+                        "hover_event": {
+                          "action": "show_entity",
+                          "id": "minecraft:pig",
+                          "uuid": [
+                            -476917227,
+                            957237455,
+                            -1876153059,
+                            -71142850
+                          ],
+                          "name": {
+                            "translate": "entity.minecraft.pig"
+                          }
+                        },
+                        "insertion": "e392d215-390e-48cf-902c-2d1dfbc2723e"
+                      }
+                    ]
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            }
+          ]
+        }
+      },
+      "entity_data": [
+        {
+          "client": "Alice",
+          "subject": "minecraft:pig",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 10.0
+            },
+            {
+              "index": 15,
+              "kind": "byte",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "minecraft:pig",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 9.0
+            },
+            {
+              "index": 15,
+              "kind": "byte",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "minecraft:pig",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 8.0
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "minecraft:pig",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 7.0
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "minecraft:pig",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 6.0
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "minecraft:pig",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 5.0
+            }
+          ]
+        }
+      ],
+      "health": [],
+      "damage_events": [
+        {
+          "client": "Alice",
+          "subject": "minecraft:pig",
+          "damage_type": 22
+        },
+        {
+          "client": "Alice",
+          "subject": "minecraft:pig",
+          "damage_type": 22
+        },
+        {
+          "client": "Alice",
+          "subject": "minecraft:pig",
+          "damage_type": 22
+        },
+        {
+          "client": "Alice",
+          "subject": "minecraft:pig",
+          "damage_type": 22
+        },
+        {
+          "client": "Alice",
+          "subject": "minecraft:pig",
+          "damage_type": 22
+        }
+      ]
+    },
+    {
+      "id": "wait_pig",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "entity_data": [],
+      "health": [],
+      "damage_events": []
+    },
+    {
+      "id": "attack_pig",
+      "observed": {
+        "sent": {
+          "disconnects": []
+        }
+      },
+      "entity_data": [
+        {
+          "client": "Alice",
+          "subject": "minecraft:pig",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 4.0
+            }
+          ]
+        }
+      ],
+      "health": [],
+      "damage_events": [
+        {
+          "client": "Alice",
+          "subject": "minecraft:pig",
+          "damage_type": 34,
+          "cause": "Alice",
+          "direct": "Alice"
+        }
+      ]
+    },
+    {
+      "id": "seq_fast_regen",
+      "observed": {
+        "sent": {
+          "disconnects": [],
+          "console_output": [
+            "Alice has the following entity data: 0.55f",
+            "Applied 4.0 damage to Alice",
+            "Alice has the following entity data: 16.0f",
+            "Alice has the following entity data: 5.0f",
+            "The game is sprinting",
+            "Alice has the following entity data: 18.333334f",
+            "Alice has the following entity data: 20",
+            "Alice has the following entity data: 2.0f",
+            "Alice has the following entity data: 2.5500002f"
+          ]
+        }
+      },
+      "entity_data": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 16.0
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 16.833334
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 17.5
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 18.0
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 18.333334
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 18.666668
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 18.833334
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 19.0
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 19.166666
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 19.333332
+            }
+          ]
+        }
+      ],
+      "health": [
+        {
+          "client": "Alice",
+          "health": 16.0,
+          "food": 20,
+          "saturation": 5.0
+        },
+        {
+          "client": "Alice",
+          "health": 16.833334,
+          "food": 20,
+          "saturation": 5.0
+        },
+        {
+          "client": "Alice",
+          "health": 17.5,
+          "food": 20,
+          "saturation": 4.0
+        },
+        {
+          "client": "Alice",
+          "health": 18.0,
+          "food": 20,
+          "saturation": 3.0
+        },
+        {
+          "client": "Alice",
+          "health": 18.333334,
+          "food": 20,
+          "saturation": 2.0
+        },
+        {
+          "client": "Alice",
+          "health": 18.666668,
+          "food": 20,
+          "saturation": 2.0
+        },
+        {
+          "client": "Alice",
+          "health": 18.833334,
+          "food": 20,
+          "saturation": 1.0
+        },
+        {
+          "client": "Alice",
+          "health": 19.0,
+          "food": 20,
+          "saturation": 1.0
+        },
+        {
+          "client": "Alice",
+          "health": 19.166666,
+          "food": 20,
+          "saturation": 1.0
+        },
+        {
+          "client": "Alice",
+          "health": 19.333332,
+          "food": 20,
+          "saturation": 1.0
+        },
+        {
+          "client": "Alice",
+          "health": 19.333332,
+          "food": 20,
+          "saturation": 0.0
+        }
+      ],
+      "damage_events": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "damage_type": 18
+        }
+      ],
+      "packets": [
+        {
+          "client": "Alice",
+          "packet": "damage_event"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        }
+      ],
+      "checkpoints": [
+        {
+          "player_ticks": {
+            "client": "Alice",
+            "at_least": 30
+          }
+        }
+      ]
+    },
+    {
+      "id": "seq_slow_regen",
+      "observed": {
+        "sent": {
+          "disconnects": [],
+          "console_output": [
+            "Applied 1 effect(s) to Alice",
+            "The game is sprinting",
+            "Alice has the following entity data: 18",
+            "Alice has the following entity data: 0.0f",
+            "Alice has the following entity data: 0.550001f",
+            "Applied 4.0 damage to Alice",
+            "Alice has the following entity data: 15.333332f",
+            "The game is sprinting",
+            "Alice has the following entity data: 16.333332f",
+            "The game is sprinting",
+            "Alice has the following entity data: 16.333332f",
+            "Alice has the following entity data: 17",
+            "Alice has the following entity data: 2.5500011f"
+          ]
+        }
+      },
+      "entity_data": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 15.333332
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 16.333332
+            }
+          ]
+        }
+      ],
+      "health": [
+        {
+          "client": "Alice",
+          "health": 19.333332,
+          "food": 19,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 19.333332,
+          "food": 18,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 15.333332,
+          "food": 18,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 16.333332,
+          "food": 18,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 16.333332,
+          "food": 17,
+          "saturation": 0.0
+        }
+      ],
+      "damage_events": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "damage_type": 18
+        }
+      ],
+      "packets": [
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "sound"
+        },
+        {
+          "client": "Alice",
+          "packet": "damage_event"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        }
+      ],
+      "checkpoints": [
+        {
+          "player_ticks": {
+            "client": "Alice",
+            "at_least": 25
+          }
+        },
+        {
+          "player_ticks": {
+            "client": "Alice",
+            "at_least": 50
+          }
+        },
+        {
+          "player_ticks": {
+            "client": "Alice",
+            "at_least": 35
+          }
+        }
+      ]
+    },
+    {
+      "id": "seq_rule_off",
+      "observed": {
+        "sent": {
+          "disconnects": [],
+          "console_output": [
+            "Game rule natural_health_regeneration is now set to false",
+            "Applied 2.0 damage to Alice",
+            "The game is sprinting",
+            "Alice has the following entity data: 14.333332f"
+          ]
+        }
+      },
+      "entity_data": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 14.333332
+            }
+          ]
+        }
+      ],
+      "health": [
+        {
+          "client": "Alice",
+          "health": 14.333332,
+          "food": 17,
+          "saturation": 0.0
+        }
+      ],
+      "damage_events": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "damage_type": 18
+        }
+      ],
+      "checkpoints": [
+        {
+          "player_ticks": {
+            "client": "Alice",
+            "at_least": 85
+          }
+        }
+      ]
+    },
+    {
+      "id": "seq_peaceful_regen",
+      "observed": {
+        "sent": {
+          "disconnects": [],
+          "console_output": [
+            "Game rule natural_health_regeneration is now set to true",
+            "The difficulty has been set to Peaceful",
+            "The game is sprinting",
+            "Alice has the following entity data: 20",
+            "Alice has the following entity data: 1.0f",
+            "Alice has the following entity data: 18.333334f"
+          ]
+        }
+      },
+      "entity_data": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 15.333332
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 15.499999
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 16.833334
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 17.0
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 18.333334
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 18.5
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 19.833334
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 20.0
+            }
+          ]
+        }
+      ],
+      "health": [
+        {
+          "client": "Alice",
+          "health": 14.333332,
+          "food": 18,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 15.333332,
+          "food": 19,
+          "saturation": 1.0
+        },
+        {
+          "client": "Alice",
+          "health": 15.499999,
+          "food": 20,
+          "saturation": 1.0
+        },
+        {
+          "client": "Alice",
+          "health": 16.833334,
+          "food": 20,
+          "saturation": 2.0
+        },
+        {
+          "client": "Alice",
+          "health": 17.0,
+          "food": 20,
+          "saturation": 1.0
+        },
+        {
+          "client": "Alice",
+          "health": 18.333334,
+          "food": 20,
+          "saturation": 2.0
+        },
+        {
+          "client": "Alice",
+          "health": 18.5,
+          "food": 20,
+          "saturation": 1.0
+        },
+        {
+          "client": "Alice",
+          "health": 19.833334,
+          "food": 20,
+          "saturation": 2.0
+        },
+        {
+          "client": "Alice",
+          "health": 20.0,
+          "food": 20,
+          "saturation": 2.0
+        }
+      ],
+      "damage_events": [],
+      "packets": [
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "sound"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        }
+      ],
+      "checkpoints": [
+        {
+          "player_ticks": {
+            "client": "Alice",
+            "at_least": 50
+          }
+        }
+      ]
+    },
+    {
+      "id": "seq_starve_easy_normal_hard",
+      "observed": {
+        "sent": {
+          "disconnects": [],
+          "console_output": [
+            "The difficulty has been set to Easy",
+            "Applied 1 effect(s) to Alice",
+            "The game is sprinting",
+            "Alice has the following entity data: 0",
+            "Alice has the following entity data: 0.0f",
+            "Alice has the following entity data: 19.0f",
+            "The game is sprinting",
+            "The game is sprinting",
+            "Alice has the following entity data: 10.0f",
+            "The game is sprinting",
+            "Alice has the following entity data: 10.0f",
+            "The difficulty has been set to Normal",
+            "The game is sprinting",
+            "The game is sprinting",
+            "Alice has the following entity data: 1.0f",
+            "The difficulty has been set to Hard",
+            "The game is sprinting"
+          ]
+        }
+      },
+      "entity_data": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 19.0
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 18.0
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 17.0
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 16.0
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 15.0
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 14.0
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 13.0
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 12.0
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 11.0
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 10.0
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 9.0
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 8.0
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 7.0
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 6.0
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 5.0
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 4.0
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 3.0
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 2.0
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 1.0
+            }
+          ]
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 0.0
+            }
+          ]
+        }
+      ],
+      "health": [
+        {
+          "client": "Alice",
+          "health": 20.0,
+          "food": 20,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 20.0,
+          "food": 19,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 20.0,
+          "food": 18,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 20.0,
+          "food": 17,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 20.0,
+          "food": 16,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 20.0,
+          "food": 15,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 20.0,
+          "food": 14,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 20.0,
+          "food": 13,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 20.0,
+          "food": 12,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 20.0,
+          "food": 11,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 20.0,
+          "food": 10,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 20.0,
+          "food": 9,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 20.0,
+          "food": 8,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 20.0,
+          "food": 7,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 20.0,
+          "food": 6,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 20.0,
+          "food": 5,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 20.0,
+          "food": 4,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 20.0,
+          "food": 3,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 20.0,
+          "food": 2,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 20.0,
+          "food": 1,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 20.0,
+          "food": 0,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 19.0,
+          "food": 0,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 18.0,
+          "food": 0,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 17.0,
+          "food": 0,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 16.0,
+          "food": 0,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 15.0,
+          "food": 0,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 14.0,
+          "food": 0,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 13.0,
+          "food": 0,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 12.0,
+          "food": 0,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 11.0,
+          "food": 0,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 10.0,
+          "food": 0,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 9.0,
+          "food": 0,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 8.0,
+          "food": 0,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 7.0,
+          "food": 0,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 6.0,
+          "food": 0,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 5.0,
+          "food": 0,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 4.0,
+          "food": 0,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 3.0,
+          "food": 0,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 2.0,
+          "food": 0,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 1.0,
+          "food": 0,
+          "saturation": 0.0
+        },
+        {
+          "client": "Alice",
+          "health": 0.0,
+          "food": 0,
+          "saturation": 0.0
+        }
+      ],
+      "damage_events": [
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "damage_type": 40
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "damage_type": 40
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "damage_type": 40
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "damage_type": 40
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "damage_type": 40
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "damage_type": 40
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "damage_type": 40
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "damage_type": 40
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "damage_type": 40
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "damage_type": 40
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "damage_type": 40
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "damage_type": 40
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "damage_type": 40
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "damage_type": 40
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "damage_type": 40
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "damage_type": 40
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "damage_type": 40
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "damage_type": 40
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "damage_type": 40
+        },
+        {
+          "client": "Alice",
+          "subject": "Alice",
+          "damage_type": 40
+        }
+      ],
+      "packets": [
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "sound"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "damage_event"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "sound"
+        },
+        {
+          "client": "Alice",
+          "packet": "damage_event"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "damage_event"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "sound"
+        },
+        {
+          "client": "Alice",
+          "packet": "damage_event"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "damage_event"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "sound"
+        },
+        {
+          "client": "Alice",
+          "packet": "damage_event"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "damage_event"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "sound"
+        },
+        {
+          "client": "Alice",
+          "packet": "damage_event"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "damage_event"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "sound"
+        },
+        {
+          "client": "Alice",
+          "packet": "damage_event"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "sound"
+        },
+        {
+          "client": "Alice",
+          "packet": "sound"
+        },
+        {
+          "client": "Alice",
+          "packet": "sound"
+        },
+        {
+          "client": "Alice",
+          "packet": "damage_event"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "sound"
+        },
+        {
+          "client": "Alice",
+          "packet": "damage_event"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "damage_event"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "sound"
+        },
+        {
+          "client": "Alice",
+          "packet": "damage_event"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "sound"
+        },
+        {
+          "client": "Alice",
+          "packet": "damage_event"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "damage_event"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "sound"
+        },
+        {
+          "client": "Alice",
+          "packet": "damage_event"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "damage_event"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "sound"
+        },
+        {
+          "client": "Alice",
+          "packet": "damage_event"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "sound"
+        },
+        {
+          "client": "Alice",
+          "packet": "damage_event"
+        },
+        {
+          "client": "Alice",
+          "packet": "entity_event"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_health"
+        },
+        {
+          "client": "Alice",
+          "packet": "set_entity_data"
+        },
+        {
+          "client": "Alice",
+          "packet": "entity_event"
+        }
+      ],
+      "checkpoints": [
+        {
+          "player_ticks": {
+            "client": "Alice",
+            "at_least": 170
+          }
+        },
+        {
+          "player_ticks": {
+            "client": "Alice",
+            "at_least": 440
+          }
+        },
+        {
+          "player_ticks": {
+            "client": "Alice",
+            "at_least": 440
+          }
+        },
+        {
+          "player_ticks": {
+            "client": "Alice",
+            "at_least": 160
+          }
+        },
+        {
+          "player_ticks": {
+            "client": "Alice",
+            "at_least": 410
+          }
+        },
+        {
+          "player_ticks": {
+            "client": "Alice",
+            "at_least": 410
+          }
+        }
+      ]
+    },
+    {
+      "id": "save_and_read",
+      "observed": {
+        "console": {
+          "output": [
+            "Saving the game (this may take a moment!)",
+            "Saved the game"
+          ],
+          "chat": [
+            {
+              "client": "Alice",
+              "text": {
+                "translate": "chat.type.admin",
+                "with": [
+                  "Server",
+                  {
+                    "translate": "commands.save.success"
+                  }
+                ],
+                "color": "gray",
+                "italic": true
+              }
+            }
+          ]
+        }
+      },
+      "entity_data": [],
+      "health": [],
+      "damage_events": [],
+      "player_file": {
+        "Health": "0.0f",
+        "foodExhaustionLevel": "1.5499932f",
+        "foodLevel": "0",
+        "foodSaturationLevel": "0.0f",
+        "foodTickTimer": "62"
+      }
+    },
+    {
+      "id": "leave_alice",
+      "observed": "left",
+      "entity_data": [],
+      "health": [],
+      "damage_events": []
+    }
+  ]
+}
