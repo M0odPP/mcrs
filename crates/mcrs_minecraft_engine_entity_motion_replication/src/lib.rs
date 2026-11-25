@@ -1,3 +1,5 @@
+#![recursion_limit = "256"]
+
 mod appearance;
 mod assign_ids;
 mod departures;

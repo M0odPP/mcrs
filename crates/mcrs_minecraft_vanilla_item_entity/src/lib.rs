@@ -1,3 +1,5 @@
+#![recursion_limit = "256"]
+
 mod block_drops;
 mod collect_items;
 mod item_collector;

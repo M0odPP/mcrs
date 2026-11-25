@@ -47,10 +47,10 @@ use mcrs_minecraft_protocol_game::player::PlayerAction;
 use mcrs_minecraft_protocol_game::serverbound::{
     PlayerCommandAction, PlayerInputFlags, ServerboundAttack, ServerboundChatCommand,
     ServerboundChunkBatchReceived, ServerboundClientInformation as GameClientInformation,
-    ServerboundCommandSuggestion, ServerboundContainerClick, ServerboundContainerClose,
-    ServerboundInteract, ServerboundMovePlayerPos, ServerboundMovePlayerPosRot,
-    ServerboundPlayerAction, ServerboundPlayerCommand, ServerboundPlayerInput,
-    ServerboundPlayerLoaded, ServerboundPunch, ServerboundSetCarriedItem,
+    ServerboundClientTickEnd, ServerboundCommandSuggestion, ServerboundContainerClick,
+    ServerboundContainerClose, ServerboundInteract, ServerboundMovePlayerPos,
+    ServerboundMovePlayerPosRot, ServerboundPlayerAction, ServerboundPlayerCommand,
+    ServerboundPlayerInput, ServerboundPlayerLoaded, ServerboundPunch, ServerboundSetCarriedItem,
     ServerboundSetCreativeModeSlot, ServerboundUseItem, ServerboundUseItemOn,
 };
 use mcrs_minecraft_protocol_game::{Direction, Hand, LpVec3, MoveFlags, Position};
@@ -629,6 +629,14 @@ fn prepare_move_player(
     Ok(MoveFlags::new().with_on_ground(on_ground))
 }
 
+async fn send_move_and_tick_end<P: Packet + Encode>(
+    io: &mut PacketIo<TcpStream>,
+    packet: &P,
+) -> anyhow::Result<()> {
+    io.send_packet(packet).await?;
+    io.send_packet(&ServerboundClientTickEnd).await
+}
+
 async fn send_gameplay_order(
     io: &mut PacketIo<TcpStream>,
     state: &mut SessionState<'_>,
@@ -641,16 +649,18 @@ async fn send_gameplay_order(
             match look {
                 Some([yaw, pitch]) => {
                     let look = Look { yaw, pitch };
-                    io.send_packet(&ServerboundMovePlayerPosRot {
-                        position,
-                        look,
-                        flags,
-                    })
+                    send_move_and_tick_end(
+                        io,
+                        &ServerboundMovePlayerPosRot {
+                            position,
+                            look,
+                            flags,
+                        },
+                    )
                     .await
                 }
                 None => {
-                    io.send_packet(&ServerboundMovePlayerPos { position, flags })
-                        .await
+                    send_move_and_tick_end(io, &ServerboundMovePlayerPos { position, flags }).await
                 }
             }
         }
@@ -679,7 +689,7 @@ async fn send_sync_position(
     state: &SessionState<'_>,
 ) -> anyhow::Result<()> {
     match state.pose.move_pos_rot() {
-        Some(packet) => io.send_packet(&packet).await,
+        Some(packet) => send_move_and_tick_end(io, &packet).await,
         None => anyhow::bail!(
             "{} cannot sync_position before accepting a player_position packet",
             state.client
@@ -1006,5 +1016,80 @@ mod tests {
             };
         let ground_ok = !flags.on_ground() && !sync.flags.on_ground();
         assert!(pos_ok && look_ok && ground_ok, "sync matches move_player");
+    }
+
+    #[test]
+    fn move_player_and_sync_position_end_the_client_tick() {
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        runtime.block_on(async {
+            let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let addr = listener.local_addr().unwrap();
+            let (client_stream, server_stream) =
+                tokio::join!(TcpStream::connect(addr), listener.accept());
+            let mut client_io = PacketIo::new(client_stream.unwrap());
+            let mut server_io = PacketIo::new(server_stream.unwrap().0);
+
+            let mut pose = Pose::default();
+            pose.accept(&ClientboundPlayerPosition {
+                teleport_id: VarInt(1),
+                position: Position::new(0.0, 64.0, 0.0).into(),
+                velocity: Default::default(),
+                look: Look {
+                    yaw: 10.0,
+                    pitch: 5.0,
+                },
+                flags: Default::default(),
+            });
+            let observe = Observe::default();
+            let mut state = SessionState {
+                client: "Alice",
+                player_id: 7,
+                observe: &observe,
+                tracks_pose: true,
+                view: MenuView::default(),
+                pose,
+                names: EntityNames::default(),
+                awaiting_respawn_pos: false,
+            };
+
+            send_order(&mut client_io, &mut state, Order::SyncPosition)
+                .await
+                .unwrap();
+            send_order(
+                &mut client_io,
+                &mut state,
+                Order::MovePlayer([1.0, 64.0, 2.0], true, None),
+            )
+            .await
+            .unwrap();
+            send_order(
+                &mut client_io,
+                &mut state,
+                Order::MovePlayer([2.0, 65.0, 3.0], false, Some([90.0, 15.0])),
+            )
+            .await
+            .unwrap();
+
+            let expected = [
+                ServerboundMovePlayerPosRot::ID,
+                ServerboundClientTickEnd::ID,
+                ServerboundMovePlayerPos::ID,
+                ServerboundClientTickEnd::ID,
+                ServerboundMovePlayerPosRot::ID,
+                ServerboundClientTickEnd::ID,
+            ];
+            for expected_id in expected {
+                let (id, body) = server_io.recv_frame().await.unwrap();
+                assert_eq!(id, expected_id);
+                if id == ServerboundClientTickEnd::ID {
+                    let mut r = &body[..];
+                    ServerboundClientTickEnd::decode(&mut r).unwrap();
+                    assert!(
+                        r.is_empty(),
+                        "ServerboundClientTickEnd must leave no trailing bytes"
+                    );
+                }
+            }
+        });
     }
 }

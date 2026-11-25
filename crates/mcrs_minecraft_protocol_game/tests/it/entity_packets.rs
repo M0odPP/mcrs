@@ -1,4 +1,4 @@
-use crate::item::harness::wire_form;
+use crate::item::harness::{registries, wire_form};
 use glam::DVec3;
 use mcrs_minecraft_entity::entity_type_keys::EntityType;
 use mcrs_minecraft_entity::variant::{CatSoundVariant, CatVariant, ZombieNautilusVariant};
@@ -9,6 +9,9 @@ use mcrs_minecraft_entity_attribute::ModifierOperation;
 use mcrs_minecraft_entity_attribute::attribute_keys::Attribute;
 use mcrs_minecraft_item::PaintingVariantValue;
 use mcrs_minecraft_item_key::item_keys::Item;
+use mcrs_minecraft_particle::{
+    BlockParticle, ColorParticle, DustParticle, ItemParticle, ParticleOptions, ParticleScale,
+};
 use mcrs_minecraft_pose::Pose;
 use mcrs_minecraft_protocol::{Decode, Encode, VarInt};
 use mcrs_minecraft_protocol_game::block::BlockStateNumber;
@@ -20,7 +23,9 @@ use mcrs_minecraft_protocol_game::entity::{
     DyeColor, EquipmentSlot, MetaDataValue, Metadata, MetadataEntry, OptionalBlockState,
     OptionalUnsignedInt, VillagerData,
 };
+use mcrs_minecraft_protocol_game::item::{ArgbInt, ComponentPatch, RgbInt, Template};
 use mcrs_minecraft_protocol_game::{ByteAngle, LpVec3, ProtoStack};
+use mcrs_minecraft_registries::{Wire, WireId};
 use mcrs_minecraft_resource::{Id, ResourceLocation};
 use uuid::Uuid;
 
@@ -59,9 +64,8 @@ fn add_entity_writes_pitch_before_yaw() {
     assert_eq!(tail, [1, 2, 3, 4]);
 }
 
-#[test]
-fn entity_data_uses_the_registered_serializer_ids() {
-    let entries = vec![
+fn entity_data_entries() -> Vec<(u8, MetaDataValue<'static>, u8)> {
+    vec![
         (0, MetaDataValue::Byte(0x20), 0),
         (1, MetaDataValue::VarInt(VarInt(300)), 1),
         (2, MetaDataValue::Float(1.5), 3),
@@ -84,6 +88,24 @@ fn entity_data_uses_the_registered_serializer_ids() {
         ),
         (
             8,
+            MetaDataValue::Particle(Box::new(ParticleOptions::Dust(DustParticle {
+                color: RgbInt(0x123456),
+                scale: ParticleScale(2.25),
+            }))),
+            16,
+        ),
+        (
+            9,
+            MetaDataValue::Particles(vec![
+                ParticleOptions::AngryVillager,
+                ParticleOptions::EntityEffect(ColorParticle {
+                    color: ArgbInt(0x80FF8000u32 as i32),
+                }),
+            ]),
+            17,
+        ),
+        (
+            10,
             MetaDataValue::VillagerData(VillagerData::new(
                 VillagerType::Plains,
                 VillagerProfession::Cleric,
@@ -92,29 +114,34 @@ fn entity_data_uses_the_registered_serializer_ids() {
             18,
         ),
         (
-            9,
+            11,
             MetaDataValue::OptionalUnsignedInt(OptionalUnsignedInt(Some(0))),
             19,
         ),
-        (10, MetaDataValue::Pose(Pose::Sitting), 20),
-        (11, MetaDataValue::CatVariant(id::<CatVariant>(1)), 21),
+        (12, MetaDataValue::Pose(Pose::Sitting), 20),
+        (13, MetaDataValue::CatVariant(id::<CatVariant>(1)), 21),
         (
-            12,
+            14,
             MetaDataValue::CatSoundVariant(id::<CatSoundVariant>(0)),
             22,
         ),
         (
-            13,
+            15,
             MetaDataValue::ZombieNautilusVariant(id::<ZombieNautilusVariant>(0)),
             32,
         ),
         (
-            14,
+            16,
             MetaDataValue::PaintingVariant(id::<PaintingVariantValue>(3)),
             34,
         ),
-        (15, MetaDataValue::DyeColor(DyeColor::Black), 43),
-    ];
+        (17, MetaDataValue::DyeColor(DyeColor::Black), 43),
+    ]
+}
+
+#[test]
+fn entity_data_uses_the_registered_serializer_ids() {
+    let entries = entity_data_entries();
     for (index, value, serializer) in &entries {
         let entry = MetadataEntry {
             index: *index,
@@ -355,4 +382,76 @@ fn animate_and_swing_animation_packets_match_wire_layout_and_table_ids() {
             }
         }
     }
+}
+
+#[test]
+fn particle_and_particles_entity_data_round_trip_and_check_registries() {
+    use mcrs_minecraft_core::codec::Bounded;
+    use mcrs_minecraft_protocol_game::item::stack::ItemStackValue;
+
+    let item_particle = wire_form(&ParticleOptions::Item(ItemParticle {
+        item: Template::new(Item::DiamondSword.id(), 2, ComponentPatch::EMPTY).unwrap(),
+    }));
+    let dust_particle = ParticleOptions::<Wire>::Dust(DustParticle {
+        color: RgbInt(0x112233),
+        scale: ParticleScale(1.5),
+    });
+    let packet = ClientboundSetEntityData {
+        entity_id: VarInt(42),
+        metadata: Metadata(vec![
+            MetadataEntry {
+                index: 10,
+                value: MetaDataValue::Particle(Box::new(item_particle.clone())),
+            },
+            MetadataEntry {
+                index: 11,
+                value: MetaDataValue::Particles(vec![
+                    ParticleOptions::AngryVillager,
+                    dust_particle.clone(),
+                    item_particle.clone(),
+                ]),
+            },
+            MetadataEntry {
+                index: 12,
+                value: MetaDataValue::Particles(Vec::new()),
+            },
+            MetadataEntry {
+                index: 13,
+                value: MetaDataValue::Boolean(true),
+            },
+        ]),
+    };
+
+    let mut buf = Vec::new();
+    round_trip(&packet, &mut buf);
+    assert!(
+        packet.metadata.check(registries()).is_ok(),
+        "valid item particle metadata should check against registries"
+    );
+
+    let block_meta = Metadata(vec![MetadataEntry {
+        index: 10,
+        value: MetaDataValue::Particle(Box::new(ParticleOptions::Block(BlockParticle {
+            block_state: BlockStateNumber(1),
+        }))),
+    }]);
+    assert!(
+        block_meta.check(registries()).is_ok(),
+        "block particle metadata should pass without block definitions"
+    );
+
+    let invalid_item = Metadata(vec![MetadataEntry {
+        index: 10,
+        value: MetaDataValue::Particles(vec![ParticleOptions::Item(ItemParticle {
+            item: Template(ItemStackValue {
+                item: WireId::new(u16::MAX),
+                count: Bounded(1),
+                components: ComponentPatch::EMPTY,
+            }),
+        })]),
+    }]);
+    assert!(
+        invalid_item.check(registries()).is_err(),
+        "unknown item id inside particles metadata must be rejected"
+    );
 }
