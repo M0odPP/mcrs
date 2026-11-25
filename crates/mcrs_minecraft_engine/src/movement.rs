@@ -37,6 +37,7 @@ impl Plugin for MovementPlugin {
         app.add_observer(handle_move_vehicle);
         app.add_observer(handle_accept_teleportation);
         app.add_message::<PlayerMovement>();
+        app.add_message::<PlayerMoved>();
         if let Err(error) = app.try_register_required_components::<Player, ClientOnGround>() {
             tracing::error!("a player does not require its on-ground flag: {error}");
         }
@@ -123,6 +124,14 @@ fn handle_move_vehicle(
     }
 }
 
+#[derive(Message, Clone, Copy, Debug, PartialEq)]
+pub struct PlayerMoved {
+    pub entity: Entity,
+    pub delta: DVec3,
+    pub was_on_ground: bool,
+    pub now_on_ground: bool,
+}
+
 #[derive(Message)]
 pub struct PlayerMovement {
     entity: Entity,
@@ -141,6 +150,7 @@ pub(crate) fn process_movement(
     )>,
     time: Res<GameTime>,
     mut packets: MessageWriter<OutboundPlayerPacket>,
+    mut moved: MessageWriter<PlayerMoved>,
 ) {
     for movement in reader.read() {
         let Ok((owner, mut state, mut transform, mut on_ground)) = query.get_mut(movement.entity)
@@ -154,6 +164,8 @@ pub(crate) fn process_movement(
             }
             continue;
         }
+        let previous_position = transform.translation;
+        let was_on_ground = on_ground.0;
         if let Some(position) = movement.position {
             transform.set_if_neq(transform.with_translation(reachable(position)));
         }
@@ -164,6 +176,12 @@ pub(crate) fn process_movement(
             on_ground.set_if_neq(reported);
         }
         state.sync(*transform);
+        moved.write(PlayerMoved {
+            entity: movement.entity,
+            delta: transform.translation - previous_position,
+            was_on_ground,
+            now_on_ground: on_ground.0,
+        });
     }
 }
 
@@ -321,6 +339,7 @@ mod tests {
     fn movement_world() -> World {
         let mut world = World::new();
         MessageRegistry::register_message::<PlayerMovement>(&mut world);
+        MessageRegistry::register_message::<PlayerMoved>(&mut world);
         MessageRegistry::register_message::<OutboundPlayerPacket>(&mut world);
         world.init_resource::<GameTime>();
         world
@@ -371,6 +390,19 @@ mod tests {
             sent_ids(&mut world),
             [] as [i32; 0],
             "the teleport is fresh"
+        );
+        let emitted: Vec<_> = world
+            .resource_mut::<Messages<PlayerMoved>>()
+            .drain()
+            .collect();
+        assert_eq!(
+            emitted,
+            vec![PlayerMoved {
+                entity: confirmed,
+                delta: to,
+                was_on_ground: false,
+                now_on_ground: false,
+            }]
         );
     }
 

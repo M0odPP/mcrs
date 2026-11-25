@@ -5,15 +5,18 @@ use mcrs_minecraft_environment::AdvanceTime;
 use mcrs_minecraft_game_rule::GameRule;
 use mcrs_minecraft_protocol::VarInt;
 use mcrs_minecraft_protocol_game::clientbound::{ClientboundTickingState, ClientboundTickingStep};
+use mcrs_minecraft_save::Difficulty;
 
 use mcrs_minecraft_engine_world::game_rules::GameRules;
 
 use crate::bus::{OutboundPlayerPacket, PacketPayload, PacketTarget, to_target};
 use crate::muxer::online_count::send_online_count;
+use crate::server_difficulty::ServerDifficulty;
 
 #[derive(Event, Clone, Copy, Debug, PartialEq)]
 pub enum ServerEdit {
     GameRule { rule: GameRule, value: i32 },
+    Difficulty { difficulty: Difficulty },
     ClearWeather { ticks: u32 },
     StartSprint { ticks: u64 },
     StopSprint,
@@ -38,6 +41,11 @@ pub fn apply_edit(world: &mut World, edit: ServerEdit) {
         ServerEdit::GameRule { rule, value } => {
             if let Some(mut rules) = world.get_resource_mut::<GameRules>() {
                 rules.set(rule, value);
+            }
+        }
+        ServerEdit::Difficulty { difficulty } => {
+            if let Some(mut current) = world.get_resource_mut::<ServerDifficulty>() {
+                current.set_if_neq(ServerDifficulty(difficulty));
             }
         }
         ServerEdit::ClearWeather { ticks } => {
@@ -71,7 +79,9 @@ fn edit_pace(pace: &mut TickPace, edit: ServerEdit) {
         ServerEdit::Unfreeze => pace.unfreeze(),
         ServerEdit::Step { ticks } => pace.step(ticks),
         ServerEdit::StopStep => pace.stop_step(),
-        ServerEdit::GameRule { .. } | ServerEdit::ClearWeather { .. } => {}
+        ServerEdit::GameRule { .. }
+        | ServerEdit::Difficulty { .. }
+        | ServerEdit::ClearWeather { .. } => {}
     }
 }
 
@@ -80,6 +90,7 @@ pub struct ServerStateHostPlugin;
 impl Plugin for ServerStateHostPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<GameRules>();
+        app.init_resource::<ServerDifficulty>();
         app.init_resource::<Weather>();
         app.add_observer(apply_host_edit);
         app.add_systems(

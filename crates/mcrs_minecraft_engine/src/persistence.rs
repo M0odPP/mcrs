@@ -62,6 +62,7 @@ const SAVED_ATTRIBUTES_KEYS: &[&str] = &["attributes"];
 const CARRIED_ATTRIBUTES_KEYS: &[&str] = &["mcrs:attributes"];
 const SPRINTING_KEYS: &[&str] = &["mcrs:sprinting"];
 const SHIFT_KEY_KEYS: &[&str] = &["mcrs:shift_key"];
+const LIVED_TICKS_KEYS: &[&str] = &["mcrs:lived_ticks"];
 const UUID_KEYS: &[&str] = &["UUID"];
 const ON_GROUND_KEYS: &[&str] = &["OnGround"];
 const HEALTH_KEY: &str = "Health";
@@ -119,7 +120,11 @@ impl Plugin for PlayerPersistencePlugin {
                 apply_vitals,
             )
             .register_persisted::<PlayerSprinting>(SPRINTING_KEYS, PersistScope::TravelOnly)
-            .register_persisted::<ShiftKey>(SHIFT_KEY_KEYS, PersistScope::TravelOnly);
+            .register_persisted::<ShiftKey>(SHIFT_KEY_KEYS, PersistScope::TravelOnly)
+            .register_persisted::<crate::player_lived_ticks::PlayerLivedTicks>(
+                LIVED_TICKS_KEYS,
+                PersistScope::TravelOnly,
+            );
     }
 }
 

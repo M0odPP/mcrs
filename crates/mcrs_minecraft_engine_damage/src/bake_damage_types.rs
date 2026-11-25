@@ -1,11 +1,16 @@
+use bevy_ecs::change_detection::DetectChangesMut;
 use bevy_ecs::system::Res;
 use bevy_ecs::system::ResMut;
 use mcrs_minecraft_damage::DamageTags;
 use mcrs_minecraft_damage::DamageTypeRules;
 use mcrs_minecraft_entity::damage_type::DamageType;
+use mcrs_minecraft_entity::damage_type_keys;
 use mcrs_minecraft_entity::damage_type_tag_keys;
+use mcrs_minecraft_entity::registry_keys::DAMAGE_TYPE;
 use mcrs_minecraft_registries::CurrentRegistries;
 use mcrs_minecraft_resource::TagKey;
+
+use crate::DamageTypeIds;
 
 struct TagBit {
     tag: TagKey<'static, DamageType>,
@@ -50,6 +55,7 @@ const TAGS: [TagBit; 8] = [
 pub(crate) fn bake_damage_types(
     registries: Res<CurrentRegistries>,
     mut rules: ResMut<DamageTypeRules>,
+    mut ids: ResMut<DamageTypeIds>,
 ) {
     let count = registries
         .entries::<DamageType>()
@@ -67,8 +73,26 @@ pub(crate) fn bake_damage_types(
             }
         }
     }
-    let baked = DamageTypeRules::new(rows);
+    let baked = match registries.registry::<DamageType>() {
+        Some(registry) => DamageTypeRules::new(rows).with_exhaustions(
+            registry
+                .values()
+                .iter()
+                .map(|damage_type| damage_type.exhaustion),
+        ),
+        None => DamageTypeRules::new(rows),
+    };
     if *rules != baked {
         *rules = baked;
     }
+    let registry_key = DAMAGE_TYPE.location();
+    let baked_ids = DamageTypeIds {
+        starve: registries
+            .id_of(registry_key, damage_type_keys::STARVE.location())
+            .map(u32::from),
+        player_attack: registries
+            .id_of(registry_key, damage_type_keys::PLAYER_ATTACK.location())
+            .map(u32::from),
+    };
+    ids.set_if_neq(baked_ids);
 }

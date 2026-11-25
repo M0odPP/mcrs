@@ -5,7 +5,7 @@ use bevy_ecs::component::Component;
 use mcrs_minecraft_nbt::compound::NbtCompound;
 use mcrs_minecraft_nbt::nbt_int_array;
 use mcrs_minecraft_text::Text;
-use serde::de::{Error as _, Visitor};
+use serde::de::{Error as _, IgnoredAny, MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[must_use]
@@ -308,6 +308,107 @@ fn is_default_icon(icon: &LocatorBarIcon) -> bool {
     *icon == LocatorBarIcon::default()
 }
 
+enum FieldScalar {
+    Signed(i64),
+    Unsigned(u64),
+    Float(f64),
+    Wrong,
+}
+
+fn read_field_scalar<'de, D: Deserializer<'de>>(
+    deserializer: D,
+    expecting: &'static str,
+) -> Result<FieldScalar, D::Error> {
+    struct ScalarVisitor(&'static str);
+
+    macro_rules! wrong_scalar {
+        ($($method:ident($ty:ty)),* $(,)?) => {
+            $(fn $method<E: serde::de::Error>(self, _: $ty) -> Result<Self::Value, E> { Ok(FieldScalar::Wrong) })*
+        };
+    }
+
+    impl<'de> Visitor<'de> for ScalarVisitor {
+        type Value = FieldScalar;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            formatter.write_str(self.0)
+        }
+
+        fn visit_i64<E: serde::de::Error>(self, v: i64) -> Result<Self::Value, E> {
+            Ok(FieldScalar::Signed(v))
+        }
+
+        fn visit_u64<E: serde::de::Error>(self, v: u64) -> Result<Self::Value, E> {
+            Ok(FieldScalar::Unsigned(v))
+        }
+
+        fn visit_f64<E: serde::de::Error>(self, v: f64) -> Result<Self::Value, E> {
+            Ok(FieldScalar::Float(v))
+        }
+
+        wrong_scalar!(
+            visit_bool(bool),
+            visit_char(char),
+            visit_str(&str),
+            visit_bytes(&[u8]),
+        );
+
+        fn visit_none<E: serde::de::Error>(self) -> Result<Self::Value, E> {
+            Ok(FieldScalar::Wrong)
+        }
+
+        fn visit_unit<E: serde::de::Error>(self) -> Result<Self::Value, E> {
+            Ok(FieldScalar::Wrong)
+        }
+
+        fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
+            while seq.next_element::<IgnoredAny>()?.is_some() {}
+            Ok(FieldScalar::Wrong)
+        }
+
+        fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
+            while map.next_entry::<IgnoredAny, IgnoredAny>()?.is_some() {}
+            Ok(FieldScalar::Wrong)
+        }
+    }
+
+    deserializer.deserialize_any(ScalarVisitor(expecting))
+}
+
+fn lenient_i32<'de, D: Deserializer<'de>>(deserializer: D, default: i32) -> Result<i32, D::Error> {
+    Ok(match read_field_scalar(deserializer, "an integer tag")? {
+        FieldScalar::Signed(v) => v as i32,
+        FieldScalar::Unsigned(v) => v as i32,
+        FieldScalar::Float(v) if v.is_finite() => v.floor() as i32,
+        FieldScalar::Float(_) | FieldScalar::Wrong => default,
+    })
+}
+
+fn lenient_food_level<'de, D: Deserializer<'de>>(deserializer: D) -> Result<i32, D::Error> {
+    lenient_i32(deserializer, 20)
+}
+
+fn lenient_food_timer<'de, D: Deserializer<'de>>(deserializer: D) -> Result<i32, D::Error> {
+    lenient_i32(deserializer, 0)
+}
+
+fn lenient_f32<'de, D: Deserializer<'de>>(deserializer: D, default: f32) -> Result<f32, D::Error> {
+    Ok(match read_field_scalar(deserializer, "a float tag")? {
+        FieldScalar::Signed(v) => v as f32,
+        FieldScalar::Unsigned(v) => v as f32,
+        FieldScalar::Float(v) if v.is_finite() => v as f32,
+        FieldScalar::Float(_) | FieldScalar::Wrong => default,
+    })
+}
+
+fn lenient_saturation<'de, D: Deserializer<'de>>(deserializer: D) -> Result<f32, D::Error> {
+    lenient_f32(deserializer, 5.0)
+}
+
+fn lenient_exhaustion<'de, D: Deserializer<'de>>(deserializer: D) -> Result<f32, D::Error> {
+    lenient_f32(deserializer, 0.0)
+}
+
 #[derive(Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct PlayerFileState {
@@ -378,13 +479,19 @@ pub struct PlayerFileState {
         skip_serializing_if = "Option::is_none"
     )]
     pub previous_player_game_type: Option<i32>,
-    #[serde(rename = "foodLevel")]
+    #[serde(rename = "foodLevel", deserialize_with = "lenient_food_level")]
     pub food_level: i32,
-    #[serde(rename = "foodTickTimer")]
+    #[serde(rename = "foodTickTimer", deserialize_with = "lenient_food_timer")]
     pub food_tick_timer: i32,
-    #[serde(rename = "foodSaturationLevel")]
+    #[serde(
+        rename = "foodSaturationLevel",
+        deserialize_with = "lenient_saturation"
+    )]
     pub food_saturation_level: f32,
-    #[serde(rename = "foodExhaustionLevel")]
+    #[serde(
+        rename = "foodExhaustionLevel",
+        deserialize_with = "lenient_exhaustion"
+    )]
     pub food_exhaustion_level: f32,
     #[serde(rename = "XpLevel")]
     pub xp_level: i32,
@@ -486,5 +593,39 @@ impl Default for PlayerFileState {
             root_vehicle: None,
             ender_pearls: Vec::new(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use mcrs_minecraft_nbt::from_tag;
+    use mcrs_minecraft_nbt::tag::NbtTag;
+
+    #[test]
+    fn hunger_fields_fallback_on_wrong_tag_type_without_clamping() {
+        let mut compound = NbtCompound::new();
+        compound.put_string("foodLevel", "bad".to_owned());
+        compound.put("foodTickTimer", NbtTag::List(Vec::new()));
+        compound.put_component("foodSaturationLevel", NbtCompound::new());
+        compound.put("foodExhaustionLevel", NbtTag::IntArray(vec![1, 2]));
+
+        let state: PlayerFileState = from_tag(NbtTag::Compound(compound)).unwrap();
+        assert_eq!(state.food_level, 20);
+        assert_eq!(state.food_tick_timer, 0);
+        assert_eq!(state.food_saturation_level, 5.0);
+        assert_eq!(state.food_exhaustion_level, 0.0);
+
+        let mut unclamped = NbtCompound::new();
+        unclamped.put_int("foodLevel", -3);
+        unclamped.put_int("foodTickTimer", 95);
+        unclamped.put_float("foodSaturationLevel", 30.0);
+        unclamped.put_float("foodExhaustionLevel", -2.5);
+
+        let state: PlayerFileState = from_tag(NbtTag::Compound(unclamped)).unwrap();
+        assert_eq!(state.food_level, -3);
+        assert_eq!(state.food_tick_timer, 95);
+        assert_eq!(state.food_saturation_level, 30.0);
+        assert_eq!(state.food_exhaustion_level, -2.5);
     }
 }

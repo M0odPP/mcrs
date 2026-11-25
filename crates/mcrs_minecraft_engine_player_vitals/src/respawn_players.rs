@@ -12,7 +12,7 @@ use mcrs_minecraft_engine::coordinator::running_dimensions::{RunningDimension, R
 use mcrs_minecraft_engine::dimension_change::Arrival;
 use mcrs_minecraft_engine::player_state::PlayerFileState;
 use mcrs_minecraft_engine::teleport::TeleportState;
-use mcrs_minecraft_engine::{KeptPlayerData, max_health, respawn_packet};
+use mcrs_minecraft_engine::{KeptPlayerData, PlayerLivedTicks, max_health, respawn_packet};
 use mcrs_minecraft_engine_damage::RespawnRequest;
 use mcrs_minecraft_engine_world::entity::physics::Transform;
 use mcrs_minecraft_engine_world::entity::player::{ChangeDimensionRequest, Player};
@@ -33,6 +33,7 @@ type RespawnedPlayer<'a> = (
     &'a mut Vitals,
     &'a mut HitRecord,
     &'a mut PlayerFileState,
+    Option<&'a mut PlayerLivedTicks>,
     &'a mut Transform,
     &'a mut TeleportState,
     &'a PlayerGameMode,
@@ -63,6 +64,7 @@ pub(crate) fn respawn_players(
             mut vitals,
             mut hits,
             mut file_state,
+            lived_ticks,
             mut transform,
             mut teleport,
             game_mode,
@@ -91,6 +93,9 @@ pub(crate) fn respawn_players(
         vitals.set_if_neq(Vitals::new(max_health(attributes)));
         hits.set_if_neq(HitRecord::default());
         reset_file_state(&mut file_state);
+        if let Some(mut lived) = lived_ticks {
+            lived.set_if_neq(PlayerLivedTicks(0));
+        }
         if own.as_deref().map(|own| own.0) != Some(request.dimension) {
             changes.write(ChangeDimensionRequest {
                 player: request.player,
@@ -152,6 +157,7 @@ fn enter_packets(
 fn reset_file_state(state: &mut PlayerFileState) {
     let fresh = PlayerFileState::default();
     state.food_level = fresh.food_level;
+    state.food_tick_timer = fresh.food_tick_timer;
     state.food_saturation_level = fresh.food_saturation_level;
     state.food_exhaustion_level = fresh.food_exhaustion_level;
     state.fire = fresh.fire;

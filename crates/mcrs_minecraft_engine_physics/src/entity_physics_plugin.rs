@@ -4,6 +4,7 @@ use bevy_app::Plugin;
 use bevy_ecs::schedule::ApplyDeferred;
 use bevy_ecs::schedule::IntoScheduleConfigs;
 use bevy_ecs::schedule::SystemCondition;
+use bevy_ecs::schedule::SystemSet;
 use bevy_ecs::schedule::common_conditions::on_message;
 use bevy_ecs::schedule::common_conditions::resource_exists;
 use bevy_ecs::schedule::common_conditions::resource_exists_and_changed;
@@ -38,6 +39,9 @@ use crate::mob_spawn::has_waiting_spawns;
 use crate::mob_spawn::spawn_mob_entities;
 use crate::mob_spawn_request::MobSpawnRequest;
 use crate::physics_tables::build_tables;
+
+#[derive(SystemSet, Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct CrowdHitSet;
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct EntityPhysicsPlugin;
@@ -81,7 +85,10 @@ impl Plugin for EntityPhysicsPlugin {
                     .run_if(has_expired)
                     .in_set(MotionPass)
                     .after(MotionEffects),
-                hit_crowds.run_if(has_crowds).in_set(DamageSet::Collect),
+                hit_crowds
+                    .run_if(has_crowds)
+                    .in_set(CrowdHitSet)
+                    .in_set(DamageSet::Collect),
                 apply_entity_writes
                     .run_if(has_writes)
                     .in_set(TickSet::Simulate)
