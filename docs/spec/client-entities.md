@@ -801,6 +801,9 @@ fire with a fire aspect sword. The client shows the fire while bit 0 is set.
 | 6 | `body` |
 | 7 | `saddle` |
 
+For a player, `equipment-sync.md` (`EQP-PKT-001`, `EQP-SLT-001`) states when the server sends slots
+`0` to `5`.
+
   2. For a living entity, the client stores the item stack of each entry in its slot. An empty
      item stack makes the slot empty. A slot that the packet does not contain keeps its stack.
   3. Each slot is empty when the client adds the entity. The client deletes the equipment with
@@ -816,7 +819,10 @@ fire with a fire aspect sword. The client shows the fire while bit 0 is set.
   `molang-queries.md` read the equippable asset of a slot. The query `is_saddled` is 1 when the
   slot `saddle` is not empty.
 
-Provenance: `source_suggested`. Kind: wire for 1; semantic for the others. Confidence: medium.
+Provenance: `source_suggested`; item 1 is `source_suggested_black_box_confirmed` for slots `0` to
+`5` (`tools/mcrs_minecraft_probe/traces/equipment_sync.json`; `equipment-sync.md`, `EQP-PKT-001`)
+and slot `7` (`pig_lineup.packets.json`). Kind: wire for 1; semantic for the others. Confidence:
+high for slot ids `0` to `5` and `7`; medium for the rest.
 Experiment: put a saddle on a pig. Capture the packet `minecraft:set_equipment`. The slot byte
 is 7. The asset is `minecraft:saddle`. Remove the saddle with shears. The next packet has an
 empty stack for the slot 7.

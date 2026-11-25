@@ -1,0 +1,145 @@
+{
+  "target": {
+    "operators": ["Alice", "Bob", "Charlie"]
+  },
+  "observe": {
+    "equipment": true,
+    "entity_event": true,
+    "sound": true,
+    "packet_order": true
+  },
+  "steps": [
+    {
+      "id": "prepare",
+      "console": {
+        "lines": [
+          "difficulty peaceful",
+          "gamerule spawn_mobs false"
+        ]
+      }
+    },
+    { "id": "join_alice", "join": "Alice" },
+    { "id": "join_bob", "join": "Bob" },
+    {
+      "id": "position_players",
+      "console": {
+        "lines": [
+          "gamemode survival Alice",
+          "gamemode survival Bob",
+          "clear Alice",
+          "clear Bob",
+          "tp Alice 0.5 -60 0.5 0 0",
+          "tp Bob 2.5 -60 0.5 90 0",
+          "fill -6 -61 -6 6 -61 6 minecraft:stone",
+          "fill -6 -60 -6 6 -55 6 minecraft:air"
+        ]
+      }
+    },
+    { "id": "wait_join", "wait": { "ms": 400 } },
+    {
+      "id": "set_hotbar_slots",
+      "console": {
+        "lines": [
+          "item replace entity Alice hotbar.0 with minecraft:diamond_sword",
+          "item replace entity Alice hotbar.1 with minecraft:iron_pickaxe"
+        ]
+      },
+      "packet_order": true
+    },
+    {
+      "id": "set_backpack_slot",
+      "console": {
+        "lines": [
+          "item replace entity Alice inventory.0 with minecraft:emerald"
+        ]
+      },
+      "packet_order": true
+    },
+    {
+      "id": "set_count_base",
+      "console": {
+        "lines": [
+          "item replace entity Alice hotbar.0 with minecraft:apple 1"
+        ]
+      },
+      "packet_order": true
+    },
+    {
+      "id": "set_count_only",
+      "console": {
+        "lines": [
+          "item replace entity Alice hotbar.0 with minecraft:apple 2"
+        ]
+      },
+      "packet_order": true
+    },
+    {
+      "id": "set_patch_base",
+      "console": {
+        "lines": [
+          "item replace entity Alice hotbar.0 with minecraft:diamond_sword[minecraft:damage=5]"
+        ]
+      },
+      "packet_order": true
+    },
+    {
+      "id": "set_patch_only",
+      "console": {
+        "lines": [
+          "item replace entity Alice hotbar.0 with minecraft:diamond_sword[minecraft:damage=10]"
+        ]
+      },
+      "packet_order": true
+    },
+    {
+      "id": "restore_hotbar0_sword",
+      "console": {
+        "lines": [
+          "item replace entity Alice hotbar.0 with minecraft:diamond_sword"
+        ]
+      },
+      "packet_order": true
+    },
+    { "id": "select_slot_1", "select_slot": { "client": "Alice", "slot": 1 }, "packet_order": true },
+    { "id": "select_slot_0", "select_slot": { "client": "Alice", "slot": 0 }, "packet_order": true },
+    { "id": "swap_offhand", "player_action": { "client": "Alice", "status": "swap_item_with_offhand" }, "packet_order": true },
+    { "id": "wait_after_swap", "wait": { "ms": 200 }, "packet_order": true },
+    {
+      "id": "equip_armour_via_console",
+      "console": {
+        "lines": [
+          "item replace entity Alice armor.head with minecraft:iron_helmet",
+          "item replace entity Alice armor.chest with minecraft:diamond_chestplate",
+          "item replace entity Alice armor.legs with minecraft:chainmail_leggings",
+          "item replace entity Alice armor.feet with minecraft:leather_boots"
+        ]
+      },
+      "packet_order": true
+    },
+    {
+      "id": "equip_helmet_by_use",
+      "console": {
+        "lines": [
+          "item replace entity Alice armor.head with minecraft:air",
+          "item replace entity Alice hotbar.0 with minecraft:golden_helmet"
+        ]
+      }
+    },
+    { "id": "use_helmet_equip", "use_item": { "client": "Alice", "hand": "main", "sequence": 1 }, "packet_order": true },
+    { "id": "join_charlie_observer", "join": "Charlie" },
+    {
+      "id": "move_charlie_near",
+      "console": {
+        "lines": [
+          "gamemode survival Charlie",
+          "tp Charlie -2.5 -60 0.5 -90 0"
+        ]
+      },
+      "packet_order": true
+    },
+    { "id": "wait_charlie", "wait": { "ms": 500 } },
+    { "id": "leave_charlie", "leave": "Charlie" },
+    { "id": "leave_bob", "leave": "Bob" },
+    { "id": "leave_alice", "leave": "Alice" }
+  ]
+}
