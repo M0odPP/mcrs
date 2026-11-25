@@ -61,6 +61,7 @@ mcrs_minecraft_protocol::extend_packet_table! {
         "set_passengers" => ClientboundSetPassengers,
         "set_player_inventory" => ClientboundSetPlayerInventory,
         "set_time" => ClientboundSetTime,
+        "sound" => ClientboundSound,
         "swing_animation" => ClientboundSwingAnimation,
         "system_chat" => ClientboundSystemChatPacket<'a>,
         "tab_list" => ClientboundTabList<'a>,
