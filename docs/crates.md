@@ -204,6 +204,7 @@ Use the crate that owns the item. Do not write a second copy.
 - `mcrs_minecraft_vanilla_player_attack`: The melee attack of a player on an entity: the attack strength, the damage amount, the hit request from the attack packet and the knockback of the hit
 - `mcrs_minecraft_vanilla_respawn`: Vanilla respawn of a dead player on its request, at the respawn position of the vanilla rules
 - `mcrs_minecraft_vanilla_swing`: Vanilla arm swings in the dimension worlds: punch, stab, and attack_animation item components
+- `mcrs_minecraft_vanilla_weather`: Vanilla weather cycle host progression, per-dimension rain and thunder ramps, and wire sync
 - `mcrs_minecraft_vanilla_worldgen`: World generation wired into the dimension worlds: the routers, carvers, features and structures of each dimension, and the column scheduler that generates or reads its columns
 
 ## wire

@@ -79,6 +79,7 @@ mod teleport_confirmation;
 mod tick_determinism;
 mod tick_freeze;
 mod view_distance;
+mod weather;
 mod whitelist;
 mod world_cells;
 mod world_server;

@@ -1,0 +1,23 @@
+[package]
+name = "mcrs_minecraft_vanilla_weather"
+description = "Vanilla weather cycle host progression, per-dimension rain and thunder ramps, and wire sync"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+doctest = false
+
+[lints]
+workspace = true
+
+[dependencies]
+bevy_app.workspace = true
+bevy_ecs.workspace = true
+mcrs_minecraft_dimension_environment = { workspace = true, features = ["bevy"] }
+mcrs_minecraft_engine.workspace = true
+mcrs_minecraft_engine_world.workspace = true
+mcrs_minecraft_game_rule.workspace = true
+mcrs_minecraft_protocol_game.workspace = true
+mcrs_minecraft_weather.workspace = true
+smallvec.workspace = true
