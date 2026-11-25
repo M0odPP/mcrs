@@ -55,38 +55,58 @@ The labels are those of `docs/spec/registry.md`, section 0.3, and the kinds are 
   `consumable`. 44 items have `food`. 5 of the 44 have `can_always_eat`: `golden_apple`,
   `enchanted_golden_apple`, `chorus_fruit`, `honey_bottle` and `suspicious_stew`.
 - The data-pack registry `minecraft:damage_type`: its field `exhaustion` (HNG-EXH-006) and its
-  tag membership (HNG-STV-002).
+  tag membership (HNG-STV-002), in `crates/mcrs_minecraft_game_registries/tests/fixtures/registry_values.txt`,
+  `crates/mcrs_minecraft_game_registries/tests/fixtures/world_registry_ids.txt` and `assets/mcrs/reports/names.json`.
 - `assets/mcrs/reports/packets.json`: `set_health` is play clientbound 106.
 - `assets/mcrs/reports/registries.json`: the game rule `natural_health_regeneration`.
+- `tools/mcrs_minecraft_probe/traces/hunger.json`: the probe trace of experiments HNG-E1 to HNG-E8.
+- `tools/mcrs_minecraft_probe/traces/player_attack.json`: the attack probe trace (`HNG-EXH-001`, `HNG-EXH-004` and `HNG-REG-005`).
 
 ## 1. The hunger state
 
-**HNG-STA-001** (`source_suggested`, semantic, confidence: high). A new player has the food level
-20, the saturation 5.0, the exhaustion 0.0 and the hunger timer 0. A player that respawns after a
-death gets these values again. A player that changes dimension keeps its values.
+**HNG-STA-001** A new player has the food level 20, the saturation 5.0, the exhaustion 0.0 and the
+hunger timer 0. A player that respawns after a death gets these values again (`player-death.md`,
+PLD-RST-002). A player that changes dimension keeps its values (`dimension-change.md`, DIM-CHG-001).
 
-**HNG-STA-002** (`source_suggested`, semantic, confidence: high). The food level stays from 0 to
-20. An eat clamps the new food level to that range. The exhaustion stays from 0 to 40: an
-addition that gives more than 40 gives 40.
+Provenance: `source_suggested_black_box_confirmed`. Kind: semantic. Confidence: high.
+Experiment: HNG-E1 (`tools/mcrs_minecraft_probe/traces/hunger.json`, `join_alice`, `setup_alice`)
+confirms `foodLevel` 20, `foodSaturationLevel` `5.0f`, `foodExhaustionLevel` `0.0f` and
+`foodTickTimer` 0. Respawn and dimension change were not probed in that trace.
 
-**HNG-STA-003** (`source_suggested`, semantic, confidence: high). An eat adds the
-saturation of the item to the saturation. The result is clamped to the range from 0 to the new food
-level. Thus an eat never gives a saturation that is more than the food level. A drain of
-the saturation (HNG-TICK-001) has no such clamp.
+**HNG-STA-002** The food level stays from 0 to 20. An eat clamps the new food level to that range
+(section 6). The exhaustion stays from 0 to 40: an addition that gives more than 40 gives 40.
+
+Provenance: `source_suggested_black_box_confirmed`. Kind: semantic. Confidence: high.
+Experiment: HNG-E5, HNG-E6 and HNG-E8 (`tools/mcrs_minecraft_probe/traces/hunger.json`) confirm
+that food stops at 20 on peaceful and at 0 under `hunger`. The `40.0` exhaustion cap was not
+reached. The eat clamp is out of scope (section 9).
+
+**HNG-STA-003** An eat adds the saturation of the item to the saturation. The result is clamped to
+the range from 0 to the new food level. Thus an eat never gives a saturation that is more than the
+food level. A drain of the saturation (HNG-TICK-001) has no such clamp.
+
+Provenance: `source_suggested_black_box_confirmed` for saturation drain and peaceful gain.
+Kind: semantic. Confidence: high. Experiment: HNG-E3, HNG-E5 and HNG-E6
+(`tools/mcrs_minecraft_probe/traces/hunger.json`) drain 5.0 to 0.0 and 2.0 to 0.0, and raise 0.0
+to 2.0 on peaceful. The eat rules belong to section 6 (out of scope, section 9).
 
 ## 2. Sources of exhaustion
 
 Each source adds a fixed amount to the exhaustion of the player. Section 2 states the amounts as
 data. All additions are f32.
 
-**HNG-EXH-001** (`source_suggested`, semantic, confidence: high). A creative player gets no
-exhaustion from any source. The addition has no effect for such a player. A client
-only sees the result as a food level that does not fall.
+**HNG-EXH-001** A creative player gets no exhaustion from any source. The addition has no effect for
+such a player. A client only sees the result as a food level that does not fall.
 
-**HNG-EXH-002** (`source_suggested`, semantic, confidence: medium). The server adds exhaustion for
-the move of a player that is not a passenger. It uses the distance of one accepted move. The
-distance is rounded to a whole number `n` of centimetres, and a move with `n = 0` adds nothing.
-The server checks these cases in this order, and only the first true case counts:
+Provenance: `source_suggested_black_box_confirmed`. Kind: semantic. Confidence: high.
+Experiment: ATK-E4 of `player-attack.md` (`tools/mcrs_minecraft_probe/traces/player_attack.json`)
+confirms a creative attack keeps `foodExhaustionLevel` at `0.5f`. Spectator mode and creative
+movement were not probed.
+
+**HNG-EXH-002** The server adds exhaustion for the move of a player that is not a passenger. It uses
+the distance of one accepted move. The distance is rounded to a whole number `n` of centimetres, and
+a move with `n = 0` adds nothing. The server checks these cases in this order, and only the first
+true case counts:
 
 | Case | Distance | Exhaustion for one move |
 |------|----------|-------------------------|
@@ -102,10 +122,19 @@ Thus a sprint of one block adds 0.1, and a swim of one block adds 0.01. A walk, 
 climb add nothing. Rounding to centimetres gives these amounts. A test must not
 compare an exhaustion that differs from the result by less than 0.0001 for each move.
 
-**HNG-EXH-003** (`source_suggested`, semantic, confidence: medium). A jump adds exhaustion once.
-The amount is 0.2 when the player sprints, and 0.05 when it does not. The two amounts do not
-add. The server detects a jump from a move packet. The player was on the ground, the client
-says that it is not on the ground, and the move goes up.
+Provenance: `source_suggested_black_box_confirmed` for the ground-sprint row. Kind: semantic.
+Confidence: high. Experiment: HNG-E2 (`tools/mcrs_minecraft_probe/traces/hunger.json`: `sprint_on`
+to `read_move_exhaustion`) adds 0.4 across 4.0 blocks before the 0.05 jump. The water, climbable,
+walk and passenger rows are out of scope (section 9).
+
+**HNG-EXH-003** A jump adds exhaustion once. The amount is 0.2 when the player sprints, and 0.05
+when it does not. The two amounts do not add. The server detects a jump from a move packet. The
+player was on the ground, the client says that it is not on the ground, and the move goes up.
+
+Provenance: `source_suggested_black_box_confirmed`. Kind: semantic. Confidence: high.
+Experiment: HNG-E2 (`tools/mcrs_minecraft_probe/traces/hunger.json`: `sprint_off`, `jump_move`,
+`jump_land`, `read_move_exhaustion`) confirms `0.05` (`0.4` to `0.45f`) without sprint. The
+sprint-jump `0.2` case was not probed.
 
 **HNG-EXH-004** An attack of a player on an entity adds 0.1 to the exhaustion when two conditions
 are true. The attack damage or the enchantment bonus is more than 0. The target does not reject the
@@ -116,18 +145,20 @@ procedure of its type decides whether it accepts the hit (`player-attack.md`, AT
 hits of a sweep add nothing. `player-attack.md` states the attack itself.
 
 Provenance: `source_suggested_black_box_confirmed`. Kind: semantic. Confidence: high. Experiment:
-ATK-E1, ATK-E2 and ATK-E5 of `player-attack.md`;
-`tools/mcrs_minecraft_probe/traces/player_attack.json`.
+ATK-E1, ATK-E2 and ATK-E5 of `player-attack.md` (`tools/mcrs_minecraft_probe/traces/player_attack.json`)
+and HNG-E2 in `tools/mcrs_minecraft_probe/traces/hunger.json` (`attack_pig`, `seq_fast_regen`:
+`0.45f` to `0.55f`).
 
 **HNG-EXH-005** (`black_box_confirmed`, semantic, confidence: high). A survival break of a block
 with a harvest adds 0.005. `block-breaking.md` states this rule as BRK-LOOT-002 and does not
-change it here.
+change it here. In `tools/mcrs_minecraft_probe/traces/hunger.json` (`mine_start`, `mine_stop`,
+`attack_exhaustion_setup`), an aborted dig adds nothing (`foodExhaustionLevel` stays `0.45f`).
 
-**HNG-EXH-006** (`source_suggested`, semantic, confidence: high). A player that loses health from
-a hit adds the exhaustion of the damage type. The hit applies this when the applied damage that
-passes the absorption is not 0 (`entity-damage.md`, DMG-HIT-004). The amount does not depend on the
-amount of the damage. A hit that the absorption fully takes adds nothing. A hit of a damage type
-with the field `exhaustion` of 0.0 adds nothing. The vanilla data pack gives these values:
+**HNG-EXH-006** A player that loses health from a hit adds the exhaustion of the damage type. The
+hit applies this when the applied damage that passes the absorption is not 0 (`entity-damage.md`,
+DMG-HIT-004). The amount does not depend on the amount of the damage. A hit that the absorption
+fully takes adds nothing. A hit of a damage type with the field `exhaustion` of 0.0 adds nothing.
+The vanilla data pack gives these values:
 
 | `exhaustion` | Damage types |
 |--------------|--------------|
@@ -137,17 +168,28 @@ with the field `exhaustion` of 0.0 adds nothing. The vanilla data pack gives the
 A data pack can change the field. The server must read it from the registry and must not use this
 table as a constant.
 
-**HNG-EXH-007** (`source_suggested`, semantic, confidence: high). Natural regeneration adds
-exhaustion (HNG-REG-001 and HNG-REG-002). The effect `hunger` adds `0.005 × (amplifier + 1)` in
-each tick. The enchantment entity effect `apply_exhaustion` adds an amount that its data states.
-`status-effects.md` and the enchantment specification state the last two sources. This document names
-them as the places where the exhaustion changes.
+Provenance: `source_suggested_black_box_confirmed`. Kind: semantic. Confidence: high. Artefact:
+`crates/mcrs_minecraft_game_registries/tests/fixtures/registry_values.txt` confirms every vanilla
+value. Experiment: HNG-E3, HNG-E4 and HNG-E6 (`tools/mcrs_minecraft_probe/traces/hunger.json`)
+confirm 0.0 exhaustion for `minecraft:generic` and `minecraft:starve`. Hits of types with 0.1
+exhaustion or with absorption were not probed.
+
+**HNG-EXH-007** Natural regeneration adds exhaustion (HNG-REG-001 and HNG-REG-002). The effect
+`hunger` adds `0.005 × (amplifier + 1)` in each tick. The enchantment entity effect
+`apply_exhaustion` adds an amount that its data states. `status-effects.md` and the enchantment
+specification state the last two sources. This document names them as the places where the
+exhaustion changes.
+
+Provenance: `black_box_confirmed` for natural regeneration and the `hunger` effect. The
+enchantment effect `apply_exhaustion` is out of scope (section 9). Kind: semantic. Confidence: high.
+Experiment: HNG-E3, HNG-E4 and HNG-E6 (`tools/mcrs_minecraft_probe/traces/hunger.json`) confirm
+saturated heal, normal heal, `hunger` 79 (20 ticks, 8.0 exhaustion) and `hunger` 119.
 
 ## 3. The hunger tick
 
-**HNG-TICK-001** (`source_suggested`, semantic, confidence: high). In each tick, after the base
-entity tick of the player, the server does the hunger tick. The server skips it when the player is
-a spectator and touches an unloaded chunk. The hunger tick does these steps in this order:
+**HNG-TICK-001** In each tick, after the base entity tick of the player, the server does the hunger
+tick. The server skips it when the player is a spectator and touches an unloaded chunk. The hunger
+tick does these steps in this order:
 
 1. Drain. If the exhaustion is more than 4.0, subtract 4.0 from it. Then:
    - if the saturation is more than 0, set it to `max(saturation - 1.0, 0)`;
@@ -160,17 +202,27 @@ The drain runs at most one time in a tick, so a large exhaustion falls by 4.0 in
 comparison is "more than 4.0", so an exhaustion of exactly 4.0 does not drain. Peaceful
 difficulty stops the loss of the food level but not the loss of the saturation.
 
-**HNG-TICK-002** (`source_suggested`, semantic, confidence: medium). The hunger tick of a tick
-runs after the regeneration of peaceful difficulty (HNG-REG-004) and before the packet of
-HNG-NET-001. A client sees the result of both steps in the one packet.
+Provenance: `source_suggested_black_box_confirmed`. Kind: semantic. Confidence: high.
+Experiment: HNG-E3 (`tools/mcrs_minecraft_probe/traces/hunger.json`: `seq_fast_regen`) confirms
+step 1 runs before step 2, and values at or below `3.55` do not drain. `seq_slow_regen`,
+`seq_peaceful_regen` and `seq_starve_easy_normal_hard` confirm single drain per tick, food loss on
+`normal` and `easy`, and no food loss on `peaceful`. Exact `4.0` and spectator skip were not probed.
+
+**HNG-TICK-002** The hunger tick of a tick runs after the regeneration of peaceful difficulty
+(HNG-REG-004) and before the packet of HNG-NET-001. A client sees the result of both steps in the
+one packet.
+
+Provenance: `black_box_confirmed`. Kind: semantic. Confidence: high. Experiment: HNG-E5
+(`tools/mcrs_minecraft_probe/traces/hunger.json`: `seq_peaceful_regen`) combines peaceful food
+restore (`19` to `20`) and saturated heal (`15.333332` to `15.499999`) in one `set_health` packet.
+Peaceful `+1.0` heal and saturated `+2/6` heal also arrive in one packet (`16.833334`, `20`, `2.0`).
 
 ## 4. Natural regeneration
 
 The branches of this section need the regeneration rule to be true. When the rule is false, the
 branches of HNG-REG-001 and HNG-REG-002 never run.
 
-**HNG-REG-001** (`source_suggested`, semantic, confidence: high). Saturated heal. This branch runs
-when all these conditions are true:
+**HNG-REG-001** Saturated heal. This branch runs when all these conditions are true:
 
 - the regeneration rule is true;
 - the saturation is more than 0;
@@ -187,8 +239,13 @@ sets the timer to 0:
 Thus a player with a saturation of 6 or more heals 1 health every 10 ticks, and it costs 6
 exhaustion. A smaller saturation gives a smaller heal for a smaller cost.
 
-**HNG-REG-002** (`source_suggested`, semantic, confidence: high). Normal heal. This branch runs
-when at least one condition of HNG-REG-001 is false and all these conditions are true:
+Provenance: `source_suggested_black_box_confirmed`. Kind: semantic. Confidence: high.
+Experiment: HNG-E3 and HNG-E5 (`tools/mcrs_minecraft_probe/traces/hunger.json`: `seq_fast_regen`)
+confirm four 10-tick heals (`16.0` to `18.333334`, exhaustion `2.5500002f`) and six later heals to
+`19.333332` at saturation `0.0`. Values above `5.0` were not probed.
+
+**HNG-REG-002** Normal heal. This branch runs when at least one condition of HNG-REG-001 is false
+and all these conditions are true:
 
 - the regeneration rule is true;
 - the food level is 18 or more;
@@ -198,14 +255,24 @@ The branch adds 1 to the hunger timer. When the timer reaches 80, the branch hea
 the exhaustion and sets the timer to 0. The saturation can be 0 here, or the food level can be 18
 or 19.
 
-**HNG-REG-003** (`source_suggested`, semantic, confidence: high). A heal changes the health to the
-smaller of the health plus the amount and the max health. The change is not a hit. It causes no
-damage event, no sound and no hurt animation. The absorption does not change.
+Provenance: `source_suggested_black_box_confirmed`. Kind: semantic. Confidence: high.
+Experiment: HNG-E4 (`tools/mcrs_minecraft_probe/traces/hunger.json`: `seq_slow_regen`) confirms
+no heal in 60 ticks (`15.333332f`), then +1.0 heal to `16.333332f`, 6.0 exhaustion (`2.5500011f`)
+and food `17` within 105 ticks.
 
-**HNG-REG-004** (`source_suggested`, semantic, confidence: medium). Regeneration of peaceful
-difficulty. This rule runs in addition to the rules above. It runs in each tick, before the hunger tick,
-when the difficulty is `peaceful` and the regeneration rule is true. Let `t` be the number of ticks
-that the player lived in the server, with `t` counted from 0:
+**HNG-REG-003** A heal changes the health to the smaller of the health plus the amount and the max
+health. The change is not a hit. It causes no damage event, no sound and no hurt animation. The
+absorption does not change.
+
+Provenance: `source_suggested_black_box_confirmed`. Kind: semantic. Confidence: high.
+Experiment: HNG-E3 to HNG-E5 (`tools/mcrs_minecraft_probe/traces/hunger.json`) clamp health at
+`20.0` (`seq_peaceful_regen`) and emit zero `damage_event` packets and zero hurt animations on
+heals. Absorption was not probed.
+
+**HNG-REG-004** Regeneration of peaceful difficulty. This rule runs in addition to the rules above.
+It runs in each tick, before the hunger tick, when the difficulty is `peaceful` and the regeneration
+rule is true. Let `t` be the number of ticks that the player lived in the server, with `t` counted
+from 0:
 
 - When `t` is a multiple of 20, do two things:
   - If the health is less than the max health, heal 1. Use the clamp of DMG-ATT-001. The heal
@@ -216,20 +283,29 @@ that the player lived in the server, with `t` counted from 0:
 Thus a player on peaceful difficulty regains 1 health and 1 saturation each second and 1 food
 level each half second. The saturation can pass the food level here (U1).
 
-**HNG-REG-005** (`source_suggested`, semantic, confidence: high). When the regeneration rule is
-false, the player gets no natural regeneration at any difficulty, and the peaceful rule of
-HNG-REG-004 does not run. The effects `regeneration` and `instant_health`, and golden apples,
-still heal. The exhaustion still drains the saturation and the food level (HNG-TICK-001). When
-the food level is more than 0, the hunger timer stays at 0.
+Provenance: `source_suggested_black_box_confirmed`. Kind: semantic. Confidence: high.
+Experiment: HNG-E5 (`tools/mcrs_minecraft_probe/traces/hunger.json`: `seq_peaceful_regen`) restores
+food `17 -> 18 -> 19 -> 20` at 10-tick intervals, adds 1.0 health and 1.0 saturation up to `2.0` at
+20-tick intervals without exhaustion cost, and clamps health at `20.0`. U1 was not reached.
+
+**HNG-REG-005** When the regeneration rule is false, the player gets no natural regeneration at any
+difficulty, and the peaceful rule of HNG-REG-004 does not run. The effects `regeneration` and
+`instant_health`, and golden apples, still heal. The exhaustion still drains the saturation and the
+food level (HNG-TICK-001). When the food level is more than 0, the hunger timer stays at 0.
+
+Provenance: `source_suggested_black_box_confirmed`. Kind: semantic. Confidence: high.
+Experiment: HNG-E4 (`tools/mcrs_minecraft_probe/traces/hunger.json`: `seq_rule_off` keeps health at
+`14.333332f` across 100 ticks at `foodLevel` 17) and HNG-E7
+(`tools/mcrs_minecraft_probe/traces/player_attack.json`: `attackprobebob` stays `19.0f` on
+`peaceful` across waits above 30 ticks). Effects and golden apples are out of scope (section 9).
 
 ## 5. Starvation
 
-**HNG-STV-001** (`source_suggested`, semantic, confidence: high). This branch runs when
-HNG-REG-001 and HNG-REG-002 have no true condition, and the food level is 0 or less. It does not
-read the regeneration rule, so it also runs when the rule is false. The branch adds 1 to the
-hunger timer. When the timer reaches 80, the branch sets it to 0. Then it does one hit on the
-player with the damage type `starve` and the amount 1.0. It does the hit when at least one of these conditions is
-true:
+**HNG-STV-001** This branch runs when HNG-REG-001 and HNG-REG-002 have no true condition, and the
+food level is 0 or less. It does not read the regeneration rule, so it also runs when the rule is
+false. The branch adds 1 to the hunger timer. When the timer reaches 80, the branch sets it to 0.
+Then it does one hit on the player with the damage type `starve` and the amount 1.0. It does the
+hit when at least one of these conditions is true:
 
 - the health is more than 10;
 - the difficulty is `hard`;
@@ -251,18 +327,32 @@ Thus a hit with 1.0 on a health of 10.5 gives 9.5 on `easy`, and the starvation 
 `peaceful` row needs the food level to be 0, which the exhaustion does not give on `peaceful`
 (HNG-TICK-001). It is possible after a command or a saved value.
 
-**HNG-STV-002** (`source_suggested`, semantic, confidence: high). The damage type `starve` has the
-tags `bypasses_armor`, `bypasses_effects` and `no_knockback`. Its `exhaustion` is 0.0 and its
-scaling is "when caused by a living non-player entity". The source has no causing entity, so the
-amount does not scale with the difficulty. A starvation hit is the full 1.0 on each difficulty, also
-on `peaceful`. Armor and the effect `resistance` do not reduce it. The absorption reduces it
-(`entity-damage.md`, DMG-RED-004). A creative player takes no starvation hit
-(`entity-damage.md`, DMG-PLR-001). The cooldown of a hit applies: the interval of 80 ticks is
-longer than the cooldown of 20 ticks.
+Provenance: `source_suggested_black_box_confirmed`. Kind: semantic. Confidence: high.
+Experiment: HNG-E6 (`tools/mcrs_minecraft_probe/traces/hunger.json`: `seq_starve_easy_normal_hard`)
+drains food to 0, stops starvation at `10.0f` on `easy`, stops at `1.0f` on `normal`, and deals a
+fatal hit from `1.0` to `0.0` on `hard`. `peaceful` at `foodLevel` 0 was not probed.
+
+**HNG-STV-002** The damage type `starve` has the tags `bypasses_armor`, `bypasses_effects` and
+`no_knockback`. Its `exhaustion` is 0.0 and its scaling is "when caused by a living non-player
+entity". The source has no causing entity, so the amount does not scale with the difficulty. A
+starvation hit is the full 1.0 on each difficulty, also on `peaceful`. Armor and the effect
+`resistance` do not reduce it. The absorption reduces it (`entity-damage.md`, DMG-RED-004). A
+creative player takes no starvation hit (`entity-damage.md`, DMG-PLR-001). The cooldown of a hit
+applies: the interval of 80 ticks is longer than the cooldown of 20 ticks.
+
+Provenance: `source_suggested_black_box_confirmed`. Kind: semantic. Confidence: high.
+Artefact: `crates/mcrs_minecraft_game_registries/tests/fixtures/registry_values.txt` and
+`crates/mcrs_minecraft_game_registries/tests/fixtures/world_registry_ids.txt` confirm `starve`.
+Experiment: HNG-E6 (`tools/mcrs_minecraft_probe/traces/hunger.json`) observes 20 hits of
+`damage_type` 40 with full `1.0` damage, no cause, direct entity or position, and `0.0` exhaustion.
+Armor, `resistance` and absorption on `starve` were not probed.
 
 ## 6. Eating
 
-**HNG-EAT-001** (`source_suggested`, semantic, confidence: high). The components of a food item
+Section 6 is out of scope for the server hunger tick, exhaustion, regeneration and starvation
+specification (section 9).
+
+**HNG-EAT-001** (`source_suggested`, semantic, confidence: high; out of scope, section 9). The components of a food item
 give these values. Both are data of the item definition:
 
 | Field | Type | Meaning |
@@ -275,7 +365,7 @@ The `saturation` is not a factor of the nutrition. An apple has `nutrition` 4 an
 and a golden apple has `nutrition` 4, `saturation` 9.6 and `can_always_eat`. The server must read
 `saturation` as the f32 of the file (`item-stack.md`, STK-SHP-019).
 
-**HNG-EAT-002** (`source_suggested`, semantic, confidence: high). A use of a consumable item starts
+**HNG-EAT-002** (`source_suggested`, semantic, confidence: high; out of scope, section 9). A use of a consumable item starts
 the consumption only when the player can eat. A player can eat in one of these cases:
 
 - the player is a creative player;
@@ -285,13 +375,13 @@ the consumption only when the player can eat. A player can eat in one of these c
 A consumable item with no `food` component has no such test, so it always starts. When the player
 cannot eat, the use fails: the player does not start to eat, and the stack does not change.
 
-**HNG-EAT-003** (`source_suggested`, semantic, confidence: high). The consume time of an item is
+**HNG-EAT-003** (`source_suggested`, semantic, confidence: high; out of scope, section 9). The consume time of an item is
 the field `consume_seconds` of its `consumable` component. The default is 1.6. The consume time in
 ticks is `trunc(consume_seconds × 20)`, with the multiplication in f32. Thus the default is 32
 ticks. The item `dried_kelp` has 0.8, so 16 ticks. The item `honey_bottle` has 2.0, so 40 ticks. When
 the consume time in ticks is 0, the use finishes at once, with no use state.
 
-**HNG-EAT-004** (`source_suggested`, semantic, confidence: high). When the consume time is more
+**HNG-EAT-004** (`source_suggested`, semantic, confidence: high; out of scope, section 9). When the consume time is more
 than 0, the player starts to use the item and the use state begins. The server counts the ticks that remain
 down by 1 in each tick. The consumption finishes in the tick that gives 0. The consumption
 does not finish in these cases:
@@ -300,7 +390,7 @@ does not finish in these cases:
   not change;
 - the item in the used hand is not the same item at the finish, then the use stops with no effect.
 
-**HNG-EAT-005** (`source_suggested`, semantic, confidence: high). At the finish, the server does
+**HNG-EAT-005** (`source_suggested`, semantic, confidence: high; out of scope, section 9). At the finish, the server does
 these steps in this order:
 
 1. Play the consume sound of the item and the particles of the item, when the item has them.
@@ -317,12 +407,12 @@ these steps in this order:
 Thus an apple at food level 10 and saturation 0 gives food level 14 and saturation 2.4. An apple at
 food level 19 and saturation 5 gives food level 20 and saturation 7.4, clamped to 20.
 
-**HNG-EAT-006** (`source_suggested`, semantic, confidence: medium). The hunger state of a player
+**HNG-EAT-006** (`source_suggested`, semantic, confidence: medium; out of scope, section 9). The hunger state of a player
 that eats changes in the tick of the finish. The packet of HNG-NET-001 reports the new values in
 that tick. The effect `saturation` gives food through the same eat step with `nutrition = amplifier +
 1`, and with a saturation of `2 × nutrition`. `status-effects.md` states the effect.
 
-**HNG-EAT-007** (`source_suggested`, semantic, confidence: medium). A cake bite gives 2 food levels
+**HNG-EAT-007** (`source_suggested`, semantic, confidence: medium; out of scope, section 9). A cake bite gives 2 food levels
 and a saturation of 0.4, through the same eat step. `block-placing.md` and the cake rules state the
 block part. This document states only the change of the hunger state.
 
@@ -345,19 +435,33 @@ The server sends the packet at the end of the player tick when at least one of t
 
 The server sends the packet in the first tick after the player joins. It sends the packet again in
 the first tick after a respawn and after a change of dimension. In these cases the server resets
-the values that it remembers as sent. The server sends at most one packet in a tick.
+the values that it remembers as sent. The server sends at most one packet in a tick. Also confirmed
+by HNG-E1, HNG-E3, HNG-E5 and HNG-E6 in `tools/mcrs_minecraft_probe/traces/hunger.json`.
 
-**HNG-NET-002** (`source_suggested`, wire, confidence: high). A change of the saturation from one
-value above 0 to another value above 0 sends no packet. The client keeps the saturation of the
-last packet until the next packet. The exhaustion and the hunger timer never go to the client.
+**HNG-NET-002** A change of the saturation from one value above 0 to another value above 0 sends no
+packet. The client keeps the saturation of the last packet until the next packet. The exhaustion
+and the hunger timer never go to the client.
 The client uses the food level for the hunger bar and for the permission to sprint. The client does
 not start a sprint at a food level of 6 or less. A creative or flying player can sprint at any
 level. The server does not check this permission when it reads the sprint command of the client.
 
-**HNG-NET-003** (`source_suggested`, wire, confidence: medium). Starvation sends the packets of a
-hit as `entity-damage.md`, section 9, states. A hit with the damage type `starve` is a full hit
-and sends `damage_event` with the network id of that type. A heal sends no `damage_event`. The new
-health goes to the client in the entity data (DMG-NET-002) and in `set_health`.
+Provenance: `source_suggested_black_box_confirmed`. Kind: wire. Confidence: high.
+Experiment: HNG-E3 (`tools/mcrs_minecraft_probe/traces/hunger.json`: `seq_fast_regen`) confirms
+saturation drains `5.0 -> 4.0 -> 3.0 -> 2.0 -> 1.0` emit no `set_health` packet. The transition
+`1.0 -> 0.0` emits `set_health` (`19.333332`, `20`, `0.0`). Exhaustion and hunger timer never go on
+the wire. Client rules are in `client-health-hud.md` (CHH-FOOD-001) and `entity-physics.md`
+(PHY-INP-008). Server sprint omission is U5.
+
+**HNG-NET-003** Starvation sends the packets of a hit as `entity-damage.md`, section 9, states. A
+hit with the damage type `starve` is a full hit and sends `damage_event` with the network id of
+that type. A heal sends no `damage_event`. The new health goes to the client in the entity data
+(DMG-NET-002) and in `set_health`.
+
+Provenance: `black_box_confirmed`. Kind: wire. Confidence: high. Experiment: HNG-E3 to HNG-E6
+(`tools/mcrs_minecraft_probe/traces/hunger.json`) and
+`crates/mcrs_minecraft_game_registries/tests/fixtures/world_registry_ids.txt`. Starvation sends 20
+`damage_event` packets with `damage_type` 40 (`minecraft:starve`), `set_health` and
+`set_entity_data` (index 9). Heals send `set_health` and `set_entity_data` with no `damage_event`.
 
 **HNG-NET-004** (`design`, semantic, confidence: medium). A `login` packet and each `respawn`
 packet make a new local player. Until the first `set_health` after that packet, the client uses
@@ -386,8 +490,8 @@ The reason for this choice:
 
 ## 8. The saved form
 
-**HNG-SAV-001** (`source_suggested`, semantic, confidence: high). The save file of a player holds
-the four values as top-level fields of the player compound:
+**HNG-SAV-001** The save file of a player holds the four values as top-level fields of the player
+compound:
 
 | Field | Type | Default when absent |
 |-------|------|---------------------|
@@ -398,6 +502,21 @@ the four values as top-level fields of the player compound:
 
 The server writes all four fields. A reader that finds a field of the wrong tag type uses the
 default for that field. The server does not clamp the values that it reads (U2).
+
+Provenance: `source_suggested_black_box_confirmed`. Kind: semantic. Confidence: high.
+Experiment: HNG-E8 (`tools/mcrs_minecraft_probe/traces/hunger.json`: `save_and_read`) confirms
+`foodLevel: 0`, `foodTickTimer: 62`, `foodSaturationLevel: 0.0f` and `foodExhaustionLevel: 1.5499932f`.
+`docs/spec/persistence.md` and `crates/mcrs_minecraft_save/tests/it/player_dat.rs` confirm the keys.
+Wrong-type fallback and unclamped loads are U2.
+
+## 9. Out of scope
+
+| Subject | Where it is stated, or the reason | Hook |
+|---------|-----------------------------------|------|
+| consumption of food items, consumable timers, `on_consume_effects`, `use_remainder`, `saturation` effect and cake bites | section 6 (`HNG-EAT-001` to `HNG-EAT-007`); deferred until item consumption is probed | `HNG-STA-002`, `HNG-STA-003`, `HNG-REG-005` |
+| swim, water, climbable, walk and passenger move exhaustion | `HNG-EXH-002` rows other than ground sprint; no probe ran these cases | `HNG-EXH-002` |
+| enchantment entity effect `apply_exhaustion` | enchantment specification | `HNG-EXH-007` |
+| client food bar layout and sprint gate | `client-health-hud.md` (`CHH-FOOD-001` to `CHH-FOOD-003`), `entity-physics.md` (`PHY-INP-008`, `PHY-INP-009`) | `HNG-NET-002`, `HNG-NET-004` |
 
 ## 10. Intentional deviations
 
@@ -421,3 +540,20 @@ None. This document states no behaviour that differs from the reference.
 - **U6.** The effects `hunger`, `saturation` and `regeneration` and the cake are stated here only
   at the place where they change the hunger state. The specifications of those subjects must
   confirm the amounts.
+
+## 12. Experiments
+
+Experiments HNG-E1 to HNG-E8 ran in `tools/mcrs_minecraft_probe/scenarios/hunger.json` and produced
+`tools/mcrs_minecraft_probe/traces/hunger.json` with `observe` enabled for `health`, `damage_event`,
+`entity_data` and `packet_order`.
+
+| Id | Steps | Observed result | Rules |
+|----|-------|-----------------|-------|
+| HNG-E1 | Join `Alice` in `survival` mode (`join_alice`, `setup_alice`) and read `foodLevel`, `foodSaturationLevel`, `foodExhaustionLevel`, `foodTickTimer` and `Health`. | `set_health` reports `(20.0, 20, 5.0)`. Data reads `20`, `5.0f`, `0.0f`, `0`, `20.0f`. | `HNG-STA-001`, `HNG-NET-001` |
+| HNG-E2 | Start sprint, move 4.0 blocks on ground, stop sprint, jump +1.2 blocks (`jump_move`, `jump_land`), abort dig on stone (`mine_start`, `mine_stop`) and attack a `pig` (`attack_pig`). | Exhaustion reads `0.45f` after sprint and jump, stays `0.45f` after abort dig, and reaches `0.55f` after attack. | `HNG-EXH-002`, `HNG-EXH-003`, `HNG-EXH-004`, `HNG-EXH-005` |
+| HNG-E3 | Deal 4 `minecraft:generic` damage (`seq_fast_regen`) and run `tick sprint 40` with `foodLevel` 20 and `foodSaturationLevel` 5.0. | Four 10-tick heals produce `16.833334`, `17.5`, `18.0`, `18.333334` and exhaustion `2.5500002f`, followed by six heals to `19.333332` and silent saturation drains `5.0` down to `1.0`, then `set_health` at `0.0`. | `HNG-TICK-001`, `HNG-REG-001`, `HNG-REG-003`, `HNG-EXH-006`, `HNG-EXH-007`, `HNG-NET-001`, `HNG-NET-002` |
+| HNG-E4 | Give `hunger` amplifier 79 for 1 s, sprint 35 ticks, deal 4 `generic` damage, sprint 60 ticks then 45 ticks; set `natural_health_regeneration` false, deal 2 `generic` damage and sprint 100 ticks (`seq_slow_regen`, `seq_rule_off`). | `hunger` drains food `20` to `18` (`0.550001f`). Health stays `15.333332f` after 60 ticks, then heals to `16.333332f` with exhaustion `2.5500011f` and food `17`. With rule false, health stays `14.333332f`. | `HNG-EXH-007`, `HNG-REG-002`, `HNG-REG-005`, `HNG-TICK-001` |
+| HNG-E5 | Enable `natural_health_regeneration`, set `difficulty peaceful` and sprint 60 ticks (`seq_peaceful_regen`). | Food restores `17 -> 18 -> 19 -> 20` at 10-tick steps; health and saturation rise to `20.0` and `2.0`; peaceful and saturated heals combine in one `set_health`. | `HNG-TICK-002`, `HNG-REG-003`, `HNG-REG-004`, `HNG-STA-002`, `HNG-STA-003` |
+| HNG-E6 | Set `difficulty easy`, give `hunger` amplifier 119 for 8 s, sprint ticks to exhaust and starve on `easy`, switch to `normal`, then `hard` (`seq_starve_easy_normal_hard`). | Food drains `20` to `0`. 20 `damage_event` hits of `damage_type` 40 (`1.0` each) stop at `10.0f` on `easy`, stop at `1.0f` on `normal`, and kill at `0.0` on `hard`. | `HNG-STV-001`, `HNG-STV-002`, `HNG-NET-003`, `HNG-STA-002` |
+| HNG-E7 | Attack an `Invulnerable` villager in `creative` mode (`player_attack.json`: ATK-E4), and attack `attackprobebob` on `peaceful` with `natural_health_regeneration` false (`a7`, `a8`). | Creative attack drops villager health `20.0` to `19.0` while `foodExhaustionLevel` stays `0.5f`; `attackprobebob` stays at `19.0f` across waits. | `HNG-EXH-001`, `HNG-REG-005` |
+| HNG-E8 | Run `save-all flush` and read `Alice` player file (`save_and_read`). | Player file holds `Health: 0.0f`, `foodLevel: 0`, `foodTickTimer: 62`, `foodSaturationLevel: 0.0f` and `foodExhaustionLevel: 1.5499932f`. | `HNG-SAV-001` |

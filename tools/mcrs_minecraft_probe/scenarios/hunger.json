@@ -1,0 +1,272 @@
+{
+  "target": {
+    "operators": ["Alice"]
+  },
+  "observe": {
+    "health": true,
+    "damage_event": true,
+    "entity_data": true,
+    "packet_order": true
+  },
+  "steps": [
+    {
+      "id": "prepare",
+      "console": {
+        "lines": [
+          "difficulty normal",
+          "gamerule spawn_mobs false",
+          "gamerule natural_health_regeneration true",
+          "kill @e[type=!minecraft:player]"
+        ]
+      }
+    },
+    { "id": "join_alice", "join": "Alice" },
+    {
+      "id": "setup_alice",
+      "console": {
+        "lines": [
+          "gamemode survival Alice",
+          "effect give Alice minecraft:luck 9999 0 true",
+          "tp Alice 0.5 -60 0.5 0 0",
+          "fill -10 -61 -10 10 -61 10 minecraft:stone",
+          "fill -10 -60 -10 10 -55 10 minecraft:air",
+          "data get entity Alice foodLevel",
+          "data get entity Alice foodSaturationLevel",
+          "data get entity Alice foodExhaustionLevel",
+          "data get entity Alice foodTickTimer",
+          "data get entity Alice Health"
+        ]
+      }
+    },
+    { "id": "wait_setup", "wait": { "ms": 300 } },
+    { "id": "sync_alice", "sync_position": "Alice" },
+    { "id": "sprint_on", "player_command": { "client": "Alice", "action": "start_sprinting" } },
+    { "id": "sprint_move_1", "move_player": { "client": "Alice", "position": [2.5, -60.0, 0.5], "on_ground": true } },
+    { "id": "sprint_move_2", "move_player": { "client": "Alice", "position": [4.5, -60.0, 0.5], "on_ground": true } },
+    { "id": "sprint_off", "player_command": { "client": "Alice", "action": "stop_sprinting" } },
+    { "id": "jump_move", "move_player": { "client": "Alice", "position": [4.5, -58.8, 0.5], "on_ground": false } },
+    { "id": "jump_land", "move_player": { "client": "Alice", "position": [4.5, -60.0, 0.5], "on_ground": true } },
+    {
+      "id": "read_move_exhaustion",
+      "console": {
+        "lines": [
+          "data get entity Alice foodExhaustionLevel",
+          "tp Alice 0.5 -60 0.5 0 0",
+          "setblock 0 -60 2 minecraft:stone"
+        ]
+      }
+    },
+    { "id": "wait_tp2", "wait": { "ms": 300 } },
+    { "id": "sync_for_mine_attack", "sync_position": "Alice" },
+    { "id": "mine_start", "player_action": { "client": "Alice", "status": "start_destroy_block", "position": [0, -60, 2], "face": "north" } },
+    { "id": "wait_mine", "wait": { "ms": 300 } },
+    { "id": "mine_stop", "player_action": { "client": "Alice", "status": "stop_destroy_block", "position": [0, -60, 2], "face": "north" } },
+    {
+      "id": "attack_exhaustion_setup",
+      "console": {
+        "lines": [
+          "data get entity Alice foodExhaustionLevel",
+          "summon minecraft:pig 0.5 -60 2.5 {NoAI:1b,Health:20.0f}"
+        ]
+      }
+    },
+    { "id": "wait_pig", "wait": { "ms": 300 } },
+    { "id": "attack_pig", "attack": { "client": "Alice", "target": "minecraft:pig" } },
+    {
+      "id": "seq_fast_regen",
+      "sequence": {
+        "steps": [
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice foodExhaustionLevel",
+                "damage Alice 4 minecraft:generic",
+                "data get entity Alice Health",
+                "data get entity Alice foodSaturationLevel",
+                "tick sprint 40"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 30 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Health",
+                "data get entity Alice foodLevel",
+                "data get entity Alice foodSaturationLevel",
+                "data get entity Alice foodExhaustionLevel"
+              ]
+            }
+          }
+        ]
+      },
+      "packet_order": true
+    },
+    {
+      "id": "seq_slow_regen",
+      "sequence": {
+        "steps": [
+          {
+            "console": {
+              "lines": [
+                "effect give Alice minecraft:hunger 1 79 true",
+                "tick sprint 35"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 25 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice foodLevel",
+                "data get entity Alice foodSaturationLevel",
+                "data get entity Alice foodExhaustionLevel",
+                "damage Alice 4 minecraft:generic",
+                "data get entity Alice Health",
+                "tick sprint 60"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 50 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Health",
+                "tick sprint 45"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 35 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Health",
+                "data get entity Alice foodLevel",
+                "data get entity Alice foodExhaustionLevel"
+              ]
+            }
+          }
+        ]
+      },
+      "packet_order": true
+    },
+    {
+      "id": "seq_rule_off",
+      "sequence": {
+        "steps": [
+          {
+            "console": {
+              "lines": [
+                "gamerule natural_health_regeneration false",
+                "damage Alice 2 minecraft:generic",
+                "tick sprint 100"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 85 } },
+          { "console": { "lines": ["data get entity Alice Health"] } }
+        ]
+      }
+    },
+    {
+      "id": "seq_peaceful_regen",
+      "sequence": {
+        "steps": [
+          {
+            "console": {
+              "lines": [
+                "gamerule natural_health_regeneration true",
+                "difficulty peaceful",
+                "tick sprint 60"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 50 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice foodLevel",
+                "data get entity Alice foodSaturationLevel",
+                "data get entity Alice Health"
+              ]
+            }
+          }
+        ]
+      },
+      "packet_order": true
+    },
+    {
+      "id": "seq_starve_easy_normal_hard",
+      "sequence": {
+        "steps": [
+          {
+            "console": {
+              "lines": [
+                "difficulty easy",
+                "effect give Alice minecraft:hunger 8 119 true",
+                "tick sprint 220"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 170 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice foodLevel",
+                "data get entity Alice foodSaturationLevel",
+                "data get entity Alice Health",
+                "tick sprint 500"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 440 } },
+          { "console": { "lines": ["tick sprint 500"] } },
+          { "await_player_ticks": { "client": "Alice", "ticks": 440 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Health",
+                "tick sprint 200"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 160 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Health",
+                "difficulty normal",
+                "tick sprint 460"
+              ]
+            }
+          },
+          { "await_player_ticks": { "client": "Alice", "ticks": 410 } },
+          { "console": { "lines": ["tick sprint 460"] } },
+          { "await_player_ticks": { "client": "Alice", "ticks": 410 } },
+          {
+            "console": {
+              "lines": [
+                "data get entity Alice Health",
+                "difficulty hard",
+                "tick sprint 120"
+              ]
+            }
+          },
+          { "wait": { "ms": 400 } }
+        ]
+      },
+      "packet_order": true
+    },
+    {
+      "id": "save_and_read",
+      "console": {
+        "lines": ["save-all flush"]
+      },
+      "read_player_file": {
+        "client": "Alice",
+        "fields": ["foodLevel", "foodTickTimer", "foodSaturationLevel", "foodExhaustionLevel", "Health"]
+      }
+    },
+    { "id": "leave_alice", "leave": "Alice" }
+  ]
+}
