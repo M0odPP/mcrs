@@ -19,6 +19,7 @@ use crate::bake;
 use crate::bake::{BakedEnvDamage, EnvBlockTable};
 use crate::env_state::{EnvDamageSet, EnvTickState, PendingEnvEffect};
 use crate::fall_system;
+use crate::hazard_system;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct VanillaEnvDamagePlugin;
@@ -63,10 +64,14 @@ impl Plugin for VanillaEnvDamagePlugin {
                                 ),
                         )
                         .in_set(TickSet::DomainInput),
-                    fall_system::collect_fall_damage
-                        .run_if(
+                    (
+                        fall_system::track_horizontal_movement.run_if(on_message::<PlayerMoved>),
+                        hazard_system::collect_env_hazards.run_if(resource_exists::<PhysicsTables>),
+                        fall_system::collect_fall_damage.run_if(
                             on_message::<PlayerMoved>.and_then(resource_exists::<PhysicsTables>),
-                        )
+                        ),
+                    )
+                        .chain()
                         .in_set(EnvDamageSet::Collect),
                     fall_system::emit_env_effects
                         .run_if(on_message::<PendingEnvEffect>)
