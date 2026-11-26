@@ -1521,8 +1521,8 @@ fn a_length_prefixed_frame_checks_each_value_against_the_shape_of_its_type() {
             Some(WireError::BadLength(ComponentType(3))),
         ),
         (
-            with_one_component("use_effects", "06 02 00 3f800000"),
-            Some(WireError::BadShape(ComponentType(5))),
+            with_one_component("kinetic_weapon", "03 00 00 02"),
+            Some(WireError::BadShape(ComponentType(39))),
         ),
         (
             unhex("01 01 01 00 7a 00"),
@@ -1558,6 +1558,10 @@ fn a_length_prefixed_frame_reads_a_value_out_of_range_as_an_error() {
         (
             with_one_component("max_damage", "01 05"),
             Ok(Some(stack(STONE, 1).set(MaxDamage(5)))),
+        ),
+        (
+            with_one_component("use_effects", "06 00 01 bf800000"),
+            Err(WireError::OutOfRange(BuiltinKey::UseEffects)),
         ),
         (unhex("01 00 00 00"), Ok(None)),
     ];

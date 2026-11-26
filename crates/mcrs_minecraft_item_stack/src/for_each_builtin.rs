@@ -17,6 +17,7 @@ macro_rules! for_each_builtin {
             AttributeModifiers => "attribute_modifiers",
             TooltipDisplay => "tooltip_display",
             RepairCost => "repair_cost",
+            UseEffects => "use_effects",
             Food => "food",
             Tool => "tool",
             MapId => "map_id",

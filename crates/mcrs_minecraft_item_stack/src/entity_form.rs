@@ -37,6 +37,7 @@ use crate::SuspiciousStewEffects;
 use crate::Tool;
 use crate::Trim;
 use crate::Unbreakable;
+use crate::UseEffects;
 use crate::Weapon;
 
 pub(crate) trait EntityForm: Clone + 'static {
@@ -56,6 +57,7 @@ impl EntityForm for Damage {}
 impl EntityForm for Unbreakable {}
 
 impl EntityForm for Food {}
+impl EntityForm for UseEffects {}
 
 impl EntityForm for MapId {}
 

@@ -179,7 +179,7 @@ pub(crate) struct GoldenCase {
     pub(crate) hash: i32,
 }
 
-const CHANGED_RECORDS: [(&str, &str); 7] = [
+const CHANGED_RECORDS: [(&str, &str); 10] = [
     ("cmd_empty", "custom_model_data"),
     ("cmd_full", "custom_model_data"),
     ("block_state_empty", "block_state"),
@@ -187,6 +187,9 @@ const CHANGED_RECORDS: [(&str, &str); 7] = [
     ("lodestone_default", "lodestone_tracker"),
     ("lodestone_full", "lodestone_tracker"),
     ("lodestone_explicit", "lodestone_tracker"),
+    ("use_effects_default", "use_effects"),
+    ("use_effects_explicit", "use_effects"),
+    ("use_effects_full", "use_effects"),
 ];
 
 const OLDER_RECORDS: [(&str, &str); 5] = [

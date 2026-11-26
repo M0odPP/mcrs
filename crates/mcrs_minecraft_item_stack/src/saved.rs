@@ -113,6 +113,7 @@ use crate::TrimMaterialId;
 use crate::TrimPatternId;
 use crate::Unbreakable;
 use crate::UndecodedValue;
+use crate::UseEffects;
 use crate::Weapon;
 use crate::builtin_key::NAMESPACE;
 use crate::check_saved_form::NOT_NEGATIVE;
@@ -129,6 +130,7 @@ use crate::saved_form::DISPLAY_HIDDEN;
 use crate::saved_form::DISPLAY_OVERRIDE;
 use crate::saved_form::Fault;
 use crate::saved_form::is_instrument_range;
+use crate::saved_form::is_unit_float;
 use crate::saved_form::is_use_duration;
 use crate::saved_form::saved_form;
 use crate::saved_key::KeyKind;
@@ -444,6 +446,7 @@ fn read_flat_value<L: NameLookup>(
             Builtin::InteractAnimation(InteractAnimation(reader.swing_animation(tag)?))
         }
         BuiltinKey::Weapon => Builtin::Weapon(reader.weapon(tag)?),
+        BuiltinKey::UseEffects => Builtin::UseEffects(reader.use_effects(tag)?),
         BuiltinKey::CustomName => Builtin::CustomName(CustomName(read_text(tag, component)?)),
         BuiltinKey::ItemName => Builtin::ItemName(ItemName(read_text(tag, component)?)),
         BuiltinKey::Lore => Builtin::Lore(read_lore(tag)?),
@@ -1185,6 +1188,31 @@ impl<L: NameLookup> Reader<'_, L> {
         Ok(Weapon {
             item_damage_per_attack,
             disable_blocking_for_seconds,
+        })
+    }
+
+    fn use_effects(&self, tag: &NbtTag) -> Result<UseEffects, SavedError> {
+        let map = self.map(tag)?;
+        let can_sprint = self.flag(map, "can_sprint", UseEffects::DEFAULT_CAN_SPRINT)?;
+        let interact_vibrations = self.flag(
+            map,
+            "interact_vibrations",
+            UseEffects::DEFAULT_INTERACT_VIBRATIONS,
+        )?;
+        let speed_multiplier = match map.get("speed_multiplier") {
+            Some(tag) => {
+                let speed = self.float(tag)?;
+                if !is_unit_float(speed) {
+                    return Err(SavedError::OutOfRange(self.component));
+                }
+                speed
+            }
+            None => UseEffects::DEFAULT_SPEED_MULTIPLIER,
+        };
+        Ok(UseEffects {
+            can_sprint,
+            interact_vibrations,
+            speed_multiplier,
         })
     }
 }

@@ -298,6 +298,7 @@ fn a_component_has_the_hash_that_the_game_recorded() {
         "food",
         "tool",
         "piercing_weapon",
+        "use_effects",
         "attack_animation",
         "interact_animation",
         "map_id",
