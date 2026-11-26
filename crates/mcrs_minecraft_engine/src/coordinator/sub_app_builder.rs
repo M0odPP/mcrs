@@ -30,7 +30,7 @@ use crate::column_store::ColumnStorePlugin;
 use crate::heightmap::{BlockHeightmapPredicates, DimHeightmapPlugin};
 use crate::minecraft_entity::MinecraftEntityPlugin;
 use crate::player_tracker::PlayerTrackerPlugin;
-use mcrs_minecraft_block::definition::Blocks;
+use mcrs_minecraft_block::definition::{BlockSoundSets, Blocks};
 use mcrs_minecraft_dimension_environment::dimension_type::DimensionTypeFile;
 use mcrs_minecraft_dimension_environment::environment::{DimensionEnvironment, WeatherLevel};
 use mcrs_minecraft_engine_world::owned_columns::{OwnedColumns, region_partition};
@@ -273,6 +273,14 @@ fn spawn_dim_subapp(app: &mut App, request: &DimSpawnRequest) -> Result<Entity, 
                 .cloned()
                 .unwrap_or_default(),
         );
+        sub_app.insert_resource(
+            host.get_resource::<mcrs_minecraft_engine_world::world_border::DimensionWorldBorder>()
+                .copied()
+                .unwrap_or_default(),
+        );
+        if let Some(sound_sets) = host.get_resource::<BlockSoundSets>() {
+            sub_app.insert_resource(sound_sets.clone());
+        }
         sub_app.insert_resource(
             host.get_resource::<crate::server_difficulty::ServerDifficulty>()
                 .copied()

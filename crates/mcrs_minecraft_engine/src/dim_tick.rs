@@ -49,6 +49,7 @@ use mcrs_minecraft_engine_world::birth_clock::BirthClock;
 use mcrs_minecraft_engine_world::entity_ids::{CellEntityIds, EntityIdRange};
 use mcrs_minecraft_engine_world::game_rules::GameRules;
 use mcrs_minecraft_engine_world::tick_pace::TickPace;
+use mcrs_minecraft_engine_world::world_border::DimensionWorldBorder;
 
 #[derive(ScheduleLabel, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TickDimensions;
@@ -74,6 +75,7 @@ pub struct DimInput {
     pub(crate) bans: Option<BanList>,
     pub(crate) weather: Option<Weather>,
     pub(crate) game_rules: Option<GameRules>,
+    pub(crate) world_border: Option<DimensionWorldBorder>,
     pub(crate) difficulty: Option<ServerDifficulty>,
     pub(crate) tick_pace: Option<TickPace>,
     pub(crate) registries: Option<Versioned<RegistrySnapshot>>,
@@ -199,6 +201,13 @@ fn apply_input(world: &mut World, _tick: Tick, input: DimInput) {
     }
     if let Some(game_rules) = input.game_rules {
         world.insert_resource(game_rules);
+    }
+    if let Some(world_border) = input.world_border {
+        if let Some(mut existing) = world.get_resource_mut::<DimensionWorldBorder>() {
+            existing.set_if_neq(world_border);
+        } else {
+            world.insert_resource(world_border);
+        }
     }
     if let Some(difficulty) = input.difficulty {
         if let Some(mut current) = world.get_resource_mut::<ServerDifficulty>() {
@@ -376,6 +385,7 @@ mod tests {
             bans: None,
             weather: None,
             game_rules: None,
+            world_border: None,
             difficulty: None,
             tick_pace: None,
             registries: None,

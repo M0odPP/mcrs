@@ -14,6 +14,7 @@ pub mod tick;
 pub mod tick_pace;
 pub mod voxel_update;
 pub mod world;
+pub mod world_border;
 pub mod world_cells;
 pub mod world_placement;
 pub mod world_seed;

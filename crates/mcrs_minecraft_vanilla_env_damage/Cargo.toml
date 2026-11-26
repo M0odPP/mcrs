@@ -1,0 +1,33 @@
+[package]
+name = "mcrs_minecraft_vanilla_env_damage"
+description = "Vanilla environmental damage plugin for fall, suffocation, contact, void, and world border."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+doctest = false
+
+[lints]
+workspace = true
+
+[dependencies]
+bevy_app.workspace = true
+bevy_ecs.workspace = true
+mcrs_minecraft_block = { workspace = true, features = ["bevy"] }
+mcrs_minecraft_engine.workspace = true
+mcrs_minecraft_engine_damage.workspace = true
+mcrs_minecraft_engine_physics.workspace = true
+mcrs_minecraft_engine_world.workspace = true
+mcrs_minecraft_entity.workspace = true
+mcrs_minecraft_env_damage.workspace = true
+mcrs_minecraft_registries = { workspace = true, features = ["bevy"] }
+mcrs_minecraft_resource.workspace = true
+mcrs_minecraft_sound = { workspace = true, features = ["registry"] }
+mcrs_voxel.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+mcrs_minecraft_engine_player_vitals.workspace = true
+mcrs_minecraft_engine_registries = { workspace = true, features = ["test-support"] }
+mcrs_minecraft_game_registries = { workspace = true, features = ["test-support"] }
