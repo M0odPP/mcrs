@@ -1,6 +1,6 @@
 use bevy_app::{App, FixedUpdate, Plugin, Update};
-use bevy_ecs::schedule::IntoScheduleConfigs;
 use bevy_ecs::schedule::common_conditions::{any_with_component, on_message};
+use bevy_ecs::schedule::{IntoScheduleConfigs, SystemSet};
 use mcrs_minecraft_engine::block_simulation::BlockSimulationSet;
 use mcrs_minecraft_engine::persisted_registry::{PersistScope, PersistedAppExt};
 use mcrs_minecraft_engine::{HeldJoins, InboundPlayerSpawnSet};
@@ -14,6 +14,9 @@ use crate::pending_spawn_search::{
 use crate::place_held_joins::{holds_joins, place_held_joins};
 use crate::request_respawns::request_respawns;
 use crate::respawn_command::{RespawnCommand, on_client_command};
+
+#[derive(SystemSet, Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct RespawnWriteSet;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct RespawnPlugin;
@@ -43,6 +46,7 @@ impl Plugin for RespawnPlugin {
                     request_respawns.run_if(on_message::<RespawnCommand>),
                 )
                     .chain()
+                    .in_set(RespawnWriteSet)
                     .in_set(TickSet::WorldWrite)
                     .after(BlockSimulationSet)
                     .before(DamageSet::Collect),
