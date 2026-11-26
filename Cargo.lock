@@ -7460,6 +7460,7 @@ dependencies = [
  "mcrs_minecraft_block",
  "mcrs_minecraft_collision_table",
  "mcrs_minecraft_damage",
+ "mcrs_minecraft_dimension_environment",
  "mcrs_minecraft_engine",
  "mcrs_minecraft_engine_damage",
  "mcrs_minecraft_engine_mob_attributes",
