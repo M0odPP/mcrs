@@ -17,6 +17,8 @@ use crate::BuiltinKey;
 use crate::BundleContents;
 use crate::ChargedProjectiles;
 use crate::ComponentType;
+use crate::Consumable;
+use crate::ConsumeEffect;
 use crate::Container;
 use crate::ContainerLoot;
 use crate::CustomData;
@@ -50,6 +52,8 @@ use crate::MapDecorations;
 use crate::MapId;
 use crate::MaxDamage;
 use crate::MaxStackSize;
+use crate::MobEffectId;
+use crate::MobEffectSet;
 use crate::ModifierDisplay;
 use crate::NameLookup;
 use crate::NameTable;
@@ -73,6 +77,7 @@ use crate::ToolRule;
 use crate::TooltipDisplay;
 use crate::Trim;
 use crate::Unbreakable;
+use crate::UseAnimation;
 use crate::UseEffects;
 use crate::Weapon;
 use crate::WireError;
@@ -80,6 +85,7 @@ use crate::check_saved_form::NOT_NEGATIVE;
 use crate::check_saved_form::OMINOUS_AMPLIFIER;
 use crate::check_saved_form::POSITIVE;
 use crate::check_saved_form::STACK_SIZE;
+use crate::effect_details::EffectFields;
 use crate::lore::MAX_LINES;
 use crate::nbt_depth::LIST_TEMPLATE_LEVELS;
 use crate::nbt_depth::SLOT_TEMPLATE_LEVELS;
@@ -215,6 +221,7 @@ fn flat_saved_form<S: SavedSink, L: NameLookup>(
         Builtin::AttributeModifiers(modifiers) => walk.attribute_modifiers(sink, modifiers),
         Builtin::TooltipDisplay(display) => walk.tooltip_display(sink, display),
         Builtin::Food(food) => walk.food(sink, food),
+        Builtin::Consumable(consumable) => walk.consumable(sink, consumable),
         Builtin::Tool(tool) => walk.tool(sink, tool),
         Builtin::Equippable(equippable) => walk.equippable(sink, equippable),
         Builtin::PiercingWeapon(weapon) => walk.piercing_weapon(sink, weapon),
@@ -309,6 +316,12 @@ const _: () = {
         "HolderSetReference alignment matches pointer width"
     );
 };
+
+#[derive(Clone, Copy)]
+enum HiddenEffects {
+    Include,
+    Strip,
+}
 
 fn listed<S: SavedSink, T>(
     sink: &mut S,
@@ -688,7 +701,7 @@ impl<L: NameLookup> Walk<'_, L> {
             .transpose()?;
         let effect_depth = self.depth.saturating_add(4);
         let custom_effects = listed(sink, &contents.custom_effects, |sink, effect| {
-            self.effect_instance(sink, effect, effect_depth)
+            self.effect_instance(sink, effect, effect_depth, HiddenEffects::Strip)
         })?;
         let custom_color = (contents.custom_color).map(|color| sink.leaf(Leaf::Int(color)));
         let custom_name =
@@ -701,28 +714,168 @@ impl<L: NameLookup> Walk<'_, L> {
         ]))
     }
 
+    fn mob_effect_set<S: SavedSink>(
+        &self,
+        sink: &mut S,
+        effects: &MobEffectSet,
+    ) -> Result<S::Node, Fault> {
+        let set = match effects {
+            MobEffectSet::Tag(tag) => HolderSetReference::Tag(tag.0),
+            MobEffectSet::Effects(effects) => HolderSetReference::Entries(effects.as_ref()),
+        };
+        self.holder_set(
+            sink,
+            NameTable::MobEffectTag,
+            NameTable::MobEffect,
+            set,
+            |effect: &MobEffectId| effect.0,
+        )
+    }
+
+    fn consumable<S: SavedSink>(
+        &self,
+        sink: &mut S,
+        consumable: &Consumable,
+    ) -> Result<S::Node, Fault> {
+        if !is_use_duration(consumable.consume_seconds) {
+            return Err(Fault::OutOfRange(self.component));
+        }
+        let consume_seconds = (consumable.consume_seconds.to_bits()
+            != Consumable::DEFAULT_CONSUME_SECONDS.to_bits())
+        .then(|| sink.leaf(Leaf::Float(consumable.consume_seconds)));
+        let animation = (consumable.animation != UseAnimation::Eat)
+            .then(|| sink.leaf(Leaf::String(consumable.animation.name())));
+        let sound = consumable
+            .sound
+            .as_ref()
+            .map(|sound| self.sound_event(sink, sound))
+            .transpose()?;
+        let has_consume_particles =
+            (!consumable.has_consume_particles).then(|| sink.leaf(Leaf::Boolean(false)));
+        let on_consume_effects = listed(sink, &consumable.on_consume_effects, |sink, effect| {
+            self.consume_effect(sink, effect)
+        })?;
+        Ok(sink.fields([
+            Field::optional("consume_seconds", consume_seconds),
+            Field::optional("animation", animation),
+            Field::optional("sound", sound),
+            Field::optional("has_consume_particles", has_consume_particles),
+            Field::optional("on_consume_effects", on_consume_effects),
+        ]))
+    }
+
+    fn consume_effect<S: SavedSink>(
+        &self,
+        sink: &mut S,
+        effect: &ConsumeEffect,
+    ) -> Result<S::Node, Fault> {
+        match effect {
+            ConsumeEffect::ApplyEffects {
+                effects,
+                probability,
+            } => {
+                if !is_unit_float(*probability) {
+                    return Err(Fault::OutOfRange(self.component));
+                }
+                let effect_depth = self.depth.saturating_add(6);
+                let effects = sink.list(effects.iter(), |sink, entry| {
+                    self.effect_instance(sink, entry, effect_depth, HiddenEffects::Include)
+                })?;
+                let probability = (probability.to_bits()
+                    != ConsumeEffect::DEFAULT_PROBABILITY.to_bits())
+                .then(|| sink.leaf(Leaf::Float(*probability)));
+                Ok(sink.fields([
+                    Field::new("effects", effects),
+                    Field::optional("probability", probability),
+                    Field::new("type", sink.leaf(Leaf::String("minecraft:apply_effects"))),
+                ]))
+            }
+            ConsumeEffect::RemoveEffects(effects) => {
+                let effects = self.mob_effect_set(sink, effects)?;
+                Ok(sink.fields([
+                    Field::new("effects", effects),
+                    Field::new("type", sink.leaf(Leaf::String("minecraft:remove_effects"))),
+                ]))
+            }
+            ConsumeEffect::ClearAllEffects => Ok(sink.fields([Field::new(
+                "type",
+                sink.leaf(Leaf::String("minecraft:clear_all_effects")),
+            )])),
+            ConsumeEffect::TeleportRandomly {
+                diameter,
+                directional_particles,
+            } => {
+                if !is_instrument_range(*diameter) {
+                    return Err(Fault::OutOfRange(self.component));
+                }
+                let diameter = (diameter.to_bits()
+                    != ConsumeEffect::DEFAULT_TELEPORT_DIAMETER.to_bits())
+                .then(|| sink.leaf(Leaf::Float(*diameter)));
+                let directional_particles =
+                    (!*directional_particles).then(|| sink.leaf(Leaf::Boolean(false)));
+                Ok(sink.fields([
+                    Field::optional("diameter", diameter),
+                    Field::optional("directional_particles", directional_particles),
+                    Field::new(
+                        "type",
+                        sink.leaf(Leaf::String("minecraft:teleport_randomly")),
+                    ),
+                ]))
+            }
+            ConsumeEffect::PlaySound(sound) => {
+                let sound = self.sound_event(sink, sound)?;
+                Ok(sink.fields([
+                    Field::new("sound", sound),
+                    Field::new("type", sink.leaf(Leaf::String("minecraft:play_sound"))),
+                ]))
+            }
+        }
+    }
+
     fn effect_instance<S: SavedSink>(
         &self,
-        sink: &S,
+        sink: &mut S,
         effect: &EffectInstance,
         depth: u32,
+        hidden: HiddenEffects,
+    ) -> Result<S::Node, Fault> {
+        let id = self.entry(sink, NameTable::MobEffect, effect.effect.0)?;
+        self.effect_fields(sink, effect.fields(), Some(id), depth, hidden)
+    }
+
+    fn effect_fields<S: SavedSink>(
+        &self,
+        sink: &mut S,
+        details: EffectFields<'_>,
+        id: Option<S::Node>,
+        depth: u32,
+        hidden: HiddenEffects,
     ) -> Result<S::Node, Fault> {
         if depth > MAX_DEPTH {
             return Err(Fault::TooDeep);
         }
-        let id = self.entry(sink, NameTable::MobEffect, effect.effect.0)?;
-        let amplifier =
-            (effect.amplifier != 0).then(|| sink.leaf(Leaf::Byte(effect.amplifier.cast_signed())));
-        let duration = (effect.duration != 0).then(|| sink.leaf(Leaf::Int(effect.duration)));
-        let ambient = effect.ambient.then(|| sink.leaf(Leaf::Boolean(true)));
-        let show_particles = (!effect.show_particles).then(|| sink.leaf(Leaf::Boolean(false)));
+        let amplifier = (details.amplifier != 0)
+            .then(|| sink.leaf(Leaf::Byte(details.amplifier.cast_signed())));
+        let duration = (details.duration != 0).then(|| sink.leaf(Leaf::Int(details.duration)));
+        let ambient = details.ambient.then(|| sink.leaf(Leaf::Boolean(true)));
+        let show_particles = (!details.show_particles).then(|| sink.leaf(Leaf::Boolean(false)));
+        let hidden_effect = match hidden {
+            HiddenEffects::Include => details
+                .hidden_effect
+                .map(|nested| {
+                    self.effect_fields(sink, nested.fields(), None, depth.saturating_add(1), hidden)
+                })
+                .transpose()?,
+            HiddenEffects::Strip => None,
+        };
         Ok(sink.fields([
-            Field::new("id", id),
+            Field::optional("id", id),
             Field::optional("amplifier", amplifier),
             Field::optional("duration", duration),
             Field::optional("ambient", ambient),
             Field::optional("show_particles", show_particles),
-            Field::new("show_icon", sink.leaf(Leaf::Boolean(effect.show_icon))),
+            Field::new("show_icon", sink.leaf(Leaf::Boolean(details.show_icon))),
+            Field::optional("hidden_effect", hidden_effect),
         ]))
     }
 

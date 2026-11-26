@@ -7,6 +7,7 @@ use mcrs_minecraft_item_stack::BlocksAttacks;
 use mcrs_minecraft_item_stack::Builtin;
 use mcrs_minecraft_item_stack::BundleContents;
 use mcrs_minecraft_item_stack::ChargedProjectiles;
+use mcrs_minecraft_item_stack::Consumable;
 use mcrs_minecraft_item_stack::Container;
 use mcrs_minecraft_item_stack::ContainerLoot;
 use mcrs_minecraft_item_stack::CustomData;
@@ -86,6 +87,7 @@ impl<'a> ComponentHolder<'a> {
             DataComponentType::RepairCost => self.effective::<RepairCost>().is_some(),
             DataComponentType::UseEffects => self.effective::<UseEffects>().is_some(),
             DataComponentType::Food => self.effective::<Food>().is_some(),
+            DataComponentType::Consumable => self.effective::<Consumable>().is_some(),
             DataComponentType::Tool => self.effective::<Tool>().is_some(),
             DataComponentType::BlocksAttacks => self.effective::<BlocksAttacks>().is_some(),
             DataComponentType::MapId => self.effective::<MapId>().is_some(),
@@ -147,6 +149,7 @@ impl<'a> ComponentHolder<'a> {
             Builtin::RepairCost(value) => self.effective() == Some(value),
             Builtin::UseEffects(value) => self.effective() == Some(value),
             Builtin::Food(value) => self.effective() == Some(value),
+            Builtin::Consumable(value) => self.effective() == Some(value),
             Builtin::Tool(value) => self.effective() == Some(value),
             Builtin::BlocksAttacks(value) => self.effective() == Some(value),
             Builtin::MapId(value) => self.effective() == Some(value),

@@ -5,6 +5,7 @@ use core::mem::{align_of, size_of};
 
 use crate::EffectDetails;
 use crate::MobEffectId;
+use crate::effect_details::EffectFields;
 
 #[non_exhaustive]
 pub struct EffectInstance {
@@ -40,6 +41,18 @@ impl EffectInstance {
             show_particles: true,
             show_icon: true,
             hidden_effect: None,
+        }
+    }
+
+    #[must_use]
+    pub(crate) fn fields(&self) -> EffectFields<'_> {
+        EffectFields {
+            amplifier: self.amplifier,
+            duration: self.duration,
+            ambient: self.ambient,
+            show_particles: self.show_particles,
+            show_icon: self.show_icon,
+            hidden_effect: self.hidden_effect.as_deref(),
         }
     }
 }
