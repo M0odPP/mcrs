@@ -1,5 +1,7 @@
 use bevy_app::{App, FixedUpdate, Plugin};
-use bevy_ecs::schedule::common_conditions::{resource_exists, resource_exists_and_changed};
+use bevy_ecs::schedule::common_conditions::{
+    on_message, resource_exists, resource_exists_and_changed,
+};
 use bevy_ecs::schedule::{IntoScheduleConfigs, SystemCondition};
 use mcrs_minecraft_block::definition::Blocks;
 use mcrs_minecraft_engine::PlayerMoved;
@@ -8,14 +10,15 @@ use mcrs_minecraft_engine::block_simulation::BlockSimulationSet;
 use mcrs_minecraft_engine::bus::OutboundPlayerPacket;
 use mcrs_minecraft_engine::player_state::PlayerFileState;
 use mcrs_minecraft_engine_damage::{DamageSet, PendingHits};
-use mcrs_minecraft_engine_physics::CrowdHitSet;
+use mcrs_minecraft_engine_physics::{CrowdHitSet, PhysicsTables};
 use mcrs_minecraft_engine_world::entity::player::Player;
 use mcrs_minecraft_engine_world::tick::TickSet;
 use mcrs_minecraft_registries::CurrentRegistries;
 
 use crate::bake;
 use crate::bake::{BakedEnvDamage, EnvBlockTable};
-use crate::env_state::{EnvDamageSet, EnvTickState};
+use crate::env_state::{EnvDamageSet, EnvTickState, PendingEnvEffect};
+use crate::fall_system;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct VanillaEnvDamagePlugin;
@@ -33,6 +36,7 @@ impl Plugin for VanillaEnvDamagePlugin {
             .init_resource::<PendingHits>()
             .add_message::<PlayerMoved>()
             .add_message::<OutboundPlayerPacket>()
+            .add_message::<PendingEnvEffect>()
             .configure_sets(
                 FixedUpdate,
                 (
@@ -48,16 +52,26 @@ impl Plugin for VanillaEnvDamagePlugin {
             )
             .add_systems(
                 FixedUpdate,
-                bake::bake_env_damage
-                    .run_if(
-                        resource_exists::<CurrentRegistries>
-                            .and_then(resource_exists::<Blocks>)
-                            .and_then(
-                                resource_exists_and_changed::<CurrentRegistries>
-                                    .or_else(resource_exists_and_changed::<Blocks>),
-                            ),
-                    )
-                    .in_set(TickSet::DomainInput),
+                (
+                    bake::bake_env_damage
+                        .run_if(
+                            resource_exists::<CurrentRegistries>
+                                .and_then(resource_exists::<Blocks>)
+                                .and_then(
+                                    resource_exists_and_changed::<CurrentRegistries>
+                                        .or_else(resource_exists_and_changed::<Blocks>),
+                                ),
+                        )
+                        .in_set(TickSet::DomainInput),
+                    fall_system::collect_fall_damage
+                        .run_if(
+                            on_message::<PlayerMoved>.and_then(resource_exists::<PhysicsTables>),
+                        )
+                        .in_set(EnvDamageSet::Collect),
+                    fall_system::emit_env_effects
+                        .run_if(on_message::<PendingEnvEffect>)
+                        .in_set(EnvDamageSet::Project),
+                ),
             );
     }
 }

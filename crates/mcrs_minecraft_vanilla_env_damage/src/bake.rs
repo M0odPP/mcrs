@@ -15,6 +15,8 @@ use mcrs_minecraft_sound::sound_event_keys::SoundEvent;
 use mcrs_minecraft_sound::{BlockSoundSet, Sound};
 use mcrs_voxel::BlockStateId;
 
+use crate::env_state::SoundSpec;
+
 #[derive(Resource, Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct BakedEnvDamage {
     pub fall: Option<u32>,
@@ -110,6 +112,18 @@ impl EnvBlockTable {
     #[must_use]
     pub fn get(&self, id: BlockStateId) -> Option<&EnvBlockEntry> {
         self.0.get(id.index())
+    }
+}
+
+pub(crate) fn sound_spec_wire(
+    sound: Id<SoundEvent>,
+    volume: f32,
+    pitch: f32,
+) -> SoundSpec<Sound<Wire>> {
+    SoundSpec {
+        sound: Ref::Id(sound.into()),
+        volume,
+        pitch,
     }
 }
 
