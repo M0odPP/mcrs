@@ -103,8 +103,7 @@ impl Plugin for VanillaEquipmentPlugin {
                             enqueue_hand_swaps.run_if(on_message::<RequestResult>),
                         )
                             .chain(),
-                        sync_equipment
-                            .run_if(|queue: Res<EquipmentDirtyQueue>| !queue.dirty.is_empty()),
+                        sync_equipment.run_if(has_dirty_equipment),
                     )
                         .chain()
                         .in_set(EquipmentSyncSet),
@@ -519,13 +518,11 @@ fn emit_armour_sounds(
     }
 }
 
-#[cfg_attr(
-    mcrs_lint,
-    expect(
-        mcrs::alloc_in_tick,
-        reason = "only runs when !queue.dirty.is_empty() and emits wire vectors"
-    )
-)]
+#[cfg_attr(mcrs_lint, mcrs::event_condition)]
+fn has_dirty_equipment(queue: Res<EquipmentDirtyQueue>) -> bool {
+    !queue.dirty.is_empty()
+}
+
 #[expect(clippy::too_many_arguments, reason = "ECS equipment diff system")]
 fn sync_equipment(
     mut queue: ResMut<EquipmentDirtyQueue>,
