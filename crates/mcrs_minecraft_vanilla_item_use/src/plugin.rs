@@ -9,7 +9,9 @@ use mcrs_minecraft_engine_world::tick::TickSet;
 use mcrs_minecraft_vanilla_inventory::InventorySet;
 
 use crate::ingest::{on_player_action, on_set_carried_item, on_use_item};
-use crate::systems::{FinishUseItem, finish_use_items, handle_use_item_inputs, tick_using_items};
+use crate::systems::{
+    FinishUseItem, TickConsumeSound, finish_use_items, handle_use_item_inputs, tick_using_items,
+};
 use crate::{CarriedSlotChanged, ReleaseUseItem, StartUseItem};
 
 #[derive(SystemSet, Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -27,6 +29,7 @@ impl Plugin for VanillaItemUsePlugin {
         app.add_message::<StartUseItem>()
             .add_message::<ReleaseUseItem>()
             .add_message::<CarriedSlotChanged>()
+            .add_message::<TickConsumeSound>()
             .add_message::<FinishUseItem>()
             .add_message::<OutboundPlayerPacket>()
             .add_observer(on_use_item)
@@ -62,7 +65,7 @@ impl Plugin for VanillaItemUsePlugin {
                         .run_if(any_with_component::<UsingItem>)
                         .in_set(ItemUseSet::Simulate),
                     finish_use_items
-                        .run_if(on_message::<FinishUseItem>)
+                        .run_if(on_message::<FinishUseItem>.or_else(on_message::<TickConsumeSound>))
                         .in_set(ItemUseSet::Finish),
                 ),
             );
