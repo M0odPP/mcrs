@@ -7102,6 +7102,7 @@ dependencies = [
  "mcrs_minecraft_vanilla_attributes",
  "mcrs_minecraft_vanilla_block_place",
  "mcrs_minecraft_vanilla_death",
+ "mcrs_minecraft_vanilla_durability",
  "mcrs_minecraft_vanilla_falling_block",
  "mcrs_minecraft_vanilla_hunger",
  "mcrs_minecraft_vanilla_inventory",
@@ -7345,6 +7346,32 @@ dependencies = [
  "mcrs_minecraft_registries",
  "mcrs_minecraft_text",
  "mcrs_minecraft_vanilla_item_entity",
+]
+
+[[package]]
+name = "mcrs_minecraft_vanilla_durability"
+version = "0.5.8"
+dependencies = [
+ "bevy_app",
+ "bevy_ecs",
+ "mcrs_minecraft_block",
+ "mcrs_minecraft_damage",
+ "mcrs_minecraft_durability",
+ "mcrs_minecraft_engine",
+ "mcrs_minecraft_engine_damage",
+ "mcrs_minecraft_engine_item",
+ "mcrs_minecraft_engine_player_vitals",
+ "mcrs_minecraft_engine_world",
+ "mcrs_minecraft_entity_key",
+ "mcrs_minecraft_game_mode",
+ "mcrs_minecraft_inventory_player",
+ "mcrs_minecraft_item",
+ "mcrs_minecraft_item_stack",
+ "mcrs_minecraft_item_table",
+ "mcrs_minecraft_protocol_game",
+ "mcrs_minecraft_registries",
+ "mcrs_minecraft_replication",
+ "mcrs_voxel",
 ]
 
 [[package]]

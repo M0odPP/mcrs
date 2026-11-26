@@ -62,6 +62,7 @@ mcrs_voxel.workspace = true
 mcrs_minecraft_text.workspace = true
 mcrs_minecraft_vanilla_attributes.workspace = true
 mcrs_minecraft_vanilla_block_place.workspace = true
+mcrs_minecraft_vanilla_durability.workspace = true
 mcrs_minecraft_vanilla_falling_block.workspace = true
 mcrs_minecraft_vanilla_hunger.workspace = true
 mcrs_minecraft_inventory_server.workspace = true

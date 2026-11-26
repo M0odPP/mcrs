@@ -196,6 +196,7 @@ Use the crate that owns the item. Do not write a second copy.
 - `mcrs_minecraft_vanilla_attributes`: Vanilla sources of attribute modifiers on the players of a dimension world: the sprint state and creative mode
 - `mcrs_minecraft_vanilla_block_place`: Vanilla block placing in the dimension worlds: a block item used on a block face places its block
 - `mcrs_minecraft_vanilla_death`: Vanilla consequences of the death of a player: the drop of its inventory and of the stacks it holds, and the death message
+- `mcrs_minecraft_vanilla_durability`: Vanilla item durability wear and breakage in dimension worlds for block breaks, melee hits, hurt armour and extra uses
 - `mcrs_minecraft_vanilla_falling_block`: The vanilla falling block: a requested fall moves with the motion pass and lands as a block or an item
 - `mcrs_minecraft_vanilla_hunger`: Server hunger plugin wiring exhaustion sources, natural and peaceful regeneration, starvation damage requests, and spectator chunk gating
 - `mcrs_minecraft_vanilla_inventory`: The gameplay of the player inventory: the hand actions, the close, the drops and the player file

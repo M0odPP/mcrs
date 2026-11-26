@@ -2,8 +2,8 @@ use bevy_app::{App, FixedUpdate, Plugin, Startup};
 use bevy_ecs::change_detection::DetectChangesMut;
 use bevy_ecs::message::MessageWriter;
 use bevy_ecs::prelude::{Commands, Query, Res, ResMut, With, not};
-use bevy_ecs::schedule::IntoScheduleConfigs;
 use bevy_ecs::schedule::common_conditions::resource_exists;
+use bevy_ecs::schedule::{IntoScheduleConfigs, SystemSet};
 use mcrs_minecraft_dimension_environment::environment::WeatherLevel;
 use mcrs_minecraft_engine::PoseSystems;
 use mcrs_minecraft_engine::bus::{OutboundPlayerPacket, PacketPayload, PacketTarget, to_target};
@@ -17,6 +17,9 @@ use mcrs_minecraft_protocol_game::GameEventKind;
 use mcrs_minecraft_protocol_game::clientbound::ClientboundGameEvent;
 use mcrs_minecraft_weather::{WeatherGameEvent, initial_levels, step_weather_levels};
 use smallvec::SmallVec;
+
+#[derive(SystemSet, Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct WeatherDimensionSet;
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct VanillaWeatherDimensionPlugin;
@@ -37,6 +40,7 @@ impl Plugin for VanillaWeatherDimensionPlugin {
                     .run_if(not(resource_exists::<WeatherLevel>))
                     .run_if(is_weather_dimension),
                 step_weather_dimension
+                    .in_set(WeatherDimensionSet)
                     .in_set(TickSet::Project)
                     .before(PoseSystems::Publish)
                     .run_if(tick_runs_normally)
