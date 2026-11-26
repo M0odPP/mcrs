@@ -67,6 +67,7 @@ use crate::ToolRule;
 use crate::TooltipDisplay;
 use crate::Trim;
 use crate::Unbreakable;
+use crate::UseEffects;
 use crate::Weapon;
 use crate::WireError;
 use crate::check_saved_form::NOT_NEGATIVE;
@@ -214,6 +215,7 @@ fn flat_saved_form<S: SavedSink, L: NameLookup>(
         Builtin::AttackAnimation(AttackAnimation(swing))
         | Builtin::InteractAnimation(InteractAnimation(swing)) => walk.swing_animation(sink, swing),
         Builtin::Weapon(weapon) => walk.weapon(sink, weapon),
+        Builtin::UseEffects(effects) => walk.use_effects(sink, effects),
         Builtin::CustomName(CustomName(text)) | Builtin::ItemName(ItemName(text)) => {
             walk.text(sink, text)
         }
@@ -279,6 +281,10 @@ pub(crate) fn is_use_duration(value: f32) -> bool {
 
 pub(crate) fn is_instrument_range(value: f32) -> bool {
     value.total_cmp(&0.0).is_gt() && value <= f32::MAX
+}
+
+pub(crate) fn is_unit_float(value: f32) -> bool {
+    value.total_cmp(&0.0).is_ge() && value.total_cmp(&1.0).is_le()
 }
 
 fn listed<S: SavedSink, T>(
@@ -897,6 +903,25 @@ impl<L: NameLookup> Walk<'_, L> {
         Ok(sink.fields([
             Field::optional("item_damage_per_attack", item_damage_per_attack),
             Field::optional("disable_blocking_for_seconds", disable_blocking_for_seconds),
+        ]))
+    }
+
+    fn use_effects<S: SavedSink>(&self, sink: &S, effects: &UseEffects) -> Result<S::Node, Fault> {
+        if !is_unit_float(effects.speed_multiplier) {
+            return Err(Fault::OutOfRange(self.component));
+        }
+        let can_sprint = (effects.can_sprint != UseEffects::DEFAULT_CAN_SPRINT)
+            .then(|| sink.leaf(Leaf::Boolean(effects.can_sprint)));
+        let interact_vibrations = (effects.interact_vibrations
+            != UseEffects::DEFAULT_INTERACT_VIBRATIONS)
+            .then(|| sink.leaf(Leaf::Boolean(effects.interact_vibrations)));
+        let speed_multiplier = (effects.speed_multiplier.to_bits()
+            != UseEffects::DEFAULT_SPEED_MULTIPLIER.to_bits())
+        .then(|| sink.leaf(Leaf::Float(effects.speed_multiplier)));
+        Ok(sink.fields([
+            Field::optional("can_sprint", can_sprint),
+            Field::optional("interact_vibrations", interact_vibrations),
+            Field::optional("speed_multiplier", speed_multiplier),
         ]))
     }
 }

@@ -104,6 +104,7 @@ use crate::Trim;
 use crate::TrimMaterialId;
 use crate::TrimPatternId;
 use crate::Unbreakable;
+use crate::UseEffects;
 use crate::Weapon;
 use crate::WireError;
 use crate::lore::MAX_LINES;
@@ -187,6 +188,10 @@ pub(crate) fn read_value_at<L: NameLookup>(
     }
 }
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "single flat match over all builtin item component keys"
+)]
 #[inline(never)]
 fn read_flat_value<L: NameLookup>(
     reader: &Reader<'_, L>,
@@ -234,6 +239,11 @@ fn read_flat_value<L: NameLookup>(
         BuiltinKey::Weapon => Builtin::Weapon(Weapon {
             item_damage_per_attack: reader.var_int(input)?,
             disable_blocking_for_seconds: f32::from_be_bytes(reader.bytes(input)?),
+        }),
+        BuiltinKey::UseEffects => Builtin::UseEffects(UseEffects {
+            can_sprint: reader.boolean(input)?,
+            interact_vibrations: reader.boolean(input)?,
+            speed_multiplier: f32::from_be_bytes(reader.bytes(input)?),
         }),
         BuiltinKey::CustomName => Builtin::CustomName(CustomName(read_text(input, component)?)),
         BuiltinKey::ItemName => Builtin::ItemName(ItemName(read_text(input, component)?)),
@@ -880,6 +890,11 @@ pub(crate) fn write_value<L: NameLookup>(
         Builtin::Weapon(weapon) => {
             put_var_int(output, weapon.item_damage_per_attack);
             output.extend_from_slice(&weapon.disable_blocking_for_seconds.to_be_bytes());
+        }
+        Builtin::UseEffects(effects) => {
+            put_boolean(output, effects.can_sprint);
+            put_boolean(output, effects.interact_vibrations);
+            output.extend_from_slice(&effects.speed_multiplier.to_be_bytes());
         }
         Builtin::MapDecorations(_) => writer.saved_form_as_nbt(value, output)?,
         Builtin::Profile(profile) => profile

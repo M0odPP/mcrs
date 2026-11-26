@@ -32,11 +32,7 @@ pub(crate) fn skip_value(
         MaxDamage => value(BuiltinKey::MaxDamage, input),
         Damage => value(BuiltinKey::Damage, input),
         Unbreakable => value(BuiltinKey::Unbreakable, input),
-        UseEffects => {
-            skip.boolean(input)?;
-            skip.boolean(input)?;
-            skip.bytes(input, F32)
-        }
+        UseEffects => value(BuiltinKey::UseEffects, input),
         CustomName => value(BuiltinKey::CustomName, input),
         MinimumAttackCharge | PotionDurationScale => skip.bytes(input, F32),
         DamageType

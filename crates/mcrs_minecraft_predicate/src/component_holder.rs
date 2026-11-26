@@ -43,6 +43,7 @@ use mcrs_minecraft_item_stack::Tool;
 use mcrs_minecraft_item_stack::TooltipDisplay;
 use mcrs_minecraft_item_stack::Trim;
 use mcrs_minecraft_item_stack::Unbreakable;
+use mcrs_minecraft_item_stack::UseEffects;
 use mcrs_minecraft_item_stack::Weapon;
 use mcrs_minecraft_item_table::ItemTable;
 
@@ -82,6 +83,7 @@ impl<'a> ComponentHolder<'a> {
             }
             DataComponentType::TooltipDisplay => self.effective::<TooltipDisplay>().is_some(),
             DataComponentType::RepairCost => self.effective::<RepairCost>().is_some(),
+            DataComponentType::UseEffects => self.effective::<UseEffects>().is_some(),
             DataComponentType::Food => self.effective::<Food>().is_some(),
             DataComponentType::Tool => self.effective::<Tool>().is_some(),
             DataComponentType::MapId => self.effective::<MapId>().is_some(),
@@ -141,6 +143,7 @@ impl<'a> ComponentHolder<'a> {
             Builtin::AttributeModifiers(value) => self.effective() == Some(value),
             Builtin::TooltipDisplay(value) => self.effective() == Some(value),
             Builtin::RepairCost(value) => self.effective() == Some(value),
+            Builtin::UseEffects(value) => self.effective() == Some(value),
             Builtin::Food(value) => self.effective() == Some(value),
             Builtin::Tool(value) => self.effective() == Some(value),
             Builtin::MapId(value) => self.effective() == Some(value),

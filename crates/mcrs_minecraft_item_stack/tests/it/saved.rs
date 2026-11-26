@@ -934,3 +934,17 @@ fn weapon_round_trips_and_validates_saved_form() {
         Err(SavedError::OutOfRange(BuiltinKey::Weapon))
     );
 }
+
+#[test]
+fn use_effects_validates_ranges_in_saved_form() {
+    for bad_speed in [-0.0_f32, 1.5_f32] {
+        let mut effects = NbtCompound::new();
+        effects.put("speed_multiplier", NbtTag::Float(bad_speed));
+        let nbt = with_component("use_effects", NbtTag::Compound(effects));
+        assert_eq!(
+            read_saved(&nbt, &Names),
+            Err(SavedError::OutOfRange(BuiltinKey::UseEffects)),
+            "expected out of range for speed_multiplier={bad_speed}"
+        );
+    }
+}
