@@ -204,6 +204,7 @@ Use the crate that owns the item. Do not write a second copy.
 - `mcrs_minecraft_vanilla_hunger`: Server hunger plugin wiring exhaustion sources, natural and peaceful regeneration, starvation damage requests, and spectator chunk gating
 - `mcrs_minecraft_vanilla_inventory`: The gameplay of the player inventory: the hand actions, the close, the drops and the player file
 - `mcrs_minecraft_vanilla_item_entity`: The vanilla item entity: a dropped stack that moves with the motion pass, ages, merges and is picked up
+- `mcrs_minecraft_vanilla_item_use`: Vanilla continuous item use, consumable completion, release, and slot-change cancellation in dimension worlds
 - `mcrs_minecraft_vanilla_light`: Vanilla light wired into the dimension worlds: the block light table, the light engine driver of each dimension and the light updates sent to the players
 - `mcrs_minecraft_vanilla_player_attack`: The melee attack of a player on an entity: the attack strength, the damage amount, the hit request from the attack packet and the knockback of the hit
 - `mcrs_minecraft_vanilla_respawn`: Vanilla respawn of a dead player on its request, at the respawn position of the vanilla rules
