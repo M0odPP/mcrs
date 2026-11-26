@@ -7,6 +7,7 @@ mod vanilla_blocks;
 mod vanilla_brains;
 mod vanilla_death_drops;
 mod vanilla_death_messages;
+mod vanilla_equipment;
 mod vanilla_swing;
 
 use bevy_app::{App, FixedUpdate, Plugin, PluginGroup, PluginGroupBuilder};
@@ -44,6 +45,7 @@ use mcrs_minecraft_vanilla_worldgen::{WorldGenPlugin, WorldgenRegistriesPlugin};
 pub use vanilla_blocks::{VanillaBlocks, VanillaBlocksPlugin};
 pub use vanilla_death_drops::VanillaDeathDropsPlugin;
 pub use vanilla_death_messages::VanillaDeathMessagesPlugin;
+pub use vanilla_equipment::VanillaEquipmentPlugin;
 pub use vanilla_swing::VanillaSwingPlugin;
 
 pub struct MinecraftServerPlugins {
@@ -107,6 +109,7 @@ impl PluginGroup for MinecraftServerPlugins {
             .add(VanillaItemPlugin)
             .add(VanillaBlockPlacePlugin)
             .add(VanillaSwingPlugin)
+            .add(VanillaEquipmentPlugin)
             .add(VanillaPlayerAttackPlugin)
             .add(VanillaHungerPlugin)
             .add(VanillaWeatherPlugin)
