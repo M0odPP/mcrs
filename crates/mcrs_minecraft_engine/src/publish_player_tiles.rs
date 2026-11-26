@@ -28,6 +28,7 @@ use crate::publish_pose::pose_entries;
 use crate::replicated::{Replicated, Visibility};
 use crate::shift_key::ShiftKey;
 use crate::tile_events::TileEvents;
+use crate::using_item::LivingFlags;
 
 #[derive(Component, Clone, Copy, Debug, Default)]
 pub struct AnnounceJoin;
@@ -81,6 +82,7 @@ pub fn publish_player_tiles(
                 &PlayerSprinting,
                 Option<&Vitals>,
                 Option<&OwnEquipment>,
+                Option<&LivingFlags>,
             ),
             Has<HiddenPlayer>,
         ),
@@ -99,7 +101,7 @@ pub fn publish_player_tiles(
         announce,
         crossed,
         attributes,
-        (&body_pose, &shift, &sprinting, vitals, own_equipment),
+        (&body_pose, &shift, &sprinting, vitals, own_equipment, living_flags),
         hidden,
     ) in &mut players
     {
@@ -130,7 +132,7 @@ pub fn publish_player_tiles(
                         pose: pose(&transform),
                         game_mode,
                         attributes: attributes.map(stored_attributes).unwrap_or_default(),
-                        entries: pose_entries(body_pose, shift, sprinting, vitals),
+                        entries: pose_entries(body_pose, shift, sprinting, vitals, living_flags),
                         equipment: own_equipment.map_or_else(Vec::new, OwnEquipment::to_wire_vec),
                     })
                     .into(),

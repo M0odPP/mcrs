@@ -14,7 +14,7 @@ use crate::dim_tick::DimInboxDrain;
 use crate::dim_tick::drain_dim_inbox;
 use crate::game_mode::{self, GameModePlugin};
 use crate::loaded_client::LoadedClientPlugin;
-use crate::movement::MovementPlugin;
+use crate::movement::{ItemUsePredictionSet, MovementPlugin};
 use crate::op_level::{refresh_op_levels, send_op_level};
 use crate::own_equipment::OwnEquipment;
 use crate::persistence;
@@ -28,6 +28,7 @@ use crate::send_own_attributes::{OwnAttributesSet, send_own_attributes};
 use crate::shift_key::{ShiftKey, handle_interact, handle_player_input};
 use crate::swing::PlayerSwingPlugin;
 use crate::use_item_request::{UseItemRequest, handle_use_item};
+use crate::using_item::LivingFlags;
 use bevy_app::{App, FixedPreUpdate, FixedUpdate, Plugin, Update};
 use bevy_ecs::schedule::IntoScheduleConfigs;
 use bevy_ecs::schedule::common_conditions::{
@@ -81,6 +82,9 @@ impl Plugin for DimPlayerPlugin {
         if let Err(error) = app.try_register_required_components::<Player, OwnEquipment>() {
             tracing::error!("a player does not require its own equipment: {error}");
         }
+        if let Err(error) = app.try_register_required_components::<Player, LivingFlags>() {
+            tracing::error!("a player does not require its living flags: {error}");
+        }
         app.add_plugins((LoadedClientPlugin, PlayerSwingPlugin));
         app.add_message::<UseItemRequest>();
         app.add_observer(handle_use_item);
@@ -89,6 +93,9 @@ impl Plugin for DimPlayerPlugin {
         app.configure_sets(
             FixedUpdate,
             (
+                ItemUsePredictionSet
+                    .in_set(TickSet::Simulate)
+                    .before(PoseSystems::Select),
                 PoseSystems::Select.in_set(TickSet::Simulate),
                 PoseSystems::Publish
                     .in_set(TickSet::Project)
