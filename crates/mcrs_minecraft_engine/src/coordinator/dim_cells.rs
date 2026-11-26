@@ -52,6 +52,7 @@ use mcrs_minecraft_engine_world::birth_clock::BirthClock;
 use mcrs_minecraft_engine_world::entity_ids::EntityIdRange;
 use mcrs_minecraft_engine_world::game_rules::GameRules;
 use mcrs_minecraft_engine_world::tick_pace::TickPace;
+use mcrs_minecraft_engine_world::world_border::DimensionWorldBorder;
 
 pub struct DimCellsPlugin;
 
@@ -731,6 +732,7 @@ struct Globals {
     bans: Option<BanList>,
     weather: Option<Weather>,
     game_rules: Option<GameRules>,
+    world_border: Option<DimensionWorldBorder>,
     difficulty: Option<ServerDifficulty>,
     tick_pace: Option<TickPace>,
     registries: Option<Versioned<RegistrySnapshot>>,
@@ -751,6 +753,7 @@ impl Globals {
             bans: changed(host),
             weather: changed(host),
             game_rules: changed(host),
+            world_border: changed(host),
             difficulty: changed(host),
             tick_pace: changed(host),
             registries: changed(host),
@@ -784,6 +787,7 @@ impl Globals {
             bans: self.bans.clone(),
             weather: self.weather,
             game_rules: self.game_rules.clone(),
+            world_border: self.world_border,
             difficulty: self.difficulty,
             tick_pace: self.tick_pace.clone(),
             registries: self.registries.clone(),
