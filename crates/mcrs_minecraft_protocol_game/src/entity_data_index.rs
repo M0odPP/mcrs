@@ -1,4 +1,5 @@
 pub const SHARED_FLAGS: u8 = 0;
+pub const AIR_SUPPLY: u8 = 1;
 pub const CUSTOM_NAME: u8 = 2;
 pub const NAME_VISIBLE: u8 = 3;
 pub const NO_GRAVITY: u8 = 5;
@@ -14,5 +15,6 @@ pub const AGE_LOCKED: u8 = 17;
 pub const MOB_FLAG_NO_AI: i8 = 1 << 0;
 pub const MOB_FLAG_LEFT_HANDED: i8 = 1 << 1;
 
+pub const SHARED_FLAG_ON_FIRE: u8 = 1 << 0;
 pub const SHARED_FLAG_SHIFT: u8 = 1 << 1;
 pub const SHARED_FLAG_SPRINT: u8 = 1 << 3;

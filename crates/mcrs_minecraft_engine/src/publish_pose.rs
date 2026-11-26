@@ -1,7 +1,7 @@
 use bevy_ecs::change_detection::DetectChangesMut;
 use bevy_ecs::component::Component;
 use bevy_ecs::message::MessageWriter;
-use bevy_ecs::query::{Changed, Or};
+use bevy_ecs::query::{Changed, Or, QueryData};
 use bevy_ecs::system::{Populated, ResMut};
 use mcrs_engine_muxer::EntityEvent;
 use mcrs_minecraft_damage::Vitals;
@@ -10,12 +10,15 @@ use mcrs_minecraft_pose::Pose;
 use mcrs_minecraft_protocol::VarInt;
 use mcrs_minecraft_protocol_game::clientbound::ClientboundSetEntityData;
 use mcrs_minecraft_protocol_game::entity::Metadata;
-use mcrs_minecraft_protocol_game::entity_data_index::{SHARED_FLAG_SHIFT, SHARED_FLAG_SPRINT};
+use mcrs_minecraft_protocol_game::entity_data_index::{
+    SHARED_FLAG_ON_FIRE, SHARED_FLAG_SHIFT, SHARED_FLAG_SPRINT,
+};
 use mcrs_minecraft_replication::{PlayerData, PlayerEntries};
 
 use crate::bus::{OutboundPlayerPacket, send_own_entity_state};
 use crate::network_id::player_network_id;
 use crate::player_sprinting::PlayerSprinting;
+use crate::player_state::PlayerFileState;
 use crate::replicated::Replicated;
 use crate::shift_key::ShiftKey;
 use crate::tile_events::TileEvents;
@@ -29,30 +32,44 @@ type PoseInputsChanged = Or<(
     Changed<ShiftKey>,
     Changed<PlayerSprinting>,
     Changed<Vitals>,
+    Changed<PlayerFileState>,
     Changed<LivingFlags>,
 )>;
 
+#[derive(QueryData)]
+pub(crate) struct PoseInputs {
+    pose: &'static Pose,
+    shift: &'static ShiftKey,
+    sprinting: &'static PlayerSprinting,
+    vitals: Option<&'static Vitals>,
+    file_state: Option<&'static PlayerFileState>,
+    living_flags: Option<&'static LivingFlags>,
+}
+
+impl PoseInputsItem<'_, '_> {
+    #[must_use]
+    pub(crate) fn entries(&self) -> PlayerEntries {
+        pose_entries(
+            *self.pose,
+            *self.shift,
+            *self.sprinting,
+            self.vitals,
+            self.file_state,
+            self.living_flags,
+        )
+    }
+}
+
 pub(crate) fn publish_pose(
     mut players: Populated<
-        (
-            &Owner,
-            &Pose,
-            &ShiftKey,
-            &PlayerSprinting,
-            Option<&Vitals>,
-            Option<&LivingFlags>,
-            &mut OwnPoseEntries,
-            Option<&Replicated>,
-        ),
+        (&Owner, PoseInputs, &mut OwnPoseEntries, Option<&Replicated>),
         PoseInputsChanged,
     >,
     mut writer: MessageWriter<OutboundPlayerPacket>,
     mut events: Option<ResMut<TileEvents>>,
 ) {
-    for (&Owner(session), &pose, &shift, &sprinting, vitals, living_flags, mut own, replicated) in
-        &mut players
-    {
-        let entries = pose_entries(pose, shift, sprinting, vitals, living_flags);
+    for (&Owner(session), pose_inputs, mut own, replicated) in &mut players {
+        let entries = pose_inputs.entries();
         let changed = entries.changed_from(&own.0);
         if changed.is_empty() {
             continue;
@@ -79,6 +96,7 @@ pub(crate) fn pose_entries(
     shift: ShiftKey,
     sprinting: PlayerSprinting,
     vitals: Option<&Vitals>,
+    file_state: Option<&PlayerFileState>,
     living_flags: Option<&LivingFlags>,
 ) -> PlayerEntries {
     let mut entries = PlayerEntries {
@@ -97,6 +115,13 @@ pub(crate) fn pose_entries(
         if !vitals.is_alive() {
             entries.pose = Pose::Dying;
         }
+    }
+    if let Some(state) = file_state {
+        if state.fire > 0 || state.has_visual_fire {
+            entries.shared_flags |= SHARED_FLAG_ON_FIRE;
+        }
+        entries.air_supply = state.air;
+        entries.ticks_frozen = state.ticks_frozen.max(0);
     }
     entries
 }
@@ -217,6 +242,57 @@ mod tests {
             observer_bytes,
             [1, 0, 3, 2, 1],
             "observers receive matching living_flags transitions"
+        );
+    }
+
+    #[test]
+    fn pose_entries_projects_fire_air_and_frozen_state() {
+        let mut state = PlayerFileState {
+            fire: 40,
+            air: 150,
+            ticks_frozen: 90,
+            ..PlayerFileState::default()
+        };
+        let burning = pose_entries(
+            Pose::Standing,
+            ShiftKey(false),
+            PlayerSprinting(false),
+            None,
+            Some(&state),
+            None,
+        );
+        assert_eq!(
+            burning.shared_flags & SHARED_FLAG_ON_FIRE,
+            SHARED_FLAG_ON_FIRE,
+            "positive fire ticks should set SHARED_FLAG_ON_FIRE"
+        );
+        assert_eq!(
+            burning.air_supply, 150,
+            "air_supply should mirror PlayerFileState.air"
+        );
+        assert_eq!(
+            burning.ticks_frozen, 90,
+            "ticks_frozen should mirror PlayerFileState.ticks_frozen"
+        );
+
+        state.fire = -20;
+        state.ticks_frozen = -5;
+        let cooled = pose_entries(
+            Pose::Standing,
+            ShiftKey(false),
+            PlayerSprinting(false),
+            None,
+            Some(&state),
+            None,
+        );
+        assert_eq!(
+            cooled.shared_flags & SHARED_FLAG_ON_FIRE,
+            0,
+            "non-positive fire ticks without visual fire should clear SHARED_FLAG_ON_FIRE"
+        );
+        assert_eq!(
+            cooled.ticks_frozen, 0,
+            "negative ticks_frozen should clamp to 0"
         );
     }
 }

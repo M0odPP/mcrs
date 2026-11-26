@@ -20,6 +20,7 @@ pub enum MobSignal {
     },
     Died,
     Removed,
+    DrownBubbles,
     EntityEvent {
         status: i8,
     },
@@ -59,6 +60,7 @@ impl MobSignal {
             }
             Self::Died => event(ClientboundEntityEvent::DIED)?,
             Self::Removed => event(ClientboundEntityEvent::REMOVED)?,
+            Self::DrownBubbles => event(ClientboundEntityEvent::DROWN_BUBBLES)?,
             Self::EntityEvent { status } => event(status)?,
             Self::Taken { collector, amount } => record(&ClientboundTakeItemEntity {
                 item_id: entity_id,

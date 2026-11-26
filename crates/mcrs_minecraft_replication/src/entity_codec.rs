@@ -383,7 +383,7 @@ impl EntityCodec {
             let Some(owner) = subjects.get(&subject).map(|state| state.viewer) else {
                 continue;
             };
-            let to_owner = matches!(signal, MobSignal::Hurt { .. });
+            let to_owner = matches!(signal, MobSignal::Hurt { .. } | MobSignal::DrownBubbles);
             let observers = holds.holders(subject);
             if !to_owner && !observers.iter().any(|&viewer| viewer != owner) {
                 continue;
@@ -1625,6 +1625,48 @@ mod tests {
         assert!(
             !late.contains(&expected),
             "transient EntityEvent never enters spawn backlog"
+        );
+    }
+
+    #[test]
+    fn drown_bubbles_signal_delivers_to_observers_and_owner_and_never_replays() {
+        let mut codec = setup_swing_codec();
+        let data = PlayerData::Signal(MobSignal::DrownBubbles).into();
+        let delta = TileDelta {
+            tile: TileKey::new(0, 0, 0),
+            events: vec![SubjectEvent {
+                subject: PLAYER,
+                event: EntityEvent::Data(data),
+            }],
+        };
+        codec.apply(1, &delta);
+        let by_viewer = finish_by_viewer(&mut codec, 1);
+        let packet = ClientboundEntityEvent {
+            entity_id: wire_id(PLAYER).0,
+            entity_status: ClientboundEntityEvent::DROWN_BUBBLES,
+        };
+        let expected = record(&packet).expect("drown bubbles entity event should encode");
+
+        for viewer in [OBSERVER_A, OBSERVER_B, SUBJECT_VIEWER] {
+            let received = by_viewer
+                .get(&viewer)
+                .expect("viewer should receive drown bubbles event");
+            assert_eq!(
+                received.as_slice(),
+                std::slice::from_ref(&expected),
+                "viewer should receive exact ClientboundEntityEvent::DROWN_BUBBLES packet"
+            );
+        }
+
+        let mut late = Vec::new();
+        let hold = Hold::Gain {
+            subject: PLAYER,
+            tier: Tier::NEAREST,
+        };
+        codec.hold(LATE_VIEWER, hold, &mut late);
+        assert!(
+            !late.contains(&expected),
+            "transient DrownBubbles event never enters spawn backlog"
         );
     }
 }

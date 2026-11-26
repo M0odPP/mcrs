@@ -160,6 +160,7 @@ impl ClientboundEntityEvent {
     pub const HONEY_SLIDE: i8 = 54;
     pub const SWAP_HANDS: i8 = 55;
     pub const REMOVED: i8 = 60;
+    pub const DROWN_BUBBLES: i8 = 67;
 }
 
 #[derive(Clone, Debug, PartialEq, Encode, Decode)]
