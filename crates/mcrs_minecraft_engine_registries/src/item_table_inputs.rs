@@ -1,6 +1,7 @@
 use mcrs_minecraft_block::block_keys::Block;
 use mcrs_minecraft_entity::damage_type::DamageType;
 use mcrs_minecraft_entity::entity_type_keys::EntityType;
+use mcrs_minecraft_entity::mob_effect_keys::MobEffect;
 use mcrs_minecraft_registries::Registries;
 use mcrs_minecraft_registries::Tags;
 use mcrs_minecraft_resource::ResourceLocation;
@@ -17,6 +18,7 @@ pub struct ItemTableInputs {
     block_tags: Vec<TagName>,
     entity_type_tags: Vec<TagName>,
     damage_type_tags: Vec<TagName>,
+    mob_effect_tags: Vec<TagName>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -34,6 +36,7 @@ impl ItemTableInputs {
             block_tags: tag_names(registries.tags::<Block>()),
             entity_type_tags: tag_names(registries.tags::<EntityType>()),
             damage_type_tags: tag_names(registries.tags::<DamageType>()),
+            mob_effect_tags: tag_names(registries.tags::<MobEffect>()),
         }
     }
 }

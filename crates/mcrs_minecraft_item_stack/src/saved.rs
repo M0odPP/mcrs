@@ -56,6 +56,7 @@ use crate::DamageTypeTagId;
 use crate::DimensionPos;
 use crate::DyeColor;
 use crate::DyedColor;
+use crate::EffectDetails;
 use crate::EffectInstance;
 use crate::EnchantmentGlintOverride;
 use crate::EnchantmentId;
@@ -990,31 +991,60 @@ impl<L: NameLookup> Reader<'_, L> {
             }
             _ => self.map(tag)?,
         };
+        let effect_depth = self.depth.saturating_add(4);
         Ok(PotionContents {
             potion: self.optional(map, "potion", Self::potion)?,
             custom_color: self.optional(map, "custom_color", |reader, tag| {
                 Ok(reader.number(tag)?.to_int())
             })?,
-            custom_effects: self.listed(map, "custom_effects", Self::effect_instance)?,
+            custom_effects: self.listed(map, "custom_effects", |reader, tag| {
+                reader.effect_instance_stripping_hidden(tag, effect_depth)
+            })?,
             custom_name: self.optional(map, "custom_name", |reader, tag| {
                 Ok(reader.string(tag)?.to_string())
             })?,
         })
     }
 
-    fn effect_instance(&self, tag: &NbtTag) -> Result<EffectInstance, SavedError> {
+    fn effect_instance_stripping_hidden(
+        &self,
+        tag: &NbtTag,
+        depth: u32,
+    ) -> Result<EffectInstance, SavedError> {
         let map = self.map(tag)?;
-        let mut effect = EffectInstance::new(self.mob_effect(self.necessary(map, "id")?)?);
+        let id = self.mob_effect(self.necessary(map, "id")?)?;
+        let details = self.effect_details_stripping_hidden(map, depth)?;
+        let mut effect = EffectInstance::new(id);
+        effect.amplifier = details.amplifier;
+        effect.duration = details.duration;
+        effect.ambient = details.ambient;
+        effect.show_particles = details.show_particles;
+        effect.show_icon = details.show_icon;
+        Ok(effect)
+    }
+
+    fn effect_details_stripping_hidden(
+        &self,
+        map: &NbtCompound,
+        depth: u32,
+    ) -> Result<EffectDetails, SavedError> {
+        if depth > MAX_DEPTH {
+            return Err(SavedError::TooDeep);
+        }
+        let mut details = EffectDetails::new();
         if let Some(amplifier) = map.get("amplifier") {
-            effect.amplifier = self.number(amplifier)?.to_int() as u8;
+            details.amplifier = self.number(amplifier)?.to_int() as u8;
         }
         if let Some(duration) = map.get("duration") {
-            effect.duration = self.number(duration)?.to_int();
+            details.duration = self.number(duration)?.to_int();
         }
-        effect.ambient = self.flag(map, "ambient", false)?;
-        effect.show_particles = self.flag(map, "show_particles", true)?;
-        effect.show_icon = self.flag(map, "show_icon", effect.show_particles)?;
-        Ok(effect)
+        details.ambient = self.flag(map, "ambient", false)?;
+        details.show_particles = self.flag(map, "show_particles", true)?;
+        details.show_icon = self.flag(map, "show_icon", details.show_particles)?;
+        let _ = self.optional(map, "hidden_effect", |reader, tag| {
+            reader.effect_details_stripping_hidden(reader.map(tag)?, depth.saturating_add(1))
+        })?;
+        Ok(details)
     }
 
     fn custom_data(&self, tag: &NbtTag) -> Result<NbtCompound, SavedError> {

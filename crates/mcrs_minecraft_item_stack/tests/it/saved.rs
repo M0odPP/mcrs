@@ -9,11 +9,13 @@ use mcrs_minecraft_item_stack::AttributeModifiers;
 use mcrs_minecraft_item_stack::BlockId;
 use mcrs_minecraft_item_stack::BlockSet;
 use mcrs_minecraft_item_stack::BlockTagId;
+use mcrs_minecraft_item_stack::Builtin;
 use mcrs_minecraft_item_stack::BuiltinKey;
 use mcrs_minecraft_item_stack::ComponentType;
 use mcrs_minecraft_item_stack::CustomName;
 use mcrs_minecraft_item_stack::Damage;
 use mcrs_minecraft_item_stack::DimensionPos;
+use mcrs_minecraft_item_stack::EffectInstance;
 use mcrs_minecraft_item_stack::EnchantmentId;
 use mcrs_minecraft_item_stack::EnchantmentLevel;
 use mcrs_minecraft_item_stack::Enchantments;
@@ -992,5 +994,57 @@ fn use_effects_and_blocks_attacks_validate_ranges_in_saved_form() {
         ),
         Err(SavedError::OutOfRange(BuiltinKey::BlocksAttacks)),
         "expected out of range for item_damage.threshold=-0.0"
+    );
+}
+
+fn nested_hidden_effect_tag(levels: usize) -> NbtCompound {
+    let mut current = NbtCompound::new();
+    current.put("show_icon", NbtTag::Byte(1));
+    for _ in 0..levels {
+        let mut outer = NbtCompound::new();
+        outer.put("show_icon", NbtTag::Byte(1));
+        outer.put("hidden_effect", NbtTag::Compound(current));
+        current = outer;
+    }
+    current
+}
+
+#[test]
+fn potion_contents_enforces_depth_512_when_stripping_hidden_effect_in_saved_form() {
+    let potion_valid = {
+        let mut effect = nested_hidden_effect_tag(507);
+        effect.put("id", NbtTag::String("minecraft:speed".into()));
+        let mut potion = NbtCompound::new();
+        potion.put(
+            "custom_effects",
+            NbtTag::List(vec![NbtTag::Compound(effect)]),
+        );
+        with_component("potion_contents", NbtTag::Compound(potion))
+    };
+    let parsed_potion = read_saved(&potion_valid, &Names)
+        .expect("potion_contents within depth 512 strips hidden_effect");
+    assert!(
+        matches!(
+            parsed_potion.patch(),
+            [PatchEntry::Value(Builtin::PotionContents(contents))]
+                if matches!(contents.custom_effects.as_slice(), [EffectInstance { hidden_effect: None, .. }])
+        ),
+        "potion_contents must strip nested hidden_effect on read"
+    );
+
+    let potion_too_deep = {
+        let mut effect = nested_hidden_effect_tag(508);
+        effect.put("id", NbtTag::String("minecraft:speed".into()));
+        let mut potion = NbtCompound::new();
+        potion.put(
+            "custom_effects",
+            NbtTag::List(vec![NbtTag::Compound(effect)]),
+        );
+        with_component("potion_contents", NbtTag::Compound(potion))
+    };
+    assert_eq!(
+        read_saved(&potion_too_deep, &Names),
+        Err(SavedError::TooDeep),
+        "potion_contents with hidden_effect deeper than 512 returns TooDeep"
     );
 }

@@ -686,8 +686,9 @@ impl<L: NameLookup> Walk<'_, L> {
         let potion = (contents.potion)
             .map(|potion| self.entry(sink, NameTable::Potion, potion.0))
             .transpose()?;
+        let effect_depth = self.depth.saturating_add(4);
         let custom_effects = listed(sink, &contents.custom_effects, |sink, effect| {
-            self.effect_instance(sink, effect)
+            self.effect_instance(sink, effect, effect_depth)
         })?;
         let custom_color = (contents.custom_color).map(|color| sink.leaf(Leaf::Int(color)));
         let custom_name =
@@ -704,7 +705,11 @@ impl<L: NameLookup> Walk<'_, L> {
         &self,
         sink: &S,
         effect: &EffectInstance,
+        depth: u32,
     ) -> Result<S::Node, Fault> {
+        if depth > MAX_DEPTH {
+            return Err(Fault::TooDeep);
+        }
         let id = self.entry(sink, NameTable::MobEffect, effect.effect.0)?;
         let amplifier =
             (effect.amplifier != 0).then(|| sink.leaf(Leaf::Byte(effect.amplifier.cast_signed())));

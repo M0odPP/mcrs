@@ -52,6 +52,7 @@ use crate::DamageTypeTagId;
 use crate::DimensionPos;
 use crate::DyeColor;
 use crate::DyedColor;
+use crate::EffectDetails;
 use crate::EffectInstance;
 use crate::EnchantmentGlintOverride;
 use crate::EnchantmentId;
@@ -880,33 +881,45 @@ impl<L: NameLookup> Reader<'_, L> {
             custom_color: self.optional(input, |reader, input| {
                 Ok(i32::from_be_bytes(reader.bytes(input)?))
             })?,
-            custom_effects: self.list(input, Self::effect_instance)?,
+            custom_effects: self.list(input, Self::effect_instance_stripping_hidden)?,
             custom_name: self.optional(input, Self::string)?,
         })
     }
 
-    fn effect_instance(&self, input: &mut &[u8]) -> Result<EffectInstance, WireError> {
+    fn effect_instance_stripping_hidden(
+        &self,
+        input: &mut &[u8],
+    ) -> Result<EffectInstance, WireError> {
         let mut effect =
             EffectInstance::new(MobEffectId(self.known_id(input, NameTable::MobEffect)?));
-        self.effect_details(input, &mut effect)?;
-        let mut hidden = EffectInstance::new(effect.effect);
-        while self.boolean(input)? {
-            self.effect_details(input, &mut hidden)?;
-        }
+        let details = self.effect_details_stripping_hidden(input, self.depth)?;
+        effect.amplifier = details.amplifier;
+        effect.duration = details.duration;
+        effect.ambient = details.ambient;
+        effect.show_particles = details.show_particles;
+        effect.show_icon = details.show_icon;
         Ok(effect)
     }
 
-    fn effect_details(
+    fn effect_details_stripping_hidden(
         &self,
         input: &mut &[u8],
-        effect: &mut EffectInstance,
-    ) -> Result<(), WireError> {
-        effect.amplifier = u8::try_from(self.var_int(input)?.clamp(0, 255)).unwrap_or(u8::MAX);
-        effect.duration = self.var_int(input)?;
-        effect.ambient = self.boolean(input)?;
-        effect.show_particles = self.boolean(input)?;
-        effect.show_icon = self.boolean(input)?;
-        Ok(())
+        depth: u32,
+    ) -> Result<EffectDetails, WireError> {
+        let mut details = EffectDetails::new();
+        details.amplifier = u8::try_from(self.var_int(input)?.clamp(0, 255)).unwrap_or(u8::MAX);
+        details.duration = self.var_int(input)?;
+        details.ambient = self.boolean(input)?;
+        details.show_particles = self.boolean(input)?;
+        details.show_icon = self.boolean(input)?;
+        if self.boolean(input)? {
+            let next_depth = depth.saturating_add(1);
+            if next_depth > MAX_DEPTH {
+                return Err(WireError::TooDeep);
+            }
+            let _ = self.effect_details_stripping_hidden(input, next_depth)?;
+        }
+        Ok(details)
     }
 
     fn custom_data(&self, input: &mut &[u8]) -> Result<NbtCompound, WireError> {

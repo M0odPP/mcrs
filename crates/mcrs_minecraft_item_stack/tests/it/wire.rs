@@ -1653,6 +1653,36 @@ fn weapon_wire_round_trips_and_rejects_out_of_range() {
     let negative_wire = with_one_component("weapon", "ffffffff0f00000000");
     assert_eq!(
         read_all(&negative_wire, read_wire),
-        Err(WireError::OutOfRange(BuiltinKey::Weapon))
+        Err(WireError::OutOfRange(BuiltinKey::Weapon)),
+        "weapon with negative damage should reject out of range"
+    );
+}
+
+#[test]
+fn potion_contents_enforces_depth_512_when_stripping_hidden_effect_in_wire_form() {
+    let potion_id = COMPONENT_TYPES
+        .iter()
+        .position(|name| *name == "potion_contents")
+        .expect("potion_contents component type registered");
+    let mut frame = vec![
+        1,
+        1,
+        1,
+        0,
+        u8::try_from(potion_id).expect("id fits byte"),
+        0,
+        0,
+        1,
+        0,
+    ];
+    for _ in 0..512 {
+        frame.extend_from_slice(&[0, 0, 0, 1, 1, 1]);
+    }
+    frame.extend_from_slice(&[0, 0, 0, 1, 1, 0]);
+    frame.push(0);
+    assert_eq!(
+        read_all(&frame, read_wire),
+        Err(WireError::TooDeep),
+        "potion_contents with > 512 hidden_effects rejects TooDeep before deep recursion"
     );
 }
