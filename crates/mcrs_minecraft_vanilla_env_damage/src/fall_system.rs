@@ -152,21 +152,12 @@ fn process_player_fall(
     step: &PlayerMoved,
     player: PlayerFallInputs<'_>,
     file_state: Mut<'_, PlayerFileState>,
-    mut tick_state: Mut<'_, EnvTickState>,
     outputs: (
         &mut u32,
         &mut PendingHits,
         &mut MessageWriter<'_, PendingEnvEffect>,
     ),
 ) {
-    let abs_x = step.delta.x.abs();
-    let abs_z = step.delta.z.abs();
-    if abs_x > tick_state.tick_move_x || abs_z > tick_state.tick_move_z {
-        tick_state.set_if_neq(EnvTickState {
-            tick_move_x: tick_state.tick_move_x.max(abs_x),
-            tick_move_z: tick_state.tick_move_z.max(abs_z),
-        });
-    }
     if !player.vitals.is_alive() {
         return;
     }
@@ -320,6 +311,25 @@ fn apply_landed_fall(
     }
 }
 
+pub(crate) fn track_horizontal_movement(
+    mut moved: MessageReader<PlayerMoved>,
+    mut players: Query<&mut EnvTickState, With<Player>>,
+) {
+    for step in moved.read() {
+        let Ok(mut tick_state) = players.get_mut(step.entity) else {
+            continue;
+        };
+        let abs_x = step.delta.x.abs();
+        let abs_z = step.delta.z.abs();
+        if abs_x > tick_state.tick_move_x || abs_z > tick_state.tick_move_z {
+            tick_state.set_if_neq(EnvTickState {
+                tick_move_x: tick_state.tick_move_x.max(abs_x),
+                tick_move_z: tick_state.tick_move_z.max(abs_z),
+            });
+        }
+    }
+}
+
 #[expect(
     clippy::too_many_arguments,
     reason = "ECS fall collection reads player motion and world tables"
@@ -345,7 +355,6 @@ pub(crate) fn collect_fall_damage(
             &Vitals,
             Option<&AttributeInstances>,
             &mut PlayerFileState,
-            &mut EnvTickState,
         ),
         With<Player>,
     >,
@@ -364,7 +373,7 @@ pub(crate) fn collect_fall_damage(
     let mut sequence = u32::try_from(pending.len()).unwrap_or(u32::MAX);
 
     for step in moved.read() {
-        let Ok((&uuid, transform, body, mode, flying, vitals, attributes, file_state, tick_state)) =
+        let Ok((&uuid, transform, body, mode, flying, vitals, attributes, file_state)) =
             players.get_mut(step.entity)
         else {
             continue;
@@ -384,7 +393,6 @@ pub(crate) fn collect_fall_damage(
             step,
             inputs,
             file_state,
-            tick_state,
             (&mut sequence, &mut pending, &mut effects),
         );
     }

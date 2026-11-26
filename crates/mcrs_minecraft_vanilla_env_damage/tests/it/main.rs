@@ -3,6 +3,7 @@
 use bevy_app::{App, FixedUpdate};
 use bevy_ecs::entity::Entity;
 use bevy_ecs::message::Messages;
+use bevy_ecs::prelude::{IntoScheduleConfigs, Res, ResMut, Resource};
 use bevy_ecs::system::SystemState;
 use glam::DVec3;
 use mcrs_minecraft_block::block_keys::Block;
@@ -17,7 +18,7 @@ use mcrs_minecraft_engine::client_on_ground::ClientOnGround;
 use mcrs_minecraft_engine::network_id;
 use mcrs_minecraft_engine::player_signal::PlayerSignal;
 use mcrs_minecraft_engine::player_state::PlayerFileState;
-use mcrs_minecraft_engine_damage::DamagePlugin;
+use mcrs_minecraft_engine_damage::{DamagePlugin, DamageSet, PendingHits};
 use mcrs_minecraft_engine_physics::PhysicsTables;
 use mcrs_minecraft_engine_player_vitals::PlayerVitalsPlugin;
 use mcrs_minecraft_engine_registries::test_corpus;
@@ -50,6 +51,20 @@ use mcrs_minecraft_vanilla_env_damage::{
 };
 use mcrs_minecraft_volume::BlockVolumeMut;
 use mcrs_voxel::{BlockPos, BlockStateId, SectionPos};
+
+#[derive(Resource, Default)]
+struct RecordedPendingOrder(Vec<u32>);
+
+fn record_pending_order(pending: Res<PendingHits>, mut order: ResMut<RecordedPendingOrder>) {
+    order.0.clear();
+    let mut requests = pending.requests().to_vec();
+    requests.sort_by_key(|request| (request.writer, request.tick, request.sequence));
+    order.0.extend(
+        requests
+            .into_iter()
+            .map(|request| request.hit.source.damage_type),
+    );
+}
 
 fn spawn_player(app: &mut App, session: u64, translation: DVec3) -> Entity {
     let bases = attribute_bases(EntityType::Player).expect("player attribute bases");
@@ -86,6 +101,8 @@ fn build_test_app() -> (App, Entity, Entity) {
     app.init_resource::<BirthClock>();
     app.init_resource::<GameRules>();
     app.init_resource::<DimensionWorldBorder>();
+    app.init_resource::<RecordedPendingOrder>();
+    app.add_systems(FixedUpdate, record_pending_order.in_set(DamageSet::Filter));
     let registries = test_registries();
     let (blocks, _) = test_corpus();
     let table = collision_table(blocks, &registries.tags::<Block>().expect("block tags"));
@@ -138,6 +155,28 @@ fn set_block(app: &mut App, dimension: Entity, position: BlockPos, state: BlockS
     view.set_block(position, state).expect("set test block");
 }
 
+fn block_property_state(
+    blocks: &Blocks,
+    identifier: &str,
+    key: &str,
+    expected: &str,
+) -> BlockStateId {
+    blocks
+        .blocks()
+        .iter()
+        .find(|entry| entry.identifier.as_str() == identifier)
+        .and_then(|entry| {
+            (0..entry.state_count)
+                .filter_map(|offset| entry.state_at(offset))
+                .find(|&id| {
+                    entry
+                        .value_of(id, key)
+                        .is_some_and(|value| value.renders_to(expected))
+                })
+        })
+        .expect("block state matching property")
+}
+
 fn icicle_up_tip_state(blocks: &Blocks) -> BlockStateId {
     blocks
         .blocks()
@@ -162,6 +201,22 @@ fn tick(app: &mut App) {
     let next = app.world().resource::<BirthClock>().0.saturating_add(1);
     app.world_mut().insert_resource(BirthClock(next));
     app.world_mut().run_schedule(FixedUpdate);
+}
+
+fn advance_ticks(app: &mut App, count: usize) {
+    for _ in 0..count {
+        tick(app);
+    }
+}
+
+fn fall_move(app: &mut App, player: Entity, delta_y: f64, now_on_ground: bool) {
+    app.world_mut().write_message(PlayerMoved {
+        entity: player,
+        delta: DVec3::new(0.0, delta_y, 0.0),
+        was_on_ground: false,
+        now_on_ground,
+    });
+    tick(app);
 }
 
 #[test]
@@ -233,16 +288,6 @@ fn env_damage_tables_bake_vanilla_blocks_and_border() {
     );
 }
 
-fn fall_move(app: &mut App, player: Entity, delta_y: f64, now_on_ground: bool) {
-    app.world_mut().write_message(PlayerMoved {
-        entity: player,
-        delta: DVec3::new(0.0, delta_y, 0.0),
-        was_on_ground: false,
-        now_on_ground,
-    });
-    tick(app);
-}
-
 #[test]
 fn fall_damage_gamerule_and_icicle_in_plugin() {
     let (mut app, dimension, player) = build_test_app();
@@ -258,9 +303,7 @@ fn fall_damage_gamerule_and_icicle_in_plugin() {
     );
 
     set_block(&mut app, dimension, BlockPos::new(0, 63, 0), icicle);
-    for _ in 0..20 {
-        tick(&mut app);
-    }
+    advance_ticks(&mut app, 20);
     fall_move(&mut app, player, -6.0, true);
     assert_eq!(
         app.world().get::<Vitals>(player).expect("vitals").health,
@@ -349,5 +392,288 @@ fn silent_honey_slide_sends_entity_event_beyond_sound_range() {
                 if sessions.contains(&PlayerSession(1)) && sessions.contains(&expected_viewer)
         ),
         "honey slide event reaches tracking viewers beyond sound range"
+    );
+}
+
+#[test]
+fn suffocation_and_border_suppression_in_plugin() {
+    let (mut app, dimension, player) = build_test_app();
+    let stone = app
+        .world()
+        .resource::<Blocks>()
+        .default_state("minecraft:stone")
+        .expect("stone");
+    tick(&mut app);
+    let baked = *app.world().resource::<BakedEnvDamage>();
+
+    set_block(&mut app, dimension, BlockPos::new(0, 65, 0), stone);
+    tick(&mut app);
+    assert_eq!(
+        app.world().get::<Vitals>(player).expect("vitals").health,
+        19.0,
+        "stone enclosing eye box deals 1 in_wall damage"
+    );
+
+    set_block(
+        &mut app,
+        dimension,
+        BlockPos::new(0, 65, 0),
+        BlockStateId::AIR,
+    );
+    advance_ticks(&mut app, 20);
+    app.world_mut()
+        .insert_resource(DimensionWorldBorder::with_center_and_size(0.5, 0.5, 20.0));
+    app.world_mut()
+        .get_mut::<Transform>(player)
+        .expect("transform")
+        .translation
+        .x = 20.5;
+    tick(&mut app);
+    assert_eq!(
+        app.world().get::<Vitals>(player).expect("vitals").health,
+        18.0,
+        "outside border beyond safe buffer deals 1 damage"
+    );
+
+    set_block(&mut app, dimension, BlockPos::new(20, 65, 0), stone);
+    advance_ticks(&mut app, 20);
+    assert_eq!(
+        app.world().resource::<RecordedPendingOrder>().0,
+        vec![baked.in_wall.expect("in_wall")],
+        "suffocation suppresses outside_border hit in the same tick"
+    );
+}
+
+#[test]
+fn contact_hazards_magma_crouch_and_fire_gamerule_in_plugin() {
+    let (mut app, dimension, player) = build_test_app();
+    let blocks = app.world().resource::<Blocks>().clone();
+    let cactus = blocks.default_state("minecraft:cactus").expect("cactus");
+    let lit_campfire = blocks
+        .default_state("minecraft:campfire")
+        .expect("campfire");
+    let unlit_campfire = block_property_state(&blocks, "minecraft:campfire", "lit", "false");
+    let soul_campfire = blocks
+        .default_state("minecraft:soul_campfire")
+        .expect("soul_campfire");
+    let magma = blocks
+        .default_state("minecraft:magma_block")
+        .expect("magma_block");
+    tick(&mut app);
+
+    set_block(&mut app, dimension, BlockPos::new(0, 64, 0), cactus);
+    tick(&mut app);
+    assert_eq!(
+        app.world().get::<Vitals>(player).expect("vitals").health,
+        19.0,
+        "cactus deals 1 HP"
+    );
+
+    set_block(&mut app, dimension, BlockPos::new(0, 64, 0), unlit_campfire);
+    advance_ticks(&mut app, 20);
+    assert_eq!(
+        app.world().get::<Vitals>(player).expect("vitals").health,
+        19.0,
+        "unlit campfire deals 0 HP"
+    );
+
+    set_block(&mut app, dimension, BlockPos::new(0, 64, 0), lit_campfire);
+    tick(&mut app);
+    assert_eq!(
+        app.world().get::<Vitals>(player).expect("vitals").health,
+        18.0,
+        "lit campfire deals 1 HP"
+    );
+
+    set_block(
+        &mut app,
+        dimension,
+        BlockPos::new(0, 64, 0),
+        BlockStateId::AIR,
+    );
+    advance_ticks(&mut app, 10);
+    set_block(&mut app, dimension, BlockPos::new(0, 64, 0), soul_campfire);
+    tick(&mut app);
+    assert_eq!(
+        app.world().get::<Vitals>(player).expect("vitals").health,
+        16.0,
+        "lit soul campfire deals 2 HP"
+    );
+
+    set_block(
+        &mut app,
+        dimension,
+        BlockPos::new(0, 64, 0),
+        BlockStateId::AIR,
+    );
+    set_block(&mut app, dimension, BlockPos::new(0, 63, 0), magma);
+    app.world_mut()
+        .entity_mut(player)
+        .get_mut::<ShiftKey>()
+        .expect("shift")
+        .0 = true;
+    advance_ticks(&mut app, 10);
+    assert_eq!(
+        app.world().get::<Vitals>(player).expect("vitals").health,
+        16.0,
+        "crouching spares hot_floor damage on magma_block"
+    );
+
+    app.world_mut()
+        .entity_mut(player)
+        .get_mut::<ShiftKey>()
+        .expect("shift")
+        .0 = false;
+    tick(&mut app);
+    assert_eq!(
+        app.world().get::<Vitals>(player).expect("vitals").health,
+        15.0,
+        "standing on magma_block deals 1 hot_floor HP"
+    );
+
+    app.world_mut()
+        .resource_mut::<GameRules>()
+        .set(GameRule::FireDamage, 0);
+    advance_ticks(&mut app, 12);
+    set_block(&mut app, dimension, BlockPos::new(0, 64, 0), lit_campfire);
+    tick(&mut app);
+    assert_eq!(
+        app.world().get::<Vitals>(player).expect("vitals").health,
+        15.0,
+        "fire_damage=false suppresses magma hot_floor and lit campfire damage"
+    );
+}
+
+#[test]
+fn sweet_berry_bush_and_water_reset_in_plugin() {
+    let (mut app, dimension, player) = build_test_app();
+    let blocks = app.world().resource::<Blocks>().clone();
+    let age_0 = block_property_state(&blocks, "minecraft:sweet_berry_bush", "age", "0");
+    let age_1 = block_property_state(&blocks, "minecraft:sweet_berry_bush", "age", "1");
+    let water = blocks.default_state("minecraft:water").expect("water");
+    tick(&mut app);
+
+    set_block(&mut app, dimension, BlockPos::new(0, 64, 0), age_0);
+    app.world_mut().write_message(PlayerMoved {
+        entity: player,
+        delta: DVec3::new(0.05, 0.0, 0.0),
+        was_on_ground: true,
+        now_on_ground: true,
+    });
+    tick(&mut app);
+    assert_eq!(
+        app.world().get::<Vitals>(player).expect("vitals").health,
+        20.0,
+        "sweet berry bush age 0 never damages"
+    );
+
+    set_block(&mut app, dimension, BlockPos::new(0, 64, 0), age_1);
+    app.world_mut().write_message(PlayerMoved {
+        entity: player,
+        delta: DVec3::new(0.0029, 0.0, 0.0),
+        was_on_ground: true,
+        now_on_ground: true,
+    });
+    tick(&mut app);
+    assert_eq!(
+        app.world().get::<Vitals>(player).expect("vitals").health,
+        20.0,
+        "movement below 0.003 inside sweet berry bush deals no damage"
+    );
+
+    app.world_mut().write_message(PlayerMoved {
+        entity: player,
+        delta: DVec3::new(0.003, 0.0, 0.0),
+        was_on_ground: true,
+        now_on_ground: true,
+    });
+    tick(&mut app);
+    assert_eq!(
+        app.world().get::<Vitals>(player).expect("vitals").health,
+        19.0,
+        "movement >= 0.003 in mature sweet berry bush deals 1 HP"
+    );
+
+    set_block(
+        &mut app,
+        dimension,
+        BlockPos::new(0, 64, 0),
+        BlockStateId::AIR,
+    );
+    fall_move(&mut app, player, -8.0, false);
+    assert_eq!(
+        app.world()
+            .entity(player)
+            .get::<PlayerFileState>()
+            .expect("file state")
+            .fall_distance,
+        8.0,
+        "airborne downward step accumulates fall_distance"
+    );
+    set_block(&mut app, dimension, BlockPos::new(0, 64, 0), water);
+    tick(&mut app);
+    assert_eq!(
+        app.world()
+            .entity(player)
+            .get::<PlayerFileState>()
+            .expect("file state")
+            .fall_distance,
+        0.0,
+        "standing in water resets accumulated fall_distance"
+    );
+}
+
+#[test]
+fn env_damage_order_void_wall_or_border_hot_floor_contact_then_fall() {
+    let (mut app, dimension, player) = build_test_app();
+    let blocks = app.world().resource::<Blocks>().clone();
+    let stone = blocks.default_state("minecraft:stone").expect("stone");
+    let magma = blocks
+        .default_state("minecraft:magma_block")
+        .expect("magma_block");
+    let cactus = blocks.default_state("minecraft:cactus").expect("cactus");
+    tick(&mut app);
+    let baked = *app.world().resource::<BakedEnvDamage>();
+
+    app.world_mut()
+        .insert_resource(DimensionWorldBorder::with_center_and_size(0.5, 0.5, 20.0));
+    set_block(&mut app, dimension, BlockPos::new(0, 65, 0), stone);
+    set_block(&mut app, dimension, BlockPos::new(0, 63, 0), magma);
+    set_block(&mut app, dimension, BlockPos::new(1, 64, 0), cactus);
+    app.world_mut()
+        .get_mut::<Transform>(player)
+        .expect("transform")
+        .translation = DVec3::new(0.8, 64.0, 0.5);
+    fall_move(&mut app, player, -10.0, true);
+    assert_eq!(
+        app.world().resource::<RecordedPendingOrder>().0,
+        vec![
+            baked.in_wall.expect("in_wall"),
+            baked.hot_floor.expect("hot_floor"),
+            baked.cactus.expect("cactus"),
+            baked.fall.expect("fall"),
+        ],
+        "intra-tick hits order in_wall -> hot_floor -> cactus -> fall"
+    );
+
+    advance_ticks(&mut app, 20);
+    app.world_mut()
+        .entity_mut(player)
+        .get_mut::<Vitals>()
+        .expect("vitals")
+        .health = 20.0;
+    app.world_mut()
+        .get_mut::<Transform>(player)
+        .expect("transform")
+        .translation = DVec3::new(20.5, -129.0, 0.5);
+    fall_move(&mut app, player, -10.0, true);
+    assert_eq!(
+        app.world().resource::<RecordedPendingOrder>().0,
+        vec![
+            baked.out_of_world.expect("out_of_world"),
+            baked.outside_border.expect("outside_border"),
+            baked.fall.expect("fall"),
+        ],
+        "void precedes outside_border which precedes fall"
     );
 }
