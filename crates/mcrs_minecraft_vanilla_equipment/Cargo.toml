@@ -1,0 +1,46 @@
+[package]
+name = "mcrs_minecraft_vanilla_equipment"
+description = "Vanilla player equipment synchronization, equip sounds, hand-swap suppression, and armour use in dimension worlds"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+test = false
+doctest = false
+
+[lints]
+workspace = true
+
+[dependencies]
+bevy_app.workspace = true
+bevy_ecs.workspace = true
+mcrs_engine_muxer.workspace = true
+mcrs_minecraft_damage = { workspace = true, features = ["bevy"] }
+mcrs_minecraft_engine.workspace = true
+mcrs_minecraft_engine_item.workspace = true
+mcrs_minecraft_engine_registries.workspace = true
+mcrs_minecraft_engine_world.workspace = true
+mcrs_minecraft_equipment = { workspace = true, features = ["bevy"] }
+mcrs_minecraft_game_mode = { workspace = true, features = ["bevy"] }
+mcrs_minecraft_inventory_player.workspace = true
+mcrs_minecraft_inventory_transaction.workspace = true
+mcrs_minecraft_item_stack = { workspace = true, features = ["bevy"] }
+mcrs_minecraft_item_table = { workspace = true, features = ["bevy"] }
+mcrs_minecraft_player_holders.workspace = true
+mcrs_minecraft_protocol_game.workspace = true
+mcrs_minecraft_registries = { workspace = true, features = ["bevy"] }
+mcrs_minecraft_replication.workspace = true
+mcrs_minecraft_sound = { workspace = true, features = ["registry"] }
+mcrs_minecraft_vanilla_inventory.workspace = true
+mcrs_minecraft_wire.workspace = true
+smallvec.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+bevy_time.workspace = true
+mcrs_minecraft_engine_registries = { workspace = true, features = ["test-support"] }
+mcrs_minecraft_game_registries = { workspace = true, features = ["test-support"] }
+mcrs_minecraft_item_key.workspace = true
+mcrs_minecraft_protocol.workspace = true
+mcrs_test_alloc.workspace = true
