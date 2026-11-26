@@ -8,6 +8,9 @@ use crate::mob_signal::MobSignal;
 use crate::player_entries::PlayerEntries;
 use crate::player_spawn::PlayerSpawn;
 use crate::swing_recipients::SwingRecipients;
+use mcrs_minecraft_protocol_game::entity::EquipmentSlot;
+use mcrs_minecraft_protocol_game::item::ProtoStack;
+use mcrs_minecraft_registries::Wire;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum PlayerData {
@@ -25,6 +28,8 @@ pub enum PlayerData {
         recipients: SwingRecipients,
     },
     Signal(MobSignal),
+    Equipment(Vec<(EquipmentSlot, ProtoStack<Wire>)>),
+    SwapHands,
     Hide,
     Show,
 }

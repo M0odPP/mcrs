@@ -6952,6 +6952,7 @@ dependencies = [
  "mcrs_minecraft_core",
  "mcrs_minecraft_entity",
  "mcrs_minecraft_entity_attribute",
+ "mcrs_minecraft_equipment",
  "mcrs_minecraft_game_mode",
  "mcrs_minecraft_pose",
  "mcrs_minecraft_profile",

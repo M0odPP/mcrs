@@ -128,6 +128,7 @@ pub fn publish_player_tiles(
                         game_mode,
                         attributes: attributes.map(stored_attributes).unwrap_or_default(),
                         entries: pose_entries(body_pose, shift, sprinting, vitals),
+                        equipment: Vec::new(),
                     })
                     .into(),
                 ),

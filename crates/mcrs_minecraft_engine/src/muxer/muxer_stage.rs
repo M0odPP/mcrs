@@ -219,6 +219,7 @@ mod tests {
                                 game_mode: GameMode::Survival,
                                 attributes: Vec::new(),
                                 entries: PlayerEntries::default(),
+                                equipment: Vec::new(),
                             })
                             .into(),
                         ),

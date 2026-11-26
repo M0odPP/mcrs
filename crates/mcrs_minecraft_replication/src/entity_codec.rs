@@ -1,6 +1,7 @@
 use crate::delivery::Delivery;
 use crate::delta_base::DeltaBase;
 use crate::encode::record;
+use crate::equipment_slots::{equip_slot, from_wire_slots, normalize_stack, protocol_slot};
 use crate::hold_set::HoldSet;
 use crate::list_packets::{Profile, game_mode_packet};
 use crate::mob_report::MobReport;
@@ -23,16 +24,19 @@ use mcrs_engine_muxer::{
     TileBlob, TileDelta, ViewerBytes, ViewerId,
 };
 use mcrs_minecraft_entity::entity_type_keys::EntityType;
+use mcrs_minecraft_equipment::{EquipSlot, EquipmentSlots};
 use mcrs_minecraft_game_mode::GameMode;
 use mcrs_minecraft_profile::Property;
 use mcrs_minecraft_protocol::packets::game::clientbound::ClientboundBundleDelimiter;
 use mcrs_minecraft_protocol::{Result, VarInt};
 use mcrs_minecraft_protocol_game::clientbound::{
-    ClientboundAddEntity, ClientboundRemoveEntities, ClientboundSetEntityData,
-    ClientboundSwingAnimation,
+    ClientboundAddEntity, ClientboundEntityEvent, ClientboundRemoveEntities,
+    ClientboundSetEntityData, ClientboundSetEquipment, ClientboundSwingAnimation,
 };
-use mcrs_minecraft_protocol_game::entity::Metadata;
+use mcrs_minecraft_protocol_game::entity::{EquipmentSlot, Metadata};
+use mcrs_minecraft_protocol_game::item::ProtoStack;
 use mcrs_minecraft_protocol_game::{Hand, LpVec3, SwingAnimationKind};
+use mcrs_minecraft_registries::Wire;
 use std::collections::BTreeMap;
 use std::mem;
 use uuid::Uuid;
@@ -54,6 +58,7 @@ pub struct EntityCodec {
     attributed: Vec<EntityId>,
     posed: Vec<EntityId>,
     swings: Vec<PendingSwing>,
+    equipment: Vec<PendingEquipment>,
     signals: Vec<PendingSignal>,
     hidden: BTreeMap<EntityId, Vec<ViewerId>>,
     hiding: Vec<EntityId>,
@@ -74,6 +79,44 @@ struct PendingSwing {
     recipients: SwingRecipients,
 }
 
+#[derive(Clone, Debug)]
+enum PendingEquipment {
+    Swap {
+        subject: EntityId,
+    },
+    Slots {
+        subject: EntityId,
+        slots: Vec<(EquipSlot, Option<ProtoStack<Wire>>)>,
+    },
+}
+
+fn upsert_equipment_slots(
+    target: &mut Vec<(EquipSlot, Option<ProtoStack<Wire>>)>,
+    incoming: &[(EquipSlot, Option<ProtoStack<Wire>>)],
+) {
+    for (slot, stack) in incoming {
+        if let Some((_, existing)) = target.iter_mut().find(|(s, _)| *s == *slot) {
+            *existing = stack.clone();
+        } else {
+            target.push((*slot, stack.clone()));
+        }
+    }
+    target.sort_by_key(|(slot, _)| slot.wire_id());
+}
+
+fn send_to_observers(
+    observers: &[ViewerId],
+    owner: ViewerId,
+    delivery: &mut Delivery,
+    packet: &Bytes,
+) {
+    for &viewer in observers {
+        if viewer != owner {
+            delivery.owe(viewer, packet.clone());
+        }
+    }
+}
+
 #[derive(Debug)]
 struct Subject {
     viewer: ViewerId,
@@ -85,6 +128,7 @@ struct Subject {
     attributes: SubjectAttributes,
     entries: PlayerEntries,
     sent_entries: PlayerEntries,
+    equipment: EquipmentSlots<ProtoStack<Wire>>,
 }
 
 impl Subject {
@@ -134,8 +178,44 @@ impl EntityCodec {
                 ),
                 entries: spawn.entries,
                 sent_entries: spawn.entries,
+                equipment: from_wire_slots(&spawn.equipment),
             },
         );
+    }
+
+    fn record_equipment(&mut self, subject: EntityId, slots: &[(EquipmentSlot, ProtoStack<Wire>)]) {
+        let filtered: Vec<(EquipSlot, Option<ProtoStack<Wire>>)> = slots
+            .iter()
+            .filter_map(|(slot, stack)| Some((equip_slot(*slot)?, normalize_stack(stack))))
+            .collect();
+        if filtered.is_empty() {
+            return;
+        }
+        for pending in self.equipment.iter_mut().rev() {
+            match pending {
+                PendingEquipment::Slots {
+                    subject: pending_subject,
+                    slots: pending_slots,
+                } if *pending_subject == subject => {
+                    upsert_equipment_slots(pending_slots, &filtered);
+                    return;
+                }
+                PendingEquipment::Swap {
+                    subject: pending_subject,
+                } if *pending_subject == subject => break,
+                PendingEquipment::Swap { .. } | PendingEquipment::Slots { .. } => {}
+            }
+        }
+        let mut merged = Vec::with_capacity(filtered.len());
+        upsert_equipment_slots(&mut merged, &filtered);
+        self.equipment.push(PendingEquipment::Slots {
+            subject,
+            slots: merged,
+        });
+    }
+
+    fn record_swap_hands(&mut self, subject: EntityId) {
+        self.equipment.push(PendingEquipment::Swap { subject });
     }
 
     fn change_game_mode(&mut self, subject: EntityId, game_mode: GameMode) -> Result<()> {
@@ -183,6 +263,61 @@ impl EntityCodec {
         Ok(())
     }
 
+    fn apply_player_data(&mut self, subject: EntityId, data: &PlayerData) -> Result<()> {
+        match data {
+            PlayerData::GameMode(game_mode) => self.change_game_mode(subject, *game_mode)?,
+            PlayerData::Joined(packet) => {
+                self.joined.push(Message {
+                    subject,
+                    packet: packet.clone(),
+                });
+            }
+            PlayerData::Attribute(attribute) => {
+                if let Some(state) = self.subjects.get_mut(&subject) {
+                    state.attributes.record(attribute);
+                    self.attributed.push(subject);
+                }
+            }
+            PlayerData::Entries(entries) => {
+                if let Some(state) = self.subjects.get_mut(&subject) {
+                    state.entries = *entries;
+                    self.posed.push(subject);
+                }
+            }
+            PlayerData::Left(packet) => {
+                for &viewer in self.holds.holders(subject) {
+                    self.delivery.owe(viewer, packet.clone());
+                }
+            }
+            PlayerData::Swing {
+                hand,
+                animation,
+                duration,
+                recipients,
+            } => {
+                self.swings.push(PendingSwing {
+                    subject,
+                    hand: *hand,
+                    animation: *animation,
+                    duration: *duration,
+                    recipients: *recipients,
+                });
+            }
+            PlayerData::Signal(signal) => {
+                self.signals.push(PendingSignal {
+                    subject,
+                    signal: *signal,
+                });
+            }
+            PlayerData::Equipment(slots) => self.record_equipment(subject, slots),
+            PlayerData::SwapHands => self.record_swap_hands(subject),
+            PlayerData::Hide => self.hide(subject),
+            PlayerData::Show => self.show(subject)?,
+            PlayerData::Spawn(_) | PlayerData::Pose(_) => {}
+        }
+        Ok(())
+    }
+
     fn apply_events(&mut self, delta: &TileDelta<ReplicationData>) -> Result<()> {
         let mut entered = Vec::new();
         for SubjectEvent { subject, event } in &delta.events {
@@ -219,57 +354,8 @@ impl EntityCodec {
                         state.motion.record(self.tick, pose);
                     }
                 }
-                EntityEvent::Data(ReplicationData::Player(PlayerData::GameMode(game_mode))) => {
-                    self.change_game_mode(subject, *game_mode)?;
-                }
-                EntityEvent::Data(ReplicationData::Player(PlayerData::Joined(packet))) => {
-                    self.joined.push(Message {
-                        subject,
-                        packet: packet.clone(),
-                    });
-                }
-                EntityEvent::Data(ReplicationData::Player(PlayerData::Attribute(attribute))) => {
-                    if let Some(state) = self.subjects.get_mut(&subject) {
-                        state.attributes.record(attribute);
-                        self.attributed.push(subject);
-                    }
-                }
-                EntityEvent::Data(ReplicationData::Player(PlayerData::Entries(entries))) => {
-                    if let Some(state) = self.subjects.get_mut(&subject) {
-                        state.entries = *entries;
-                        self.posed.push(subject);
-                    }
-                }
-                EntityEvent::Data(ReplicationData::Player(PlayerData::Left(packet))) => {
-                    for &viewer in self.holds.holders(subject) {
-                        self.delivery.owe(viewer, packet.clone());
-                    }
-                }
-                EntityEvent::Data(ReplicationData::Player(PlayerData::Swing {
-                    hand,
-                    animation,
-                    duration,
-                    recipients,
-                })) => {
-                    self.swings.push(PendingSwing {
-                        subject,
-                        hand: *hand,
-                        animation: *animation,
-                        duration: *duration,
-                        recipients: *recipients,
-                    });
-                }
-                EntityEvent::Data(ReplicationData::Player(PlayerData::Signal(signal))) => {
-                    self.signals.push(PendingSignal {
-                        subject,
-                        signal: *signal,
-                    });
-                }
-                EntityEvent::Data(ReplicationData::Player(PlayerData::Hide)) => {
-                    self.hide(subject);
-                }
-                EntityEvent::Data(ReplicationData::Player(PlayerData::Show)) => {
-                    self.show(subject)?;
+                EntityEvent::Data(ReplicationData::Player(data)) => {
+                    self.apply_player_data(subject, data)?;
                 }
                 EntityEvent::Enter { .. } => {
                     self.generation = self.generation.wrapping_add(1);
@@ -423,6 +509,71 @@ impl EntityCodec {
         }
     }
 
+    fn send_equipment(&mut self) {
+        let Self {
+            subjects,
+            holds,
+            delivery,
+            equipment,
+            ..
+        } = self;
+        for pending in equipment.drain(..) {
+            let subject = match &pending {
+                PendingEquipment::Swap { subject } | PendingEquipment::Slots { subject, .. } => {
+                    *subject
+                }
+            };
+            let Some(state) = subjects.get_mut(&subject) else {
+                continue;
+            };
+            let owner = state.viewer;
+            let observers = holds.holders(subject);
+            let has_observers = observers.iter().any(|&viewer| viewer != owner);
+            match pending {
+                PendingEquipment::Swap { .. } => {
+                    state.equipment.swap_hands();
+                    if !has_observers {
+                        continue;
+                    }
+                    let packet = match record(&ClientboundEntityEvent {
+                        entity_id: wire_id(subject).0,
+                        entity_status: ClientboundEntityEvent::SWAP_HANDS,
+                    }) {
+                        Ok(packet) => packet,
+                        Err(error) => {
+                            tracing::warn!("a player equipment swap did not encode: {error:#}");
+                            continue;
+                        }
+                    };
+                    send_to_observers(observers, owner, delivery, &packet);
+                }
+                PendingEquipment::Slots { slots, .. } => {
+                    let mut wire_slots = Vec::new();
+                    for (slot, next) in slots {
+                        if state.equipment.get(slot) != next.as_ref() {
+                            state.equipment.set(slot, next.clone());
+                            wire_slots.push((protocol_slot(slot), next.unwrap_or_default()));
+                        }
+                    }
+                    if wire_slots.is_empty() || !has_observers {
+                        continue;
+                    }
+                    let packet = match record(&ClientboundSetEquipment {
+                        entity_id: wire_id(subject),
+                        slots: wire_slots,
+                    }) {
+                        Ok(packet) => packet,
+                        Err(error) => {
+                            tracing::warn!("a player equipment update did not encode: {error:#}");
+                            continue;
+                        }
+                    };
+                    send_to_observers(observers, owner, delivery, &packet);
+                }
+            }
+        }
+    }
+
     fn write_blob(
         &mut self,
         subjects: &[EntityId],
@@ -540,6 +691,17 @@ impl EntityCodec {
             .write_spawn(wire_id(subject), &mut attributes)?;
         if !attributes.is_empty() {
             chunks.push(attributes.freeze());
+        }
+        let equipment: Vec<(EquipmentSlot, ProtoStack<Wire>)> = state
+            .equipment
+            .non_empty()
+            .map(|(slot, stack)| (protocol_slot(slot), stack.clone()))
+            .collect();
+        if !equipment.is_empty() {
+            chunks.push(record(&ClientboundSetEquipment {
+                entity_id: wire_id(subject),
+                slots: equipment,
+            })?);
         }
         chunks.push(delimiter);
         self.holds.insert(viewer, subject);
@@ -759,6 +921,7 @@ impl ReplicationCodec for EntityCodec {
         self.send_attributes();
         self.send_entries();
         self.send_swings();
+        self.send_equipment();
         self.send_hides();
         self.mobs.finish_tick(tick, &self.holds, &mut self.delivery);
         if let Err(error) = self.update_list() {
@@ -940,6 +1103,7 @@ mod tests {
             game_mode: GameMode::Survival,
             attributes: Vec::new(),
             entries: PlayerEntries::default(),
+            equipment: Vec::new(),
         };
         codec.apply(
             0,
