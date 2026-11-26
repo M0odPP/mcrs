@@ -1,8 +1,10 @@
 use bevy_ecs::entity::Entity;
+use bevy_ecs::message::MessageWriter;
 use bevy_ecs::prelude::{DetectChangesMut, Mut, Populated, Query, Res, ResMut, With};
 use glam::DVec3;
 use mcrs_minecraft_damage::{DamageSource, Hit, Vitals};
 use mcrs_minecraft_engine::client_on_ground::ClientOnGround;
+use mcrs_minecraft_engine::player_signal::PlayerSignal;
 use mcrs_minecraft_engine::player_state::PlayerFileState;
 use mcrs_minecraft_engine::{self as engine, PlayerBody, ShiftKey};
 use mcrs_minecraft_engine_damage::{DamageRequest, PendingHits};
@@ -14,6 +16,7 @@ use mcrs_minecraft_engine_world::game_rules::GameRules;
 use mcrs_minecraft_engine_world::world::dimension::{Dimension, DimensionTypeConfig};
 use mcrs_minecraft_engine_world::world::storage::view::{DimensionView, WorldView};
 use mcrs_minecraft_engine_world::world_border::DimensionWorldBorder;
+use mcrs_minecraft_entity_attribute::AttributeInstances;
 use mcrs_minecraft_entity_key::{EntityUuid, WriterKey};
 use mcrs_minecraft_env_damage::{
     self as env_damage, AxisAlignedBounds, CACTUS_DAMAGE, CAMPFIRE_DAMAGE, CONTACT_BOX_SHRINK,
@@ -31,6 +34,7 @@ use mcrs_voxel::BlockPos;
 use crate::bake::{BakedEnvDamage, EnvBlockTable, EnvContactBlock};
 use crate::env_state::EnvTickState;
 use crate::fall_system;
+use crate::water_hazards::DrownInputs;
 
 fn push_env_hit(
     pending: &mut PendingHits,
@@ -109,12 +113,13 @@ struct HazardContext<'a> {
     block_table: &'a EnvBlockTable,
     min_y: i32,
     now: u64,
+    drowning_damage_enabled: bool,
     fire_damage_enabled: bool,
     border_bounds: WorldBorderBounds,
     border_config: WorldBorderDamageConfig,
 }
 
-struct PlayerHazardInputs {
+struct PlayerHazardInputs<'a> {
     player: Entity,
     uuid: EntityUuid,
     position: DVec3,
@@ -122,11 +127,12 @@ struct PlayerHazardInputs {
     mode: GameMode,
     on_ground: bool,
     shift: bool,
+    attributes: Option<&'a AttributeInstances>,
 }
 
 fn collect_contact_hazards(
     context: &HazardContext<'_>,
-    inputs: &PlayerHazardInputs,
+    inputs: &PlayerHazardInputs<'_>,
     bounds: Aabb,
     tick_state: &EnvTickState,
     sequence: &mut u32,
@@ -221,7 +227,7 @@ fn collect_contact_hazards(
 
 fn check_hot_floor(
     context: &HazardContext<'_>,
-    inputs: &PlayerHazardInputs,
+    inputs: &PlayerHazardInputs<'_>,
     sequence: &mut u32,
     pending: &mut PendingHits,
 ) {
@@ -261,54 +267,36 @@ fn check_hot_floor(
     }
 }
 
-fn evaluate_player_hazards(
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum SleepState {
+    Awake,
+    Sleeping,
+}
+
+const _: () = {
+    assert!(
+        size_of::<SleepState>() == 1,
+        "SleepState size must match single-byte enum"
+    );
+    assert!(
+        align_of::<SleepState>() == 1,
+        "SleepState alignment must match single-byte enum"
+    );
+};
+
+fn collect_suffocation_and_border(
     context: &HazardContext<'_>,
-    inputs: PlayerHazardInputs,
-    file_state: Mut<'_, PlayerFileState>,
-    tick_state: &EnvTickState,
+    inputs: &PlayerHazardInputs<'_>,
+    eye: DVec3,
+    sleep_state: SleepState,
     sequence: &mut u32,
     pending: &mut PendingHits,
 ) {
-    let sleeping = file_state.sleeping_pos.is_some();
-    let shrunk = Aabb::of_body(inputs.position, inputs.body.width, inputs.body.height)
-        .deflate(CONTACT_BOX_SHRINK);
-    let spectator = inputs.mode == GameMode::Spectator;
-
-    if !spectator
-        && file_state.fall_distance > 0.0
-        && fall_system::box_has_block_flag(
-            context.dimension_view,
-            context.collision,
-            shrunk,
-            BlockFlags::WATER,
-        )
-    {
-        file_state
-            .map_unchanged(|state| &mut state.fall_distance)
-            .set_if_neq(0.0);
-    }
-
-    if let Some(damage) = env_damage::void_damage(inputs.position.y, context.min_y) {
-        push_env_hit(
-            pending,
-            inputs.player,
-            inputs.uuid,
-            context.now,
-            sequence,
-            context.baked.out_of_world,
-            damage,
-        );
-    }
-
-    if spectator {
-        return;
-    }
-
-    let suffocation = if !sleeping
+    let suffocation = if sleep_state == SleepState::Awake
         && is_suffocating(
             context.dimension_view,
             context.collision,
-            engine::eye_position(inputs.position, inputs.body),
+            eye,
             inputs.body.width,
         ) {
         push_env_hit(
@@ -352,6 +340,95 @@ fn evaluate_player_hazards(
             );
         }
     }
+}
+
+fn evaluate_player_hazards(
+    context: &HazardContext<'_>,
+    inputs: PlayerHazardInputs<'_>,
+    mut file_state: Mut<'_, PlayerFileState>,
+    tick_state: &EnvTickState,
+    sequence: &mut u32,
+    pending: &mut PendingHits,
+    signals: &mut MessageWriter<PlayerSignal>,
+) {
+    let sleep_state = if file_state.sleeping_pos.is_some() {
+        SleepState::Sleeping
+    } else {
+        SleepState::Awake
+    };
+    let eye = engine::eye_position(inputs.position, inputs.body);
+    let shrunk = Aabb::of_body(inputs.position, inputs.body.width, inputs.body.height)
+        .deflate(CONTACT_BOX_SHRINK);
+    let spectator = inputs.mode == GameMode::Spectator;
+
+    if !spectator
+        && file_state.fall_distance > 0.0
+        && fall_system::box_has_block_flag(
+            context.dimension_view,
+            context.collision,
+            shrunk,
+            BlockFlags::WATER,
+        )
+    {
+        file_state
+            .reborrow()
+            .map_unchanged(|state| &mut state.fall_distance)
+            .set_if_neq(0.0);
+    }
+
+    if let Some(damage) = env_damage::void_damage(inputs.position.y, context.min_y) {
+        push_env_hit(
+            pending,
+            inputs.player,
+            inputs.uuid,
+            context.now,
+            sequence,
+            context.baked.out_of_world,
+            damage,
+        );
+    }
+
+    if !spectator {
+        collect_suffocation_and_border(context, &inputs, eye, sleep_state, sequence, pending);
+    }
+
+    let drown_inputs = DrownInputs {
+        player: inputs.player,
+        eye,
+        mode: inputs.mode,
+        now: context.now,
+        drowning_damage_enabled: context.drowning_damage_enabled,
+        attributes: inputs.attributes,
+    };
+    if let Some(evaluation) = crate::water_hazards::step_player_drowning(
+        context.dimension_view,
+        context.block_table,
+        &drown_inputs,
+        &file_state,
+        signals,
+    ) {
+        if file_state.air != evaluation.next_air {
+            file_state
+                .reborrow()
+                .map_unchanged(|state| &mut state.air)
+                .set_if_neq(evaluation.next_air);
+        }
+        if let Some(damage) = evaluation.damage {
+            push_env_hit(
+                pending,
+                inputs.player,
+                inputs.uuid,
+                context.now,
+                sequence,
+                context.baked.drown,
+                damage,
+            );
+        }
+    }
+
+    if spectator {
+        return;
+    }
 
     check_hot_floor(context, &inputs, sequence, pending);
     collect_contact_hazards(context, &inputs, shrunk, tick_state, sequence, pending);
@@ -360,6 +437,10 @@ fn evaluate_player_hazards(
 #[expect(
     clippy::too_many_arguments,
     reason = "Per-tick env hazards inspect player state, world, border, and rules"
+)]
+#[expect(
+    clippy::type_complexity,
+    reason = "Player query bundles components required for environmental hazards"
 )]
 pub(crate) fn collect_env_hazards(
     dimensions: Query<(Entity, &DimensionTypeConfig), With<Dimension>>,
@@ -371,6 +452,7 @@ pub(crate) fn collect_env_hazards(
     rules: Option<Res<GameRules>>,
     clock: Option<Res<BirthClock>>,
     mut pending: ResMut<PendingHits>,
+    mut signals: MessageWriter<PlayerSignal>,
     mut players: Populated<
         (
             Entity,
@@ -381,6 +463,7 @@ pub(crate) fn collect_env_hazards(
             &ClientOnGround,
             &ShiftKey,
             &Vitals,
+            Option<&AttributeInstances>,
             &mut PlayerFileState,
             &mut EnvTickState,
         ),
@@ -400,6 +483,9 @@ pub(crate) fn collect_env_hazards(
         block_table: &block_table,
         min_y: dimension_config.min_y,
         now: clock.as_deref().map_or(0, |birth| birth.0),
+        drowning_damage_enabled: rules
+            .as_deref()
+            .is_none_or(|game_rules| game_rules.is_on(GameRule::DrowningDamage)),
         fire_damage_enabled: rules
             .as_deref()
             .is_none_or(|game_rules| game_rules.is_on(GameRule::FireDamage)),
@@ -425,6 +511,7 @@ pub(crate) fn collect_env_hazards(
         on_ground,
         shift,
         vitals,
+        attributes,
         file_state,
         mut tick_state,
     ) in &mut players
@@ -438,6 +525,7 @@ pub(crate) fn collect_env_hazards(
                 mode: mode.0,
                 on_ground: on_ground.0,
                 shift: shift.0,
+                attributes,
             };
             evaluate_player_hazards(
                 &context,
@@ -446,6 +534,7 @@ pub(crate) fn collect_env_hazards(
                 &tick_state,
                 &mut sequence,
                 &mut pending,
+                &mut signals,
             );
         }
         if tick_state.tick_move_x != 0.0 || tick_state.tick_move_z != 0.0 {

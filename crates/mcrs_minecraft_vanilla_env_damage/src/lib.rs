@@ -7,6 +7,7 @@ mod lava_burn_sound;
 mod plugin;
 mod powder_snow_speed;
 mod registry_tables;
+mod water_hazards;
 
 pub use bake::*;
 pub use env_state::*;
