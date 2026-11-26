@@ -1,4 +1,5 @@
 use alloc::borrow::Cow;
+use alloc::boxed::Box;
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::mem;
@@ -39,6 +40,8 @@ use crate::BuiltinKey;
 use crate::BundleContents;
 use crate::ChargedProjectiles;
 use crate::ComponentType;
+use crate::Consumable;
+use crate::ConsumeEffect;
 use crate::Container;
 use crate::Count;
 use crate::CustomData;
@@ -83,6 +86,8 @@ use crate::MapId;
 use crate::MaxDamage;
 use crate::MaxStackSize;
 use crate::MobEffectId;
+use crate::MobEffectSet;
+use crate::MobEffectTagId;
 use crate::ModifierDisplay;
 use crate::NameLookup;
 use crate::NameTable;
@@ -111,9 +116,11 @@ use crate::Trim;
 use crate::TrimMaterialId;
 use crate::TrimPatternId;
 use crate::Unbreakable;
+use crate::UseAnimation;
 use crate::UseEffects;
 use crate::Weapon;
 use crate::WireError;
+use crate::effect_details::EffectFields;
 use crate::lore::MAX_LINES;
 use crate::nbt_depth::LIST_TEMPLATE_LEVELS;
 use crate::nbt_depth::SLOT_TEMPLATE_LEVELS;
@@ -137,6 +144,18 @@ const DISPLAY_OVERRIDE: i32 = 2;
 
 const HOLDER_SET_TAG: i32 = 0;
 const INLINE_VALUE: i32 = 0;
+
+const CONSUME_APPLY_EFFECTS: i32 = 0;
+const CONSUME_REMOVE_EFFECTS: i32 = 1;
+const CONSUME_CLEAR_ALL_EFFECTS: i32 = 2;
+const CONSUME_TELEPORT_RANDOMLY: i32 = 3;
+const CONSUME_PLAY_SOUND: i32 = 4;
+
+#[derive(Clone, Copy)]
+enum HiddenEffects {
+    Include,
+    Strip,
+}
 
 pub(crate) fn put_var_int(output: &mut Vec<u8>, value: i32) {
     let _ = VarInt(value).encode(output);
@@ -234,6 +253,7 @@ fn read_flat_value<L: NameLookup>(
             saturation: f32::from_be_bytes(reader.bytes(input)?),
             can_always_eat: reader.boolean(input)?,
         }),
+        BuiltinKey::Consumable => Builtin::Consumable(reader.consumable(input)?),
         BuiltinKey::Tool => Builtin::Tool(reader.tool(input)?),
         BuiltinKey::Equippable => Builtin::Equippable(reader.equippable(input)?),
         BuiltinKey::PiercingWeapon => Builtin::PiercingWeapon(reader.piercing_weapon(input)?),
@@ -874,37 +894,88 @@ impl<L: NameLookup> Reader<'_, L> {
     }
 
     fn potion_contents(&self, input: &mut &[u8]) -> Result<PotionContents, WireError> {
+        let potion = self.optional(input, |reader, input| {
+            Ok(PotionId(reader.known_id(input, NameTable::Potion)?))
+        })?;
+        let custom_color = self.optional(input, |reader, input| {
+            Ok(i32::from_be_bytes(reader.bytes(input)?))
+        })?;
+        let custom_effects = self.list(input, |reader, input| {
+            reader.effect_instance_with(input, HiddenEffects::Strip)
+        })?;
         Ok(PotionContents {
-            potion: self.optional(input, |reader, input| {
-                Ok(PotionId(reader.known_id(input, NameTable::Potion)?))
-            })?,
-            custom_color: self.optional(input, |reader, input| {
-                Ok(i32::from_be_bytes(reader.bytes(input)?))
-            })?,
-            custom_effects: self.list(input, Self::effect_instance_stripping_hidden)?,
+            potion,
+            custom_color,
+            custom_effects,
             custom_name: self.optional(input, Self::string)?,
         })
     }
 
-    fn effect_instance_stripping_hidden(
+    fn mob_effect_set(&self, input: &mut &[u8]) -> Result<MobEffectSet, WireError> {
+        self.holder_set(
+            input,
+            HolderSetCodec {
+                tag_table: NameTable::MobEffectTag,
+                entry_table: NameTable::MobEffect,
+                validate_known: true,
+                make_tag: |id| MobEffectSet::Tag(MobEffectTagId(id)),
+                make_entry: MobEffectId,
+                make_list: MobEffectSet::Effects,
+            },
+        )
+    }
+
+    fn consumable(&self, input: &mut &[u8]) -> Result<Consumable, WireError> {
+        Ok(Consumable {
+            consume_seconds: f32::from_be_bytes(self.bytes(input)?),
+            animation: self.list_entry(input, &UseAnimation::ALL)?,
+            sound: self.optional(input, Self::sound_event)?,
+            has_consume_particles: self.boolean(input)?,
+            on_consume_effects: self.list(input, Self::consume_effect)?,
+        })
+    }
+
+    fn consume_effect(&self, input: &mut &[u8]) -> Result<ConsumeEffect, WireError> {
+        match self.var_int(input)? {
+            CONSUME_APPLY_EFFECTS => Ok(ConsumeEffect::ApplyEffects {
+                effects: self.list(input, |reader, input| {
+                    reader.effect_instance_with(input, HiddenEffects::Include)
+                })?,
+                probability: f32::from_be_bytes(self.bytes(input)?),
+            }),
+            CONSUME_REMOVE_EFFECTS => Ok(ConsumeEffect::RemoveEffects(self.mob_effect_set(input)?)),
+            CONSUME_CLEAR_ALL_EFFECTS => Ok(ConsumeEffect::ClearAllEffects),
+            CONSUME_TELEPORT_RANDOMLY => Ok(ConsumeEffect::TeleportRandomly {
+                diameter: f32::from_be_bytes(self.bytes(input)?),
+                directional_particles: self.boolean(input)?,
+            }),
+            CONSUME_PLAY_SOUND => Ok(ConsumeEffect::PlaySound(self.sound_event(input)?)),
+            _ => Err(self.bad()),
+        }
+    }
+
+    fn effect_instance_with(
         &self,
         input: &mut &[u8],
+        hidden: HiddenEffects,
     ) -> Result<EffectInstance, WireError> {
         let mut effect =
             EffectInstance::new(MobEffectId(self.known_id(input, NameTable::MobEffect)?));
-        let details = self.effect_details_stripping_hidden(input, self.depth)?;
+        let mut details = self.effect_details(input, self.depth, hidden)?;
         effect.amplifier = details.amplifier;
         effect.duration = details.duration;
         effect.ambient = details.ambient;
         effect.show_particles = details.show_particles;
         effect.show_icon = details.show_icon;
+        effect.hidden_effect = details.hidden_effect.take();
         Ok(effect)
     }
 
-    fn effect_details_stripping_hidden(
+    fn effect_details(
         &self,
         input: &mut &[u8],
         depth: u32,
+        hidden: HiddenEffects,
     ) -> Result<EffectDetails, WireError> {
         let mut details = EffectDetails::new();
         details.amplifier = u8::try_from(self.var_int(input)?.clamp(0, 255)).unwrap_or(u8::MAX);
@@ -917,7 +988,11 @@ impl<L: NameLookup> Reader<'_, L> {
             if next_depth > MAX_DEPTH {
                 return Err(WireError::TooDeep);
             }
-            let _ = self.effect_details_stripping_hidden(input, next_depth)?;
+            let nested = self.effect_details(input, next_depth, hidden)?;
+            details.hidden_effect = match hidden {
+                HiddenEffects::Include => Some(Box::new(nested)),
+                HiddenEffects::Strip => None,
+            };
         }
         Ok(details)
     }
@@ -990,6 +1065,7 @@ pub(crate) fn write_value<L: NameLookup>(
             output.extend_from_slice(&food.saturation.to_be_bytes());
             put_boolean(output, food.can_always_eat);
         }
+        Builtin::Consumable(consumable) => writer.consumable(consumable, output)?,
         Builtin::Tool(tool) => writer.tool(tool, output)?,
         Builtin::Equippable(equippable) => writer.equippable(equippable, output)?,
         Builtin::PiercingWeapon(weapon) => writer.piercing_weapon(weapon, output)?,
@@ -1364,17 +1440,109 @@ impl<L: NameLookup> Writer<'_, L> {
             output.extend_from_slice(&color.to_be_bytes());
             Ok(())
         })?;
-        self.list(&contents.custom_effects, output, |_, effect, output| {
-            put_var_int(output, i32::from(effect.effect.0));
-            put_var_int(output, i32::from(effect.amplifier));
-            put_var_int(output, effect.duration);
-            put_boolean(output, effect.ambient);
-            put_boolean(output, effect.show_particles);
-            put_boolean(output, effect.show_icon);
-            put_boolean(output, false);
-            Ok(())
-        })?;
+        self.list(
+            &contents.custom_effects,
+            output,
+            |writer, effect, output| writer.effect_instance(effect, HiddenEffects::Strip, output),
+        )?;
         self.optional(contents.custom_name.as_deref(), output, Self::string)
+    }
+
+    fn mob_effect_set(
+        &self,
+        effects: &MobEffectSet,
+        output: &mut Vec<u8>,
+    ) -> Result<(), WireError> {
+        match effects {
+            MobEffectSet::Tag(tag) => self.write_holder_tag(NameTable::MobEffectTag, tag.0, output),
+            MobEffectSet::Effects(effects) => self.write_holder_entries(effects, |id| id.0, output),
+        }
+    }
+
+    fn consumable(&self, consumable: &Consumable, output: &mut Vec<u8>) -> Result<(), WireError> {
+        output.extend_from_slice(&consumable.consume_seconds.to_be_bytes());
+        self.list_id(&UseAnimation::ALL, consumable.animation, output)?;
+        self.optional(consumable.sound.as_ref(), output, Self::sound_event)?;
+        put_boolean(output, consumable.has_consume_particles);
+        self.list(&consumable.on_consume_effects, output, Self::consume_effect)
+    }
+
+    fn consume_effect(
+        &self,
+        effect: &ConsumeEffect,
+        output: &mut Vec<u8>,
+    ) -> Result<(), WireError> {
+        match effect {
+            ConsumeEffect::ApplyEffects {
+                effects,
+                probability,
+            } => {
+                put_var_int(output, CONSUME_APPLY_EFFECTS);
+                self.list(effects, output, |writer, effect, output| {
+                    writer.effect_instance(effect, HiddenEffects::Include, output)
+                })?;
+                output.extend_from_slice(&probability.to_be_bytes());
+                Ok(())
+            }
+            ConsumeEffect::RemoveEffects(effects) => {
+                put_var_int(output, CONSUME_REMOVE_EFFECTS);
+                self.mob_effect_set(effects, output)
+            }
+            ConsumeEffect::ClearAllEffects => {
+                put_var_int(output, CONSUME_CLEAR_ALL_EFFECTS);
+                Ok(())
+            }
+            ConsumeEffect::TeleportRandomly {
+                diameter,
+                directional_particles,
+            } => {
+                put_var_int(output, CONSUME_TELEPORT_RANDOMLY);
+                output.extend_from_slice(&diameter.to_be_bytes());
+                put_boolean(output, *directional_particles);
+                Ok(())
+            }
+            ConsumeEffect::PlaySound(sound) => {
+                put_var_int(output, CONSUME_PLAY_SOUND);
+                self.sound_event(sound, output)
+            }
+        }
+    }
+
+    fn effect_instance(
+        &self,
+        effect: &EffectInstance,
+        hidden: HiddenEffects,
+        output: &mut Vec<u8>,
+    ) -> Result<(), WireError> {
+        put_var_int(output, i32::from(effect.effect.0));
+        self.effect_details(effect.fields(), hidden, self.depth, output)
+    }
+
+    fn effect_details(
+        &self,
+        details: EffectFields<'_>,
+        hidden: HiddenEffects,
+        depth: u32,
+        output: &mut Vec<u8>,
+    ) -> Result<(), WireError> {
+        put_var_int(output, i32::from(details.amplifier));
+        put_var_int(output, details.duration);
+        put_boolean(output, details.ambient);
+        put_boolean(output, details.show_particles);
+        put_boolean(output, details.show_icon);
+        let nested = match hidden {
+            HiddenEffects::Include => details.hidden_effect,
+            HiddenEffects::Strip => None,
+        };
+        put_boolean(output, nested.is_some());
+        if let Some(nested) = nested {
+            let next_depth = depth.saturating_add(1);
+            if next_depth > MAX_DEPTH {
+                return Err(WireError::TooDeep);
+            }
+            self.effect_details(nested.fields(), hidden, next_depth, output)?;
+        }
+        Ok(())
     }
 
     fn instrument(

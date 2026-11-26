@@ -19,6 +19,7 @@ macro_rules! for_each_builtin {
             RepairCost => "repair_cost",
             UseEffects => "use_effects",
             Food => "food",
+            Consumable => "consumable",
             Tool => "tool",
             BlocksAttacks => "blocks_attacks",
             MapId => "map_id",

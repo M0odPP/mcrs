@@ -2,8 +2,12 @@ use std::collections::BTreeMap;
 
 use mcrs_minecraft_fixtures::fixture;
 use mcrs_minecraft_item_stack::ComponentType;
+use mcrs_minecraft_item_stack::Consumable;
+use mcrs_minecraft_item_stack::ConsumeEffect;
 use mcrs_minecraft_item_stack::CustomName;
 use mcrs_minecraft_item_stack::Damage;
+use mcrs_minecraft_item_stack::EffectDetails;
+use mcrs_minecraft_item_stack::EffectInstance;
 use mcrs_minecraft_item_stack::HashError;
 use mcrs_minecraft_item_stack::HashScratch;
 use mcrs_minecraft_item_stack::HashedComponent;
@@ -11,6 +15,9 @@ use mcrs_minecraft_item_stack::HashedStack;
 use mcrs_minecraft_item_stack::ItemStack;
 use mcrs_minecraft_item_stack::Kind;
 use mcrs_minecraft_item_stack::MapDecorations;
+use mcrs_minecraft_item_stack::MobEffectId;
+use mcrs_minecraft_item_stack::MobEffectSet;
+use mcrs_minecraft_item_stack::MobEffectTagId;
 use mcrs_minecraft_item_stack::NameLookup;
 use mcrs_minecraft_item_stack::NameTable;
 use mcrs_minecraft_item_stack::RepairCost;
@@ -60,6 +67,7 @@ impl Names {
             NameTable::SoundEvent => &[
                 (50, "item.armor.equip_generic"),
                 (52, "item.armor.equip_iron"),
+                (501, "entity.generic.eat"),
                 (653, "entity.item.break"),
                 (999, "item.shears.snip"),
             ],
@@ -77,6 +85,7 @@ impl Names {
             NameTable::EntityTypeTag => &["skeletons"],
             NameTable::DamageTypeTag => &["bypasses_shield"],
             NameTable::MobEffect => &["speed", "slowness", "haste"],
+            NameTable::MobEffectTag => &["harmful_effects"],
             NameTable::Potion => &["water"],
             NameTable::TrimMaterial => &["amethyst"],
             NameTable::TrimPattern => &["bolt", "coast"],
@@ -126,7 +135,7 @@ struct PlainValue {
     hash: Option<i32>,
 }
 
-const PLAIN_KINDS: [&str; 24] = [
+const PLAIN_KINDS: [&str; 25] = [
     "max_stack_size",
     "max_damage",
     "damage",
@@ -151,6 +160,7 @@ const PLAIN_KINDS: [&str; 24] = [
     "instrument",
     "stored_enchantments",
     "painting/variant",
+    "consumable",
 ];
 
 const LOW_BITS_ON_THE_WIRE: &str = r#"{"target":{"dimension":"mcrs:custom","pos":[0,4096,-1]}}"#;
@@ -298,6 +308,7 @@ fn a_component_has_the_hash_that_the_game_recorded() {
         "tooltip_display",
         "repair_cost",
         "food",
+        "consumable",
         "tool",
         "piercing_weapon",
         "use_effects",
@@ -600,6 +611,52 @@ fn a_match_of_a_name_with_an_entity_hover_allocates_nothing_after_the_warm_up() 
     let allocated = allocations() - before;
 
     assert_eq!((matched, allocated), (Ok(true), 0));
+}
+
+#[test]
+fn hidden_effect_depth_enforces_512_when_hashing_and_hashes_mob_effect_tag() {
+    let build_stack = |hidden_levels: usize| {
+        let mut hidden: Option<Box<EffectDetails>> = None;
+        for _ in 0..hidden_levels {
+            let mut outer = EffectDetails::new();
+            outer.hidden_effect = hidden;
+            hidden = Some(Box::new(outer));
+        }
+        let mut effect = EffectInstance::new(MobEffectId(0));
+        effect.hidden_effect = hidden;
+        stack(STONE, 1).set(Consumable {
+            on_consume_effects: vec![ConsumeEffect::ApplyEffects {
+                effects: vec![effect],
+                probability: 1.0,
+            }],
+            ..Consumable::new()
+        })
+    };
+
+    let at_limit = build_stack(505);
+    let at_limit_result = hash_stack(Some(&at_limit), &Names, &mut HashScratch::default());
+    assert!(
+        at_limit_result.is_ok_and(|hashed_value| hashed_value.is_some()),
+        "hashing consumable at exact NBT depth 512 succeeds"
+    );
+
+    let over_limit = build_stack(506);
+    assert_eq!(
+        hash_stack(Some(&over_limit), &Names, &mut HashScratch::default()),
+        Err(HashError::TooDeep),
+        "hashing consumable with 506 hidden_effects rejects TooDeep"
+    );
+
+    let tagged = stack(STONE, 1).set(Consumable {
+        on_consume_effects: vec![ConsumeEffect::RemoveEffects(MobEffectSet::Tag(
+            MobEffectTagId(0),
+        ))],
+        ..Consumable::new()
+    });
+    assert!(
+        hashed(Some(&tagged)).is_some(),
+        "hashing consumable with MobEffectSet::Tag should succeed"
+    );
 }
 
 fn wire_error(error: mcrs_minecraft_wire::Error) -> Option<WireError> {

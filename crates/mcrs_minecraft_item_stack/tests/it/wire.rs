@@ -13,10 +13,14 @@ use mcrs_minecraft_item_stack::BlockTagId;
 use mcrs_minecraft_item_stack::Builtin;
 use mcrs_minecraft_item_stack::BuiltinKey;
 use mcrs_minecraft_item_stack::ComponentType;
+use mcrs_minecraft_item_stack::Consumable;
+use mcrs_minecraft_item_stack::ConsumeEffect;
 use mcrs_minecraft_item_stack::Container;
 use mcrs_minecraft_item_stack::CustomData;
 use mcrs_minecraft_item_stack::CustomName;
 use mcrs_minecraft_item_stack::Damage;
+use mcrs_minecraft_item_stack::EffectDetails;
+use mcrs_minecraft_item_stack::EffectInstance;
 use mcrs_minecraft_item_stack::EnchantmentId;
 use mcrs_minecraft_item_stack::EnchantmentLevel;
 use mcrs_minecraft_item_stack::Enchantments;
@@ -30,6 +34,9 @@ use mcrs_minecraft_item_stack::Lore;
 use mcrs_minecraft_item_stack::MapDecorations;
 use mcrs_minecraft_item_stack::MaxDamage;
 use mcrs_minecraft_item_stack::MaxStackSize;
+use mcrs_minecraft_item_stack::MobEffectId;
+use mcrs_minecraft_item_stack::MobEffectSet;
+use mcrs_minecraft_item_stack::MobEffectTagId;
 use mcrs_minecraft_item_stack::ModifierDisplay;
 use mcrs_minecraft_item_stack::NameLookup;
 use mcrs_minecraft_item_stack::NameTable;
@@ -111,6 +118,7 @@ impl Names {
             NameTable::SoundEvent => vec![
                 (50, "item.armor.equip_generic"),
                 (52, "item.armor.equip_iron"),
+                (501, "entity.generic.eat"),
                 (653, "entity.item.break"),
                 (999, "item.shears.snip"),
             ],
@@ -119,6 +127,7 @@ impl Names {
             NameTable::DamageType => vec![(21, "in_fire"), (24, "lava")],
             NameTable::DamageTypeTag => indexed(&["bypasses_shield"]),
             NameTable::MobEffect => indexed(&["speed", "slowness", "haste"]),
+            NameTable::MobEffectTag => indexed(&["harmful_effects"]),
             NameTable::Potion => indexed(&["water"]),
             NameTable::TrimMaterial => indexed(&["amethyst"]),
             NameTable::TrimPattern => indexed(&["bolt", "coast"]),
@@ -947,7 +956,7 @@ struct PlainValue {
     wire: Option<String>,
 }
 
-const DECODED_PLAIN: [&str; 32] = [
+const DECODED_PLAIN: [&str; 33] = [
     "max_stack_size",
     "max_damage",
     "damage",
@@ -980,6 +989,7 @@ const DECODED_PLAIN: [&str; 32] = [
     "container_loot",
     "stored_enchantments",
     "painting/variant",
+    "consumable",
 ];
 
 fn assert_same_component(kind: &str, written: &[u8], expected: &[u8], header: usize) {
@@ -1069,7 +1079,7 @@ fn the_wire_components_that_the_game_wrote_read_to_the_saved_value_and_write_bac
         assert_same_component(&value.kind, &wire(read.as_ref()), &bare, header.len());
         decoded += 1;
     }
-    assert_eq!((decoded, kept), (113, 73));
+    assert_eq!((decoded, kept), (114, 72));
 }
 
 #[derive(Deserialize)]
@@ -1658,8 +1668,45 @@ fn weapon_wire_round_trips_and_rejects_out_of_range() {
     );
 }
 
-#[test]
-fn potion_contents_enforces_depth_512_when_stripping_hidden_effect_in_wire_form() {
+fn consumable_wire_with_hidden_depth(hidden_levels: usize, length_prefixed: bool) -> Vec<u8> {
+    let mut payload = Vec::new();
+    payload.extend_from_slice(&1.6_f32.to_be_bytes());
+    payload.push(1);
+    payload.push(0);
+    payload.push(1);
+    payload.push(1);
+    payload.push(0);
+    payload.push(1);
+    payload.push(0);
+    for _ in 0..hidden_levels {
+        payload.extend_from_slice(&[0, 0, 0, 1, 1, 1]);
+    }
+    payload.extend_from_slice(&[0, 0, 0, 1, 1, 0]);
+    payload.extend_from_slice(&1.0_f32.to_be_bytes());
+
+    let consumable_id = COMPONENT_TYPES
+        .iter()
+        .position(|name| *name == "consumable")
+        .expect("consumable component type registered");
+    let mut frame = vec![
+        1,
+        1,
+        1,
+        0,
+        u8::try_from(consumable_id).expect("id fits byte"),
+    ];
+    if length_prefixed {
+        mcrs_minecraft_wire::Encode::encode(
+            &mcrs_minecraft_wire::VarInt(i32::try_from(payload.len()).expect("len fits i32")),
+            &mut frame,
+        )
+        .expect("varint encode");
+    }
+    frame.extend_from_slice(&payload);
+    frame
+}
+
+fn potion_wire_with_hidden_depth(hidden_levels: usize) -> Vec<u8> {
     let potion_id = COMPONENT_TYPES
         .iter()
         .position(|name| *name == "potion_contents")
@@ -1675,14 +1722,93 @@ fn potion_contents_enforces_depth_512_when_stripping_hidden_effect_in_wire_form(
         1,
         0,
     ];
-    for _ in 0..512 {
+    for _ in 0..hidden_levels {
         frame.extend_from_slice(&[0, 0, 0, 1, 1, 1]);
     }
     frame.extend_from_slice(&[0, 0, 0, 1, 1, 0]);
     frame.push(0);
+    frame
+}
+
+fn build_hidden_consumable_stack(hidden_levels: usize) -> ItemStack {
+    let mut hidden: Option<Box<EffectDetails>> = None;
+    for _ in 0..hidden_levels {
+        let mut outer = EffectDetails::new();
+        outer.hidden_effect = hidden;
+        hidden = Some(Box::new(outer));
+    }
+    let mut effect = EffectInstance::new(MobEffectId(0));
+    effect.hidden_effect = hidden;
+    stack(STONE, 1).set(Consumable {
+        on_consume_effects: vec![ConsumeEffect::ApplyEffects {
+            effects: vec![effect],
+            probability: 1.0,
+        }],
+        ..Consumable::new()
+    })
+}
+
+#[test]
+fn hidden_effect_depth_enforces_512_in_wire_form_and_round_trips_mob_effect_tag() {
+    let valid_wire = consumable_wire_with_hidden_depth(505, false);
+    let read_valid = read_all(&valid_wire, read_wire)
+        .expect("consumable with 505 hidden_effects stays within NBT depth 512")
+        .expect("non-empty item stack");
+    let mut encoded = Vec::new();
+    write_wire(Some(&read_valid), &Names, &mut encoded)
+        .expect("writing consumable within NBT depth 512 succeeds");
     assert_eq!(
-        read_all(&frame, read_wire),
+        encoded, valid_wire,
+        "consumable at max depth 512 round-trips byte-for-byte"
+    );
+
+    let over_nbt_limit = consumable_wire_with_hidden_depth(506, false);
+    assert_eq!(
+        read_all(&over_nbt_limit, read_wire),
+        Err(WireError::TooDeep),
+        "consumable with 506 hidden_effects exceeds NBT depth 512 on read"
+    );
+
+    let over_wire_limit_bare = consumable_wire_with_hidden_depth(512, false);
+    assert_eq!(
+        read_all(&over_wire_limit_bare, read_wire),
+        Err(WireError::TooDeep),
+        "Reader::effect_details must reject > 512 hidden_effects directly"
+    );
+
+    let over_wire_limit_prefixed = consumable_wire_with_hidden_depth(512, true);
+    assert_eq!(
+        decode_with_length(&over_wire_limit_prefixed),
+        Err(WireError::TooDeep),
+        "skip_value::effect_details must match Reader::effect_details > 512 TooDeep"
+    );
+
+    let potion_over_limit = potion_wire_with_hidden_depth(512);
+    assert_eq!(
+        read_all(&potion_over_limit, read_wire),
         Err(WireError::TooDeep),
         "potion_contents with > 512 hidden_effects rejects TooDeep before deep recursion"
+    );
+
+    let too_deep_stack = build_hidden_consumable_stack(506);
+    assert_eq!(
+        write_wire(Some(&too_deep_stack), &Names, &mut Vec::new()),
+        Err(WireError::TooDeep),
+        "write_wire rejects consumable with 506 hidden_effects as TooDeep"
+    );
+
+    let tagged = stack(STONE, 1).set(Consumable {
+        on_consume_effects: vec![ConsumeEffect::RemoveEffects(MobEffectSet::Tag(
+            MobEffectTagId(0),
+        ))],
+        ..Consumable::new()
+    });
+    let wire_bytes = wire(Some(&tagged));
+    let decoded_tag = read_all(&wire_bytes, read_wire)
+        .expect("wire read remove_effects tag")
+        .expect("non-empty item stack");
+    assert_eq!(
+        decoded_tag, tagged,
+        "MobEffectSet::Tag should round-trip through wire"
     );
 }

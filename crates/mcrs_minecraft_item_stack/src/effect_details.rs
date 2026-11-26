@@ -31,6 +31,27 @@ const _: () = {
     );
 };
 
+#[derive(Clone, Copy)]
+pub(crate) struct EffectFields<'hidden> {
+    pub(crate) amplifier: u8,
+    pub(crate) duration: i32,
+    pub(crate) ambient: bool,
+    pub(crate) show_particles: bool,
+    pub(crate) show_icon: bool,
+    pub(crate) hidden_effect: Option<&'hidden EffectDetails>,
+}
+
+const _: () = {
+    assert!(
+        size_of::<EffectFields<'static>>() == 8 + size_of::<usize>(),
+        "EffectFields borrows optional child without allocation"
+    );
+    assert!(
+        align_of::<EffectFields<'static>>() == align_of::<EffectDetails>(),
+        "EffectFields matches EffectDetails alignment"
+    );
+};
+
 impl EffectDetails {
     #[must_use]
     pub const fn new() -> Self {
@@ -41,6 +62,18 @@ impl EffectDetails {
             show_particles: true,
             show_icon: true,
             hidden_effect: None,
+        }
+    }
+
+    #[must_use]
+    pub(crate) fn fields(&self) -> EffectFields<'_> {
+        EffectFields {
+            amplifier: self.amplifier,
+            duration: self.duration,
+            ambient: self.ambient,
+            show_particles: self.show_particles,
+            show_icon: self.show_icon,
+            hidden_effect: self.hidden_effect.as_deref(),
         }
     }
 

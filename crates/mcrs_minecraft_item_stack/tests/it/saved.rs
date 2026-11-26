@@ -9,9 +9,10 @@ use mcrs_minecraft_item_stack::AttributeModifiers;
 use mcrs_minecraft_item_stack::BlockId;
 use mcrs_minecraft_item_stack::BlockSet;
 use mcrs_minecraft_item_stack::BlockTagId;
-use mcrs_minecraft_item_stack::Builtin;
 use mcrs_minecraft_item_stack::BuiltinKey;
 use mcrs_minecraft_item_stack::ComponentType;
+use mcrs_minecraft_item_stack::Consumable;
+use mcrs_minecraft_item_stack::ConsumeEffect;
 use mcrs_minecraft_item_stack::CustomName;
 use mcrs_minecraft_item_stack::Damage;
 use mcrs_minecraft_item_stack::DimensionPos;
@@ -29,6 +30,8 @@ use mcrs_minecraft_item_stack::ItemStack;
 use mcrs_minecraft_item_stack::LodestoneTracker;
 use mcrs_minecraft_item_stack::MaxDamage;
 use mcrs_minecraft_item_stack::MaxStackSize;
+use mcrs_minecraft_item_stack::MobEffectSet;
+use mcrs_minecraft_item_stack::MobEffectTagId;
 use mcrs_minecraft_item_stack::ModifierDisplay;
 use mcrs_minecraft_item_stack::NameLookup;
 use mcrs_minecraft_item_stack::NameTable;
@@ -101,12 +104,17 @@ impl Names {
                 "block_entity_data",
             ],
             NameTable::MapDecorationType => &["player", "red_x", "target_x", "banner_red"],
-            NameTable::SoundEvent => &["item.armor.equip_iron", "entity.item.break"],
+            NameTable::SoundEvent => &[
+                "item.armor.equip_iron",
+                "entity.item.break",
+                "entity.generic.eat",
+            ],
             NameTable::EntityType => &["pig", "zombie"],
             NameTable::EntityTypeTag => &["skeletons"],
             NameTable::DamageType => &["in_fire", "lava"],
             NameTable::DamageTypeTag => &["bypasses_shield"],
             NameTable::MobEffect => &["speed", "slowness", "haste"],
+            NameTable::MobEffectTag => &["harmful_effects"],
             NameTable::Potion => &["water"],
             NameTable::TrimMaterial => &["amethyst"],
             NameTable::TrimPattern => &["bolt", "coast"],
@@ -750,7 +758,7 @@ struct PlainError {
     error: String,
 }
 
-const PLAIN_KINDS: [(&str, BuiltinKey); 22] = [
+const PLAIN_KINDS: [(&str, BuiltinKey); 23] = [
     ("max_stack_size", BuiltinKey::MaxStackSize),
     ("max_damage", BuiltinKey::MaxDamage),
     ("damage", BuiltinKey::Damage),
@@ -779,6 +787,7 @@ const PLAIN_KINDS: [(&str, BuiltinKey); 22] = [
         BuiltinKey::OminousBottleAmplifier,
     ),
     ("instrument", BuiltinKey::Instrument),
+    ("consumable", BuiltinKey::Consumable),
 ];
 
 fn plain_kind(kind: &str) -> Option<BuiltinKey> {
@@ -997,6 +1006,57 @@ fn use_effects_and_blocks_attacks_validate_ranges_in_saved_form() {
     );
 }
 
+#[test]
+fn consumable_validates_ranges_in_saved_form() {
+    let mut bad_seconds = NbtCompound::new();
+    bad_seconds.put("consume_seconds", NbtTag::Float(-0.0));
+    assert_eq!(
+        read_saved(
+            &with_component("consumable", NbtTag::Compound(bad_seconds)),
+            &Names
+        ),
+        Err(SavedError::OutOfRange(BuiltinKey::Consumable)),
+        "expected out of range for consume_seconds=-0.0"
+    );
+
+    for bad_probability in [-0.0_f32, 1.5_f32] {
+        let mut apply = NbtCompound::new();
+        apply.put("type", NbtTag::String("minecraft:apply_effects".into()));
+        apply.put("effects", NbtTag::List(Vec::new()));
+        apply.put("probability", NbtTag::Float(bad_probability));
+        let mut consumable = NbtCompound::new();
+        consumable.put(
+            "on_consume_effects",
+            NbtTag::List(vec![NbtTag::Compound(apply)]),
+        );
+        assert_eq!(
+            read_saved(
+                &with_component("consumable", NbtTag::Compound(consumable)),
+                &Names
+            ),
+            Err(SavedError::OutOfRange(BuiltinKey::Consumable)),
+            "expected out of range for probability={bad_probability}"
+        );
+    }
+
+    let mut teleport = NbtCompound::new();
+    teleport.put("type", NbtTag::String("minecraft:teleport_randomly".into()));
+    teleport.put("diameter", NbtTag::Float(0.0));
+    let mut consumable = NbtCompound::new();
+    consumable.put(
+        "on_consume_effects",
+        NbtTag::List(vec![NbtTag::Compound(teleport)]),
+    );
+    assert_eq!(
+        read_saved(
+            &with_component("consumable", NbtTag::Compound(consumable)),
+            &Names
+        ),
+        Err(SavedError::OutOfRange(BuiltinKey::Consumable)),
+        "expected out of range for teleport diameter=0.0"
+    );
+}
+
 fn nested_hidden_effect_tag(levels: usize) -> NbtCompound {
     let mut current = NbtCompound::new();
     current.put("show_icon", NbtTag::Byte(1));
@@ -1010,7 +1070,39 @@ fn nested_hidden_effect_tag(levels: usize) -> NbtCompound {
 }
 
 #[test]
-fn potion_contents_enforces_depth_512_when_stripping_hidden_effect_in_saved_form() {
+fn hidden_effect_depth_enforces_512_in_saved_form_and_round_trips_mob_effect_tag() {
+    let build_consumable = |hidden_levels: usize| {
+        let mut instance = nested_hidden_effect_tag(hidden_levels);
+        instance.put("id", NbtTag::String("minecraft:speed".into()));
+        let mut apply = NbtCompound::new();
+        apply.put("type", NbtTag::String("minecraft:apply_effects".into()));
+        apply.put("effects", NbtTag::List(vec![NbtTag::Compound(instance)]));
+        let mut consumable = NbtCompound::new();
+        consumable.put(
+            "on_consume_effects",
+            NbtTag::List(vec![NbtTag::Compound(apply)]),
+        );
+        with_component("consumable", NbtTag::Compound(consumable))
+    };
+
+    let at_limit = build_consumable(505);
+    let read = read_saved(&at_limit, &Names)
+        .expect("consumable with 505 nested hidden_effects reaches exact NBT depth 512");
+    let written =
+        write_saved(&read, &Names).expect("writing consumable at exact NBT depth 512 succeeds");
+    assert_eq!(
+        read_saved(&written, &Names),
+        Ok(read),
+        "consumable at exact NBT depth 512 round-trips through saved form"
+    );
+
+    let over_limit = build_consumable(506);
+    assert_eq!(
+        read_saved(&over_limit, &Names),
+        Err(SavedError::TooDeep),
+        "consumable with 506 nested hidden_effects exceeds MAX_DEPTH 512"
+    );
+
     let potion_valid = {
         let mut effect = nested_hidden_effect_tag(507);
         effect.put("id", NbtTag::String("minecraft:speed".into()));
@@ -1026,7 +1118,7 @@ fn potion_contents_enforces_depth_512_when_stripping_hidden_effect_in_saved_form
     assert!(
         matches!(
             parsed_potion.patch(),
-            [PatchEntry::Value(Builtin::PotionContents(contents))]
+            [PatchEntry::Value(mcrs_minecraft_item_stack::Builtin::PotionContents(contents))]
                 if matches!(contents.custom_effects.as_slice(), [EffectInstance { hidden_effect: None, .. }])
         ),
         "potion_contents must strip nested hidden_effect on read"
@@ -1046,5 +1138,18 @@ fn potion_contents_enforces_depth_512_when_stripping_hidden_effect_in_saved_form
         read_saved(&potion_too_deep, &Names),
         Err(SavedError::TooDeep),
         "potion_contents with hidden_effect deeper than 512 returns TooDeep"
+    );
+
+    let tagged = stack(STONE, 1).set(Consumable {
+        on_consume_effects: vec![ConsumeEffect::RemoveEffects(MobEffectSet::Tag(
+            MobEffectTagId(0),
+        ))],
+        ..Consumable::new()
+    });
+    let saved_tagged = write_saved(&tagged, &Names).expect("write remove_effects tag");
+    let round_tripped = read_saved(&saved_tagged, &Names).expect("read remove_effects tag");
+    assert_eq!(
+        round_tripped, tagged,
+        "MobEffectSet::Tag should round-trip through saved NBT"
     );
 }

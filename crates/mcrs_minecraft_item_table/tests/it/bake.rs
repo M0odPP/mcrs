@@ -124,12 +124,19 @@ impl Registries {
                 NameTable::DamageTypeTag,
                 pack_table(&vanilla_dir().join("tags/damage_type")),
             ),
+            (
+                NameTable::MobEffectTag,
+                pack_table(&vanilla_dir().join("tags/mob_effect")),
+            ),
         ]);
         Self { tables }
     }
 }
 
 fn pack_table(root: &Path) -> HashMap<String, u16> {
+    if !root.exists() {
+        return HashMap::new();
+    }
     let mut names: Vec<String> = Vec::new();
     let mut pending: Vec<PathBuf> = vec![root.to_owned()];
     while let Some(directory) = pending.pop() {

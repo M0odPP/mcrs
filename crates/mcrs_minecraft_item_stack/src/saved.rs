@@ -42,6 +42,8 @@ use crate::BuiltinKey;
 use crate::BundleContents;
 use crate::ChargedProjectiles;
 use crate::ComponentType;
+use crate::Consumable;
+use crate::ConsumeEffect;
 use crate::Container;
 use crate::ContainerLoot;
 use crate::Count;
@@ -89,6 +91,8 @@ use crate::MapId;
 use crate::MaxDamage;
 use crate::MaxStackSize;
 use crate::MobEffectId;
+use crate::MobEffectSet;
+use crate::MobEffectTagId;
 use crate::ModifierDisplay;
 use crate::NameLookup;
 use crate::NameTable;
@@ -121,6 +125,7 @@ use crate::TrimMaterialId;
 use crate::TrimPatternId;
 use crate::Unbreakable;
 use crate::UndecodedValue;
+use crate::UseAnimation;
 use crate::UseEffects;
 use crate::Weapon;
 use crate::builtin_key::NAMESPACE;
@@ -444,6 +449,7 @@ fn read_flat_value<L: NameLookup>(
         }
         BuiltinKey::TooltipDisplay => Builtin::TooltipDisplay(reader.tooltip_display(tag)?),
         BuiltinKey::Food => Builtin::Food(reader.food(tag)?),
+        BuiltinKey::Consumable => Builtin::Consumable(reader.consumable(tag)?),
         BuiltinKey::Tool => Builtin::Tool(reader.tool(tag)?),
         BuiltinKey::Equippable => Builtin::Equippable(reader.equippable(tag)?),
         BuiltinKey::PiercingWeapon => Builtin::PiercingWeapon(reader.piercing_weapon(tag)?),
@@ -524,6 +530,12 @@ struct Reader<'names, L> {
     component: BuiltinKey,
     names: &'names L,
     depth: u32,
+}
+
+#[derive(Clone, Copy)]
+enum HiddenEffects {
+    Include,
+    Strip,
 }
 
 impl<L: NameLookup> Reader<'_, L> {
@@ -992,41 +1004,152 @@ impl<L: NameLookup> Reader<'_, L> {
             _ => self.map(tag)?,
         };
         let effect_depth = self.depth.saturating_add(4);
+        let custom_effects = self.listed(map, "custom_effects", |reader, tag| {
+            reader.effect_instance_at(tag, effect_depth, HiddenEffects::Strip)
+        })?;
         Ok(PotionContents {
             potion: self.optional(map, "potion", Self::potion)?,
             custom_color: self.optional(map, "custom_color", |reader, tag| {
                 Ok(reader.number(tag)?.to_int())
             })?,
-            custom_effects: self.listed(map, "custom_effects", |reader, tag| {
-                reader.effect_instance_stripping_hidden(tag, effect_depth)
-            })?,
+            custom_effects,
             custom_name: self.optional(map, "custom_name", |reader, tag| {
                 Ok(reader.string(tag)?.to_string())
             })?,
         })
     }
 
-    fn effect_instance_stripping_hidden(
+    fn mob_effect_set(&self, tag: &NbtTag) -> Result<MobEffectSet, SavedError> {
+        self.holder_set(
+            tag,
+            HolderSetSpecification {
+                tag_table: NameTable::MobEffectTag,
+                entry_table: NameTable::MobEffect,
+                make_tag: |id| MobEffectSet::Tag(MobEffectTagId(id)),
+                make_entry: MobEffectId,
+                make_list: MobEffectSet::Effects,
+            },
+        )
+    }
+
+    fn consumable(&self, tag: &NbtTag) -> Result<Consumable, SavedError> {
+        let map = self.map(tag)?;
+        let consume_seconds = match map.get("consume_seconds") {
+            Some(tag) => {
+                let seconds = self.float(tag)?;
+                if !is_use_duration(seconds) {
+                    return Err(SavedError::OutOfRange(self.component));
+                }
+                seconds
+            }
+            None => Consumable::DEFAULT_CONSUME_SECONDS,
+        };
+        let animation = match map.get("animation") {
+            Some(tag) => UseAnimation::from_name(self.string(tag)?).ok_or(self.bad())?,
+            None => Consumable::DEFAULT_ANIMATION,
+        };
+        let sound = self.optional(map, "sound", Self::sound_event)?;
+        let has_consume_particles = self.flag(
+            map,
+            "has_consume_particles",
+            Consumable::DEFAULT_HAS_CONSUME_PARTICLES,
+        )?;
+        let on_consume_effects = self.listed(map, "on_consume_effects", Self::consume_effect)?;
+        Ok(Consumable {
+            consume_seconds,
+            animation,
+            sound,
+            has_consume_particles,
+            on_consume_effects,
+        })
+    }
+
+    fn consume_effect(&self, tag: &NbtTag) -> Result<ConsumeEffect, SavedError> {
+        let map = self.map(tag)?;
+        let kind = self.identifier(self.necessary(map, "type")?)?;
+        if kind.namespace() != NAMESPACE {
+            return Err(self.bad());
+        }
+        match kind.path() {
+            "apply_effects" => {
+                let effect_depth = self.depth.saturating_add(6);
+                let effects = self.each(
+                    self.list(self.necessary(map, "effects")?)?,
+                    |reader, tag| {
+                        reader.effect_instance_at(tag, effect_depth, HiddenEffects::Include)
+                    },
+                )?;
+                let probability = match map.get("probability") {
+                    Some(tag) => {
+                        let value = self.float(tag)?;
+                        if !is_unit_float(value) {
+                            return Err(SavedError::OutOfRange(self.component));
+                        }
+                        value
+                    }
+                    None => ConsumeEffect::DEFAULT_PROBABILITY,
+                };
+                Ok(ConsumeEffect::ApplyEffects {
+                    effects,
+                    probability,
+                })
+            }
+            "remove_effects" => Ok(ConsumeEffect::RemoveEffects(
+                self.mob_effect_set(self.necessary(map, "effects")?)?,
+            )),
+            "clear_all_effects" => Ok(ConsumeEffect::ClearAllEffects),
+            "teleport_randomly" => {
+                let diameter = match map.get("diameter") {
+                    Some(tag) => {
+                        let value = self.float(tag)?;
+                        if !is_instrument_range(value) {
+                            return Err(SavedError::OutOfRange(self.component));
+                        }
+                        value
+                    }
+                    None => ConsumeEffect::DEFAULT_TELEPORT_DIAMETER,
+                };
+                let directional_particles = self.flag(
+                    map,
+                    "directional_particles",
+                    ConsumeEffect::DEFAULT_DIRECTIONAL_PARTICLES,
+                )?;
+                Ok(ConsumeEffect::TeleportRandomly {
+                    diameter,
+                    directional_particles,
+                })
+            }
+            "play_sound" => Ok(ConsumeEffect::PlaySound(
+                self.sound_event(self.necessary(map, "sound")?)?,
+            )),
+            _ => Err(self.bad()),
+        }
+    }
+
+    fn effect_instance_at(
         &self,
         tag: &NbtTag,
         depth: u32,
+        hidden: HiddenEffects,
     ) -> Result<EffectInstance, SavedError> {
         let map = self.map(tag)?;
         let id = self.mob_effect(self.necessary(map, "id")?)?;
-        let details = self.effect_details_stripping_hidden(map, depth)?;
+        let mut details = self.effect_details(map, depth, hidden)?;
         let mut effect = EffectInstance::new(id);
         effect.amplifier = details.amplifier;
         effect.duration = details.duration;
         effect.ambient = details.ambient;
         effect.show_particles = details.show_particles;
         effect.show_icon = details.show_icon;
+        effect.hidden_effect = details.hidden_effect.take();
         Ok(effect)
     }
 
-    fn effect_details_stripping_hidden(
+    fn effect_details(
         &self,
         map: &NbtCompound,
         depth: u32,
+        hidden: HiddenEffects,
     ) -> Result<EffectDetails, SavedError> {
         if depth > MAX_DEPTH {
             return Err(SavedError::TooDeep);
@@ -1041,9 +1164,16 @@ impl<L: NameLookup> Reader<'_, L> {
         details.ambient = self.flag(map, "ambient", false)?;
         details.show_particles = self.flag(map, "show_particles", true)?;
         details.show_icon = self.flag(map, "show_icon", details.show_particles)?;
-        let _ = self.optional(map, "hidden_effect", |reader, tag| {
-            reader.effect_details_stripping_hidden(reader.map(tag)?, depth.saturating_add(1))
-        })?;
+        details.hidden_effect = self
+            .optional(map, "hidden_effect", |reader, tag| {
+                let nested =
+                    reader.effect_details(reader.map(tag)?, depth.saturating_add(1), hidden)?;
+                Ok(match hidden {
+                    HiddenEffects::Include => Some(Box::new(nested)),
+                    HiddenEffects::Strip => None,
+                })
+            })?
+            .flatten();
         Ok(details)
     }
 
