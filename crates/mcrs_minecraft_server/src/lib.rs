@@ -30,6 +30,9 @@ use mcrs_minecraft_entity::damage_type_tag_keys::PANIC_CAUSES;
 use mcrs_minecraft_vanilla_attributes::{CreativeRangePlugin, SprintAttributePlugin};
 use mcrs_minecraft_vanilla_block_place::BlockPlacePlugin;
 use mcrs_minecraft_vanilla_durability::{DurabilityPlugin, DurabilityProjectSet};
+use mcrs_minecraft_vanilla_env_damage::{
+    EnvDamageSet, VanillaEnvDamagePlugin as DimensionEnvDamagePlugin,
+};
 use mcrs_minecraft_vanilla_hunger::VanillaHungerPlugin as DimensionHungerPlugin;
 use mcrs_minecraft_vanilla_inventory::InventoryPersistencePlugin;
 use mcrs_minecraft_vanilla_light::LightingPlugin;
@@ -114,6 +117,7 @@ impl PluginGroup for MinecraftServerPlugins {
             .add(VanillaHungerPlugin)
             .add(VanillaWeatherPlugin)
             .add(VanillaDurabilityPlugin)
+            .add(VanillaEnvDamagePlugin)
             .add(self.world_gen)
             .add(LightingPlugin)
             .add(self.network)
@@ -246,5 +250,23 @@ impl Plugin for VanillaWeatherPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(VanillaWeatherHostPlugin)
             .add_dimension_plugin(VanillaWeatherDimensionPlugin);
+    }
+}
+
+pub struct VanillaEnvDamagePlugin;
+
+impl Plugin for VanillaEnvDamagePlugin {
+    fn build(&self, app: &mut App) {
+        fn order_env_damage(app: &mut App) {
+            app.configure_sets(
+                FixedUpdate,
+                (
+                    DurabilityProjectSet.before(EnvDamageSet::Project),
+                    WeatherDimensionSet.before(EnvDamageSet::Project),
+                ),
+            );
+        }
+        app.add_dimension_plugin(DimensionEnvDamagePlugin)
+            .add_dimension_plugin(order_env_damage);
     }
 }
