@@ -10,17 +10,17 @@ use mcrs_minecraft_network::metrics::PacketKind;
 use mcrs_minecraft_protocol::uuid::Uuid;
 use mcrs_minecraft_protocol::{Encode, Packet};
 use mcrs_minecraft_protocol_game::clientbound::{
-    ClientboundBlockChangedAck, ClientboundBlockDestruction, ClientboundBlockEvent,
-    ClientboundBlockUpdate, ClientboundChunkBatchFinished, ClientboundChunkBatchStart,
-    ClientboundChunkCacheRadius, ClientboundCommandSuggestions, ClientboundContainerClose,
-    ClientboundContainerSetContent, ClientboundContainerSetSlot, ClientboundEntityEvent,
-    ClientboundEntityPositionSync, ClientboundForgetLevelChunk, ClientboundGameEvent,
-    ClientboundHurtAnimation, ClientboundLevelEvent, ClientboundLightUpdate, ClientboundLogin,
-    ClientboundOpenScreen, ClientboundPlayerAbilities, ClientboundPlayerCombatKill,
-    ClientboundPlayerLookAt, ClientboundPlayerPosition, ClientboundRespawn,
-    ClientboundSectionBlocksUpdate, ClientboundSetChunkCacheCenter, ClientboundSetCursorItem,
-    ClientboundSetHealth, ClientboundSetHeldSlot, ClientboundSetTime, ClientboundSound,
-    ClientboundSystemChatPacket, ClientboundTabList, ClientboundTickingState,
+    ClientboundAddEntity, ClientboundBlockChangedAck, ClientboundBlockDestruction,
+    ClientboundBlockEvent, ClientboundBlockUpdate, ClientboundChunkBatchFinished,
+    ClientboundChunkBatchStart, ClientboundChunkCacheRadius, ClientboundCommandSuggestions,
+    ClientboundContainerClose, ClientboundContainerSetContent, ClientboundContainerSetSlot,
+    ClientboundEntityEvent, ClientboundEntityPositionSync, ClientboundForgetLevelChunk,
+    ClientboundGameEvent, ClientboundHurtAnimation, ClientboundLevelEvent, ClientboundLightUpdate,
+    ClientboundLogin, ClientboundOpenScreen, ClientboundPlayerAbilities,
+    ClientboundPlayerCombatKill, ClientboundPlayerLookAt, ClientboundPlayerPosition,
+    ClientboundRespawn, ClientboundSectionBlocksUpdate, ClientboundSetChunkCacheCenter,
+    ClientboundSetCursorItem, ClientboundSetHealth, ClientboundSetHeldSlot, ClientboundSetTime,
+    ClientboundSound, ClientboundSystemChatPacket, ClientboundTabList, ClientboundTickingState,
     ClientboundTickingStep,
 };
 use mcrs_minecraft_resource::ResourceKeyBuf;
@@ -126,6 +126,7 @@ pub enum PacketPayload {
     ChunkBatchStart(ClientboundChunkBatchStart),
     ChunkBatchFinished(ClientboundChunkBatchFinished),
     Replication(Vec<Bytes>),
+    AddEntity(ClientboundAddEntity),
     EntityPosSync(ClientboundEntityPositionSync),
     PlayerLogin(ClientboundLogin),
     Respawn(ClientboundRespawn),

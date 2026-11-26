@@ -58,3 +58,13 @@ fn weather_schedules_build_without_ambiguities() {
     dim.init_resource::<Weather>();
     assert_no_schedule_ambiguities(&mut dim, "dimension");
 }
+
+#[test]
+fn unbaked_weather_tables_reject_rain_until_baked() {
+    let unbaked = crate::weather_baked::WeatherBaked::default();
+    assert!(unbaked.is_unbaked(), "default tables must be unbaked");
+    assert!(
+        !unbaked.can_rain(0),
+        "unbaked biome table must not permit rain before baking"
+    );
+}

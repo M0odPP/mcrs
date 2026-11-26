@@ -2,40 +2,61 @@ use std::path::{Path, PathBuf};
 
 use bevy_ecs::entity::Entity;
 use bevy_ecs::message::Messages;
-use bevy_ecs::prelude::{ResMut, With};
+use bevy_ecs::prelude::{ResMut, With, Without};
 use bevy_ecs::system::RunSystemOnce;
+use bevy_math::DVec3;
 use bevy_time::TimeUpdateStrategy;
+use mcrs_minecraft_biome_file::BiomeFile;
+use mcrs_minecraft_block::block_keys::Block;
+use mcrs_minecraft_block::definition::Blocks;
 use mcrs_minecraft_command_engine::CommandPlugin;
 use mcrs_minecraft_command_vanilla::{VanillaCommands, VanillaCommandsPlugin};
 use mcrs_minecraft_command_world::WorldCommandsPlugin;
+use mcrs_minecraft_damage::Vitals;
 use mcrs_minecraft_dimension_environment::environment::WeatherLevel;
-use mcrs_minecraft_engine::bus::PacketPayload;
+use mcrs_minecraft_engine::bus::{OutboundPlayerPacket, PacketPayload, PacketTarget};
 use mcrs_minecraft_engine::coordinator::birth_clock::BirthClockPlugin;
 use mcrs_minecraft_engine::coordinator::clock::WorldClockHostPlugin;
 use mcrs_minecraft_engine::server_edit::{ServerEdit, ServerStateHostPlugin, Weather};
 use mcrs_minecraft_engine::{WorldStatePlugin, WorldStateSources, WorldStateWriter};
+use mcrs_minecraft_engine_entity_motion::MotionState;
+use mcrs_minecraft_engine_world::birth_clock::BirthClock;
+use mcrs_minecraft_engine_world::block_update::BlockSetRequest;
 use mcrs_minecraft_engine_world::entity::physics::Transform;
-use mcrs_minecraft_engine_world::entity::player::ChangeDimensionRequest;
+use mcrs_minecraft_engine_world::entity::player::{ChangeDimensionRequest, Player};
+use mcrs_minecraft_engine_world::palette::BiomePalette;
+use mcrs_minecraft_engine_world::session::PlayerSession;
 use mcrs_minecraft_engine_world::tick_pace::TickPace;
 use mcrs_minecraft_engine_world::world::dimension::{Dimension, HasWeather};
+use mcrs_minecraft_engine_world::world::storage::section::SectionIndex;
 use mcrs_minecraft_engine_world::world::sub_app::AddDimensionPlugins;
 use mcrs_minecraft_engine_world::world::world_save::WorldSave;
 use mcrs_minecraft_engine_world::world_seed::WorldSeed;
+use mcrs_minecraft_entity::entity_type_keys::EntityType;
 use mcrs_minecraft_environment::{AdvanceTime, WorldClockPlugin};
+use mcrs_minecraft_game_mode::{GameMode, PlayerGameMode};
 use mcrs_minecraft_protocol::Bounded;
 use mcrs_minecraft_protocol::uuid::Uuid;
 use mcrs_minecraft_protocol_game::GameEventKind;
+use mcrs_minecraft_protocol_game::clientbound::ClientboundSound;
 use mcrs_minecraft_protocol_game::serverbound::ServerboundChatCommand;
 use mcrs_minecraft_protocol_game::text::{Color, IntoText, Text};
+use mcrs_minecraft_registries::CurrentRegistries;
 use mcrs_minecraft_resource::{ResourceKeyBuf, ResourceLocationBuf};
-use mcrs_minecraft_server::VanillaWeatherPlugin;
 use mcrs_minecraft_server::operator_broadcast::OperatorBroadcastPlugin;
+use mcrs_minecraft_server::{
+    VanillaBlocksPlugin, VanillaEntityAttributesPlugin, VanillaEntityPhysicsPlugin,
+    VanillaWeatherPlugin,
+};
+use mcrs_minecraft_simulation::BlockUpdateFlags;
 use mcrs_minecraft_weather::{
     CLEAR_TICKS_MAX, CLEAR_TICKS_MIN, RAIN_OFF_MAX, RAIN_OFF_MIN, RAIN_ON_MAX, RAIN_ON_MIN,
-    THUNDER_ON_MAX, THUNDER_ON_MIN,
+    THUNDER_ON_MAX, THUNDER_ON_MIN, WeatherCycleRng,
 };
+use mcrs_voxel::{BlockPos, BlockStateId, LocalPos, SectionPos};
 use serde_json::Value;
 
+use crate::commands::load_stone_column;
 use crate::host_app::{self, PlayServer, label_of, sent_to};
 use crate::support::{chats, reply};
 
@@ -86,6 +107,9 @@ fn start_server_with(
         VanillaCommandsPlugin,
         WorldCommandsPlugin,
         VanillaWeatherPlugin,
+        VanillaBlocksPlugin,
+        VanillaEntityPhysicsPlugin,
+        VanillaEntityAttributesPlugin,
     ));
     app.add_dimension_plugin(OperatorBroadcastPlugin);
     PlayServer::start_in(app, dims, ops, 0)
@@ -145,6 +169,46 @@ fn cmd(server: &mut PlayServer, anchor: Entity, line: &str) {
     );
 }
 
+fn set_column_biome(server: &mut PlayServer, name: &str) {
+    let reg = server.world().resource::<CurrentRegistries>().clone();
+    let loc = ResourceLocationBuf::read(name).unwrap();
+    let id = u8::try_from(
+        reg.registry::<BiomeFile>()
+            .unwrap()
+            .by_name(&loc)
+            .unwrap()
+            .number(),
+    )
+    .unwrap();
+    let world = server.world();
+    let sec_ids: Vec<Entity> = (-4..20)
+        .filter_map(|sy| {
+            world
+                .query::<&SectionIndex>()
+                .single(world)
+                .ok()?
+                .get(SectionPos::new(0, sy, 0))
+        })
+        .collect();
+    for entity in sec_ids {
+        world
+            .entity_mut(entity)
+            .insert(BiomePalette::homogeneous(id));
+    }
+}
+
+fn block_at(server: &mut PlayServer, pos: BlockPos) -> BlockStateId {
+    let world = server.world();
+    world
+        .query::<&SectionIndex>()
+        .single(world)
+        .unwrap()
+        .blocks(SectionPos::from(pos))
+        .unwrap()
+        .0
+        .get(LocalPos::from(pos))
+}
+
 fn transfer(
     server: &mut PlayServer,
     from: Entity,
@@ -164,6 +228,37 @@ fn transfer(
             transform: tf,
         });
     sent_to(sess, server.ticks_all(4))
+}
+
+fn bolts(packets: &[PacketPayload]) -> Vec<DVec3> {
+    packets
+        .iter()
+        .filter_map(|p| match p {
+            PacketPayload::AddEntity(e) if e.kind == EntityType::LightningBolt => Some(e.pos),
+            _ => None,
+        })
+        .collect()
+}
+
+fn weather_sounds(packets: &[PacketPayload]) -> Vec<f32> {
+    packets
+        .iter()
+        .filter_map(|packet| match packet {
+            PacketPayload::Sound(sound) if sound.source == ClientboundSound::SOURCE_WEATHER => {
+                Some(sound.volume)
+            }
+            _ => None,
+        })
+        .collect()
+}
+
+fn strike_packets(server: &mut PlayServer, tick: u64) -> Vec<OutboundPlayerPacket> {
+    server.app.world_mut().insert_resource(BirthClock(tick - 1));
+    server.ticks_all(1)
+}
+
+fn strike_tick(server: &mut PlayServer, sess: PlayerSession, tick: u64) -> Vec<PacketPayload> {
+    sent_to(sess, strike_packets(server, tick))
 }
 
 #[test]
@@ -549,5 +644,179 @@ fn natural_cycle_countdowns_and_seed_determinism() {
         w_clear,
         *b.app.world().resource::<Weather>(),
         "seed match at rain off"
+    );
+}
+
+fn place_block(server: &mut PlayServer, pos: BlockPos, block: Block) -> BlockStateId {
+    let state = server
+        .world()
+        .resource::<Blocks>()
+        .default_state_of(block.id());
+    let dim = {
+        let world_ref = server.world();
+        world_ref
+            .query_filtered::<Entity, With<Dimension>>()
+            .single(world_ref)
+            .unwrap()
+    };
+    server
+        .world()
+        .resource_mut::<Messages<BlockSetRequest>>()
+        .write(BlockSetRequest {
+            dimension: dim,
+            pos,
+            new_state: state,
+            flags: BlockUpdateFlags::ALL,
+            recursion_left: 512,
+        });
+    server.ticks_all(1);
+    state
+}
+
+fn first_strike_tick(seed: u64) -> (u64, i32, i32) {
+    (1u64..1_000_000)
+        .find_map(|tick| {
+            let mut rng = WeatherCycleRng::new(seed ^ tick.wrapping_mul(0x9E37_79B9_7F4A_7C15));
+            rng.one_in(100_000).then(|| {
+                (
+                    tick,
+                    rng.next_u32_bound(16).cast_signed(),
+                    rng.next_u32_bound(16).cast_signed(),
+                )
+            })
+        })
+        .unwrap()
+}
+
+fn assert_lightning_broadcast(
+    outbound: &[OutboundPlayerPacket],
+    sessions: [PlayerSession; 2],
+    expected_bolt: DVec3,
+) {
+    let targets_ok = outbound
+        .iter()
+        .filter(|packet| match &packet.data {
+            PacketPayload::AddEntity(add) => add.kind == EntityType::LightningBolt,
+            PacketPayload::Sound(sound) => sound.source == ClientboundSound::SOURCE_WEATHER,
+            _ => false,
+        })
+        .all(|packet| match &packet.target {
+            PacketTarget::PlayerSet(targets) => {
+                sessions.iter().all(|session| targets.contains(session))
+            }
+            _ => false,
+        });
+    assert!(
+        targets_ok,
+        "lightning packets must broadcast via PlayerSet to both viewers"
+    );
+    for session in sessions {
+        let packets = sent_to(session, outbound.to_vec());
+        assert_eq!(
+            bolts(&packets),
+            [expected_bolt],
+            "viewer AddEntity mismatch"
+        );
+        assert_eq!(
+            weather_sounds(&packets),
+            [10_000.0, 2.0],
+            "viewer sound mismatch"
+        );
+    }
+}
+
+#[test]
+fn lightning_strike_effects_rod_redirect_and_dry_biome() {
+    let mut server = start_server(&[("minecraft:overworld", "minecraft:overworld")], None);
+    load_stone_column(&mut server);
+    set_column_biome(&mut server, "minecraft:plains");
+    let (operator, _) = server.join(OP, "Op");
+    let (guest, _) = server.join(GUEST, "Guest");
+    let operator_session = server.session_of(operator).unwrap();
+    let guest_session = server.session_of(guest).unwrap();
+    cmd(&mut server, operator, "weather thunder");
+    server.ticks_all(2);
+    *server.world().resource_mut::<WeatherLevel>() = WeatherLevel {
+        rain: 1.0,
+        thunder: 1.0,
+    };
+
+    let seed = server
+        .world()
+        .get_resource::<WorldSeed>()
+        .map_or(0, |world_seed| world_seed.0);
+    let (trigger_tick, strike_x, strike_z) = first_strike_tick(seed);
+    let expected_bolt = DVec3::new(f64::from(strike_x) + 0.5, 64.0, f64::from(strike_z) + 0.5);
+
+    let player = server.player(operator);
+    server.world().get_mut::<PlayerGameMode>(player).unwrap().0 = GameMode::Survival;
+    server
+        .world()
+        .get_mut::<Transform>(player)
+        .unwrap()
+        .translation = expected_bolt;
+    cmd(
+        &mut server,
+        operator,
+        &format!(
+            "summon minecraft:pig {} 64 {} {{NoAI:1b}}",
+            expected_bolt.x, expected_bolt.z
+        ),
+    );
+    server.ticks_all(2);
+    let pig = server
+        .world()
+        .query_filtered::<Entity, (With<MotionState>, Without<Player>)>()
+        .single(server.world())
+        .unwrap();
+    let pig_health_before = server.world().get::<Vitals>(pig).unwrap().health;
+
+    let outbound = strike_packets(&mut server, trigger_tick);
+    assert_lightning_broadcast(&outbound, [operator_session, guest_session], expected_bolt);
+    let fire = server
+        .world()
+        .resource::<Blocks>()
+        .default_state_of(Block::Fire.id());
+    assert_eq!(
+        block_at(&mut server, BlockPos::new(strike_x, 64, strike_z)),
+        fire,
+        "lightning must place fire at strike position"
+    );
+    assert!(
+        server.world().get::<Vitals>(player).unwrap().health < 20.0,
+        "lightning strike must damage nearby player"
+    );
+    assert!(
+        server.world().get::<Vitals>(pig).unwrap().health < pig_health_before,
+        "lightning strike must damage nearby spawned mob"
+    );
+
+    set_column_biome(&mut server, "minecraft:desert");
+    assert!(
+        bolts(&strike_tick(&mut server, operator_session, trigger_tick)).is_empty(),
+        "lightning must not strike in non-rain desert biome"
+    );
+
+    set_column_biome(&mut server, "minecraft:plains");
+    let rod_pos = BlockPos::new((strike_x + 2) & 15, 64, (strike_z + 2) & 15);
+    let rod_state = place_block(&mut server, rod_pos, Block::LightningRod);
+    assert_eq!(
+        block_at(&mut server, rod_pos),
+        rod_state,
+        "lightning rod must be placed before strike"
+    );
+    assert_eq!(
+        bolts(&strike_tick(&mut server, operator_session, trigger_tick)),
+        [DVec3::new(
+            f64::from(rod_pos.x) + 0.5,
+            65.0,
+            f64::from(rod_pos.z) + 0.5
+        )],
+        "lightning must redirect onto lightning rod top"
+    );
+    assert_ne!(
+        block_at(&mut server, BlockPos::new(rod_pos.x, 65, rod_pos.z)),
+        fire,
+        "lightning rod strike must not ignite fire"
     );
 }

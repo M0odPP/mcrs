@@ -173,6 +173,7 @@ pub struct ClientboundSound {
 }
 
 impl ClientboundSound {
+    pub const SOURCE_WEATHER: VarInt = VarInt(3);
     pub const SOURCE_PLAYERS: VarInt = VarInt(7);
 
     #[must_use]
