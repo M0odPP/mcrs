@@ -6,7 +6,8 @@ use mcrs_minecraft_protocol::packets::table::Decoded;
 use mcrs_minecraft_protocol_game::clientbound::{
     ClientboundEntityEvent, ClientboundSetEquipment, ClientboundSwingAnimation,
 };
-use mcrs_minecraft_protocol_game::entity::EquipmentSlot as Slot;
+use mcrs_minecraft_protocol_game::entity::{EquipmentSlot as Slot, MetaDataValue, MetadataEntry};
+use mcrs_minecraft_protocol_game::entity_data_index::LIVING_FLAGS;
 use mcrs_minecraft_protocol_game::item::ProtoStack;
 use mcrs_minecraft_protocol_game::table::game_clientbound::{ClientboundGamePacket as Pkt, decode};
 use mcrs_minecraft_protocol_game::{Hand, SwingAnimationKind};
@@ -531,5 +532,76 @@ fn filters_non_player_slots_air_count_and_no_op_slot_updates() {
         eqs(&tick4),
         [[(Slot::Head, ProtoStack::default())]],
         "clearing existing slot with air stack emits wire empty ProtoStack::default()"
+    );
+}
+
+#[test]
+fn living_flags_changes_emit_index_8_metadata_for_observers_and_spawn() {
+    let mut prev = PlayerEntries::default();
+    for expected in [1_u8, 0, 3, 2, 1] {
+        let next = PlayerEntries {
+            living_flags: expected,
+            ..prev
+        };
+        assert_ne!(next, prev, "living_flags change must update PartialEq");
+        assert_eq!(
+            next.changed_from(&prev),
+            vec![MetadataEntry {
+                index: LIVING_FLAGS,
+                value: MetaDataValue::Byte(expected.cast_signed()),
+            }],
+            "changed_from should emit LIVING_FLAGS index 8 for {expected}"
+        );
+        prev = next;
+    }
+
+    let mut codec = EntityCodec::default();
+    spawn_actor(&mut codec, Vec::new());
+    codec.hold(OBSERVER, GAIN, &mut Vec::new());
+    let mut out = Vec::new();
+    codec.finish_tick(0, &mut out);
+    out.clear();
+
+    send(
+        &mut codec,
+        1,
+        vec![EntityEvent::Data(
+            PlayerData::Entries(PlayerEntries {
+                living_flags: 3,
+                ..PlayerEntries::default()
+            })
+            .into(),
+        )],
+    );
+    codec.finish_tick(1, &mut out);
+    let viewer_chunks: Vec<_> = out
+        .iter()
+        .filter(|m| m.viewer == OBSERVER)
+        .flat_map(|m| m.chunks.iter().cloned())
+        .collect();
+    assert!(
+        viewer_chunks.iter().any(|chunk| matches!(
+            dec_chunk(chunk),
+            Pkt::ClientboundSetEntityData(pkt)
+                if pkt.metadata.0 == [MetadataEntry {
+                    index: LIVING_FLAGS,
+                    value: MetaDataValue::Byte(3),
+                }]
+        )),
+        "observer must receive ClientboundSetEntityData with LIVING_FLAGS=3"
+    );
+
+    let mut late = Vec::new();
+    codec.hold(OBSERVER_B, GAIN, &mut late);
+    assert!(
+        late.iter().any(|chunk| matches!(
+            dec_chunk(chunk),
+            Pkt::ClientboundSetEntityData(pkt)
+                if pkt.metadata.0.contains(&MetadataEntry {
+                    index: LIVING_FLAGS,
+                    value: MetaDataValue::Byte(3),
+                })
+        )),
+        "late observer must receive current LIVING_FLAGS on spawn"
     );
 }

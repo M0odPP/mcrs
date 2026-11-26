@@ -126,6 +126,7 @@ Use the crate that owns the item. Do not write a second copy.
 - `mcrs_minecraft_item_stack`: The item stack value of kind, count and typed component patch, with every item component type and its saved and hashed forms
 - `mcrs_minecraft_item_table`: The prototype of each item kind and the effective components of an item stack
 - `mcrs_minecraft_item_tooltip`: The parts of an item tooltip as text values, from an item stack, the item table and the inputs the caller fills
+- `mcrs_minecraft_item_use`: Pure active item use timing, living flags metadata, movement speed scaling, and slot-change rules without Bevy
 
 ## light
 

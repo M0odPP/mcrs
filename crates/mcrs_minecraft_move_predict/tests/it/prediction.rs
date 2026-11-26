@@ -8,6 +8,7 @@ use mcrs_minecraft_move_predict::Outcome;
 use mcrs_minecraft_move_predict::Prediction;
 use mcrs_minecraft_move_predict::Pusher;
 use mcrs_minecraft_move_validate::Move;
+use mcrs_minecraft_physics::ItemUse;
 use mcrs_minecraft_physics::Keys;
 use mcrs_minecraft_physics::NoBodies;
 use mcrs_minecraft_physics::Orientation;
@@ -158,6 +159,7 @@ fn apply(change: &Change, state: &mut PlayerState) {
     match *change {
         Change::Motion(velocity) => state.body.velocity = velocity,
         Change::Impulse(impulse) => state.body.velocity += impulse,
+        Change::ItemUse(item_use) => state.item_use = item_use,
         _ => {}
     }
 }
@@ -756,5 +758,28 @@ fn rsp_004_the_buffer_decays_in_each_tick_without_a_violation() {
     assert!(
         outcome.offset.is_some() && outcome.setback.is_none(),
         "1000 ticks shrink the buffer of 0.99 by the factor 0.999^1000: {outcome:?}"
+    );
+}
+
+#[test]
+fn item_use_change_scales_client_and_server_prediction() {
+    let mut normal = Session::new();
+    for _ in 0..4 {
+        assert!(passes(normal.step(FORWARD)), "normal step passes");
+    }
+
+    let mut using = Session::new();
+    using.send(Change::ItemUse(ItemUse {
+        using: true,
+        speed_multiplier: 0.2,
+        permits_sprint: false,
+    }));
+    for tick in 0..4 {
+        assert!(passes(using.step(FORWARD)), "using tick {tick} passes");
+    }
+
+    assert!(
+        using.prediction.accepted().body.position.x < normal.prediction.accepted().body.position.x,
+        "item use 0.2x multiplier should reduce forward travel"
     );
 }
