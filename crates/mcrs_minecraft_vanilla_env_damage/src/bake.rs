@@ -102,8 +102,18 @@ impl Default for EnvBlockEntry {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(crate) struct LoweredCauldronStates {
+    pub(crate) empty: Option<BlockStateId>,
+    pub(crate) water_level_one: Option<BlockStateId>,
+    pub(crate) water_level_two: Option<BlockStateId>,
+}
+
 #[derive(Resource, Clone, Debug, Default, PartialEq)]
-pub struct EnvBlockTable(Box<[EnvBlockEntry]>);
+pub struct EnvBlockTable {
+    entries: Box<[EnvBlockEntry]>,
+    cauldrons: LoweredCauldronStates,
+}
 
 const _: () = {
     assert!(
@@ -147,8 +157,16 @@ const _: () = {
         "EnvBlockEntry align must match pointer alignment"
     );
     assert!(
-        size_of::<EnvBlockTable>() == 16,
-        "EnvBlockTable size must match boxed slice fat pointer"
+        size_of::<LoweredCauldronStates>() == 12,
+        "LoweredCauldronStates size must hold three optional u16 block state ids"
+    );
+    assert!(
+        align_of::<LoweredCauldronStates>() == 2,
+        "LoweredCauldronStates align must match BlockStateId alignment"
+    );
+    assert!(
+        size_of::<EnvBlockTable>() == 32,
+        "EnvBlockTable size must match boxed slice plus lowered cauldron targets"
     );
     assert!(
         align_of::<EnvBlockTable>() == 8,
@@ -159,7 +177,16 @@ const _: () = {
 impl EnvBlockTable {
     #[must_use]
     pub fn get(&self, id: BlockStateId) -> Option<&EnvBlockEntry> {
-        self.0.get(id.index())
+        self.entries.get(id.index())
+    }
+
+    #[must_use]
+    pub fn lowered_cauldron_state(&self, current_level: u8) -> Option<BlockStateId> {
+        match current_level {
+            0..=1 => self.cauldrons.empty,
+            2 => self.cauldrons.water_level_one,
+            _ => self.cauldrons.water_level_two,
+        }
     }
 }
 
@@ -388,6 +415,7 @@ pub(crate) fn bake_env_damage(
     registry_tables.set_if_neq(bake_registry_tables(&registries));
 
     let mut entries = vec![EnvBlockEntry::default(); blocks.state_count()];
+    let mut cauldrons = LoweredCauldronStates::default();
     let tags = registries.tags::<Block>();
     let bed_tag = tags
         .as_ref()
@@ -398,6 +426,9 @@ pub(crate) fn bake_env_damage(
     let sound_registry = registries.registry::<BlockSoundSet>();
 
     for block_entry in blocks.blocks() {
+        if block_entry.identifier.as_str() == Block::Cauldron.as_static_str() {
+            cauldrons.empty = block_entry.state_at(0);
+        }
         let block_id = blocks.block_index(block_entry.base_state_id);
         let is_bed = bed_tag
             .zip(tags.as_ref())
@@ -413,6 +444,11 @@ pub(crate) fn bake_env_damage(
             };
             let fall_kind = classify_fall_kind(block_entry, state_id, is_bed);
             let contact = classify_contact_block(block_entry, state_id);
+            match contact {
+                EnvContactBlock::WaterCauldron(1) => cauldrons.water_level_one = Some(state_id),
+                EnvContactBlock::WaterCauldron(2) => cauldrons.water_level_two = Some(state_id),
+                _ => {}
+            }
             let fluid = classify_fluid(&blocks, state_id);
             let fall_sound =
                 resolve_block_fall_sound(&blocks, state_id, sound_sets.as_deref(), sound_registry);
@@ -428,5 +464,8 @@ pub(crate) fn bake_env_damage(
         }
     }
 
-    table.set_if_neq(EnvBlockTable(entries.into_boxed_slice()));
+    table.set_if_neq(EnvBlockTable {
+        entries: entries.into_boxed_slice(),
+        cauldrons,
+    });
 }

@@ -12,6 +12,7 @@ use mcrs_minecraft_engine::{OwnAttributesSet, PlayerMoved, PoseSystems};
 use mcrs_minecraft_engine_damage::{DamageSet, Damaged, PendingHits};
 use mcrs_minecraft_engine_mob_attributes::AttributeEdits;
 use mcrs_minecraft_engine_physics::{CrowdHitSet, PhysicsTables};
+use mcrs_minecraft_engine_world::block_update::BlockSetRequest;
 use mcrs_minecraft_engine_world::entity::player::Player;
 use mcrs_minecraft_engine_world::tick::TickSet;
 use mcrs_minecraft_registries::CurrentRegistries;
@@ -42,6 +43,7 @@ impl Plugin for VanillaEnvDamagePlugin {
             .add_message::<PendingEnvEffect>()
             .add_message::<PlayerSignal>()
             .add_message::<Damaged>()
+            .add_message::<BlockSetRequest>()
             .configure_sets(
                 FixedUpdate,
                 (

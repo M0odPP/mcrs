@@ -7,10 +7,11 @@ use mcrs_minecraft_damage::{DamageSource, Hit, Vitals};
 use mcrs_minecraft_engine::client_on_ground::ClientOnGround;
 use mcrs_minecraft_engine::player_signal::PlayerSignal;
 use mcrs_minecraft_engine::player_state::PlayerFileState;
-use mcrs_minecraft_engine::{self as engine, PlayerBody, ShiftKey};
+use mcrs_minecraft_engine::{self as engine, OwnEquipment, PlayerBody, PlayerLivedTicks, ShiftKey};
 use mcrs_minecraft_engine_damage::{DamageRequest, PendingHits};
 use mcrs_minecraft_engine_physics::PhysicsTables;
 use mcrs_minecraft_engine_world::birth_clock::BirthClock;
+use mcrs_minecraft_engine_world::block_update::BlockSetRequest;
 use mcrs_minecraft_engine_world::entity::physics::Transform;
 use mcrs_minecraft_engine_world::entity::player::Player;
 use mcrs_minecraft_engine_world::game_rules::GameRules;
@@ -24,8 +25,8 @@ use mcrs_minecraft_entity_attribute::AttributeInstances;
 use mcrs_minecraft_entity_key::{EntityUuid, WriterKey};
 use mcrs_minecraft_env_damage::{
     self as env_damage, AxisAlignedBounds, CACTUS_DAMAGE, CAMPFIRE_DAMAGE, CONTACT_BOX_SHRINK,
-    ContactHazard, IN_WALL_DAMAGE, SOUL_CAMPFIRE_DAMAGE, SuffocationState, WorldBorderBounds,
-    WorldBorderDamageConfig,
+    ContactHazard, FreezeImmunity, IN_WALL_DAMAGE, OnFireState, PowderSnowExposure,
+    SOUL_CAMPFIRE_DAMAGE, SuffocationState, WorldBorderBounds, WorldBorderDamageConfig,
 };
 use mcrs_minecraft_game_mode::{GameMode, PlayerGameMode};
 use mcrs_minecraft_game_rule::GameRule;
@@ -40,7 +41,8 @@ use crate::env_state::{EnvTickState, PendingEnvEffect};
 use crate::fall_system;
 use crate::registry_tables::EnvRegistryTables;
 use crate::status_hazards::{
-    self, PlayerFireOutcome, RainContext, RainWorld, StatusInputs, SurroundingsScan,
+    self, ExtinguishStatus, PlayerFireOutcome, PowderSnowFallReset, RainContext, RainWorld,
+    StatusInputs, SurroundingsScan,
 };
 use crate::water_hazards::{self, DrownInputs};
 
@@ -69,10 +71,12 @@ pub(crate) struct EnvWorldAccess<'w, 's> {
 pub(crate) struct EnvHazardOutputs<'w> {
     pending: ResMut<'w, PendingHits>,
     signals: MessageWriter<'w, PlayerSignal>,
+    block_requests: MessageWriter<'w, BlockSetRequest>,
     effects: MessageWriter<'w, PendingEnvEffect>,
 }
 
 struct DimensionSnapshot<'a> {
+    entity: Entity,
     config: &'a DimensionTypeConfig,
     section_index: Option<&'a SectionIndex>,
     view: Option<&'a DimensionView<'a>>,
@@ -87,6 +91,7 @@ enum SleepState {
 }
 
 struct HazardContext<'a> {
+    dimension_entity: Entity,
     dimension_view: Option<&'a DimensionView<'a>>,
     collision: &'a CollisionTable,
     baked: &'a BakedEnvDamage,
@@ -96,6 +101,7 @@ struct HazardContext<'a> {
     now: u64,
     drowning_damage_enabled: bool,
     fire_damage_enabled: bool,
+    freeze_damage_enabled: bool,
     border_bounds: WorldBorderBounds,
     border_config: WorldBorderDamageConfig,
 }
@@ -108,12 +114,15 @@ struct PlayerHazardInputs<'a> {
     mode: GameMode,
     on_ground: bool,
     shift: bool,
+    lived_ticks: Option<u64>,
+    equipment: Option<&'a OwnEquipment>,
     attributes: Option<&'a AttributeInstances>,
 }
 
 struct PlayerEvaluationFrame<'a> {
     inputs: &'a PlayerHazardInputs<'a>,
-    status_inputs: StatusInputs,
+    status_inputs: StatusInputs<'a>,
+    surroundings: SurroundingsScan,
     shrunk: Aabb,
     tick_state: &'a EnvTickState,
     fire_outcome: PlayerFireOutcome,
@@ -121,7 +130,7 @@ struct PlayerEvaluationFrame<'a> {
 
 const _: () = {
     assert!(
-        size_of::<DimensionSnapshot<'static>>() == 32,
+        size_of::<DimensionSnapshot<'static>>() == 40,
         "DimensionSnapshot size must match dimension references and flags"
     );
     assert!(
@@ -137,7 +146,7 @@ const _: () = {
         "SleepState alignment must match single-byte enum"
     );
     assert!(
-        size_of::<HazardContext<'static>>() == 144,
+        size_of::<HazardContext<'static>>() == 152,
         "HazardContext size must match context references and rule flags"
     );
     assert!(
@@ -145,7 +154,7 @@ const _: () = {
         "HazardContext alignment must match pointer alignment"
     );
     assert!(
-        size_of::<PlayerHazardInputs<'static>>() == 80,
+        size_of::<PlayerHazardInputs<'static>>() == 104,
         "PlayerHazardInputs size must match player frame data"
     );
     assert!(
@@ -153,7 +162,7 @@ const _: () = {
         "PlayerHazardInputs alignment must match f64 alignment"
     );
     assert!(
-        size_of::<PlayerEvaluationFrame<'static>>() == 136,
+        size_of::<PlayerEvaluationFrame<'static>>() == 512,
         "PlayerEvaluationFrame size must match bundled per-player frame state"
     );
     assert!(
@@ -473,6 +482,7 @@ fn apply_drown(
 fn evaluate_spectator_hazards(
     context: &HazardContext<'_>,
     inputs: &PlayerHazardInputs<'_>,
+    freeze_age: u64,
     mut file_state: Mut<'_, PlayerFileState>,
     tick_state: &EnvTickState,
     sequence: &mut u32,
@@ -503,7 +513,33 @@ fn evaluate_spectator_hazards(
     }
 
     let eye = engine::eye_position(inputs.position, inputs.body);
-    apply_drown(context, inputs, eye, file_state, sequence, outputs);
+    apply_drown(
+        context,
+        inputs,
+        eye,
+        file_state.reborrow(),
+        sequence,
+        outputs,
+    );
+
+    let on_fire_state = if next_fire_ticks > 0 {
+        OnFireState::Burning
+    } else {
+        OnFireState::NotBurning
+    };
+    let freeze_outcome = env_damage::step_freeze(
+        file_state.ticks_frozen,
+        PowderSnowExposure::Outside,
+        on_fire_state,
+        freeze_age,
+        FreezeImmunity::ColdImmune,
+    );
+    if file_state.ticks_frozen != freeze_outcome.next_ticks_frozen {
+        file_state
+            .reborrow()
+            .map_unchanged(|state| &mut state.ticks_frozen)
+            .set_if_neq(freeze_outcome.next_ticks_frozen);
+    }
 
     tick_state.extinguish_sound_cooldown.saturating_sub(1)
 }
@@ -542,10 +578,44 @@ fn push_fire_and_lava_hits(
     }
 }
 
-fn collect_step_eight_hazards(
+fn apply_freeze_hazard(
     context: &HazardContext<'_>,
     frame: &PlayerEvaluationFrame<'_>,
-    file_state: &PlayerFileState,
+    mut file_state: Mut<'_, PlayerFileState>,
+    sequence: &mut u32,
+    pending: &mut PendingHits,
+) -> ExtinguishStatus {
+    let evaluation = status_hazards::step_player_freezing(
+        &frame.status_inputs,
+        &file_state,
+        &frame.surroundings,
+        frame.fire_outcome,
+        context.rain.registry_tables,
+    );
+    if file_state.ticks_frozen != evaluation.outcome.next_ticks_frozen {
+        file_state
+            .reborrow()
+            .map_unchanged(|state| &mut state.ticks_frozen)
+            .set_if_neq(evaluation.outcome.next_ticks_frozen);
+    }
+    if let Some(damage) = evaluation.outcome.damage {
+        push_env_hit(
+            pending,
+            frame.inputs.player,
+            frame.inputs.uuid,
+            context.now,
+            sequence,
+            context.baked.freeze,
+            damage,
+        );
+    }
+    evaluation.extinguish_status
+}
+
+fn collect_step_eight_and_freeze(
+    context: &HazardContext<'_>,
+    frame: &PlayerEvaluationFrame<'_>,
+    mut file_state: Mut<'_, PlayerFileState>,
     sequence: &mut u32,
     outputs: &mut EnvHazardOutputs<'_>,
 ) -> u8 {
@@ -566,14 +636,89 @@ fn collect_step_eight_hazards(
         &mut outputs.pending,
     );
 
+    if frame.fire_outcome.extinguish_status == ExtinguishStatus::Extinguished {
+        if !frame.surroundings.powder_snow.as_slice().is_empty() {
+            status_hazards::emit_powder_snow_melt(
+                context.dimension_entity,
+                &frame.surroundings.powder_snow,
+                &mut outputs.block_requests,
+            );
+        }
+        if !frame.surroundings.cauldrons.as_slice().is_empty() {
+            status_hazards::emit_cauldron_extinguish(
+                context.dimension_entity,
+                context.block_table,
+                &frame.surroundings.cauldrons,
+                &mut outputs.block_requests,
+            );
+        }
+    }
+
+    let freeze_extinguish = apply_freeze_hazard(
+        context,
+        frame,
+        file_state.reborrow(),
+        sequence,
+        &mut outputs.pending,
+    );
+    let combined_extinguish = if frame.fire_outcome.extinguish_status
+        == ExtinguishStatus::Extinguished
+        || freeze_extinguish == ExtinguishStatus::Extinguished
+    {
+        ExtinguishStatus::Extinguished
+    } else {
+        ExtinguishStatus::Unchanged
+    };
     status_hazards::step_extinguish_sound(
         &frame.status_inputs,
         context.baked,
-        file_state,
+        &file_state,
         frame.tick_state.extinguish_sound_cooldown,
-        frame.fire_outcome.extinguish_status,
+        combined_extinguish,
         &mut outputs.effects,
     )
+}
+
+fn apply_base_tick_fire_and_void(
+    context: &HazardContext<'_>,
+    inputs: &PlayerHazardInputs<'_>,
+    surroundings: &SurroundingsScan,
+    mut file_state: Mut<'_, PlayerFileState>,
+    sequence: &mut u32,
+    pending: &mut PendingHits,
+) -> PlayerFireOutcome {
+    let fire_outcome = status_hazards::step_player_fire(&file_state, surroundings);
+    if file_state.fire != fire_outcome.next_fire_ticks {
+        file_state
+            .reborrow()
+            .map_unchanged(|state| &mut state.fire)
+            .set_if_neq(fire_outcome.next_fire_ticks);
+    }
+    if context.fire_damage_enabled
+        && let Some(damage) = fire_outcome.burning_damage
+    {
+        push_env_hit(
+            pending,
+            inputs.player,
+            inputs.uuid,
+            context.now,
+            sequence,
+            context.baked.on_fire,
+            damage,
+        );
+    }
+    if let Some(damage) = env_damage::void_damage(inputs.position.y, context.min_y) {
+        push_env_hit(
+            pending,
+            inputs.player,
+            inputs.uuid,
+            context.now,
+            sequence,
+            context.baked.out_of_world,
+            damage,
+        );
+    }
+    fire_outcome
 }
 
 fn evaluate_player_hazards(
@@ -585,9 +730,10 @@ fn evaluate_player_hazards(
     sequence: &mut u32,
     outputs: &mut EnvHazardOutputs<'_>,
 ) -> u8 {
+    let freeze_age = inputs.lived_ticks.unwrap_or(tick_state.freeze_age_ticks);
     if inputs.mode == GameMode::Spectator {
         return evaluate_spectator_hazards(
-            context, inputs, file_state, tick_state, sequence, outputs,
+            context, inputs, freeze_age, file_state, tick_state, sequence, outputs,
         );
     }
 
@@ -602,9 +748,13 @@ fn evaluate_player_hazards(
     let status_inputs = StatusInputs {
         player: inputs.player,
         position: inputs.position,
+        mode: inputs.mode,
         now: context.now,
+        freeze_age,
+        freeze_damage_enabled: context.freeze_damage_enabled,
+        equipment: inputs.equipment,
     };
-    let surroundings: SurroundingsScan = status_hazards::scan_surroundings(
+    let surroundings = status_hazards::scan_surroundings(
         &context.rain,
         rain_world,
         inputs.position,
@@ -613,12 +763,13 @@ fn evaluate_player_hazards(
     );
 
     if file_state.fall_distance > 0.0
-        && fall_system::box_has_block_flag(
-            context.dimension_view,
-            context.collision,
-            shrunk,
-            BlockFlags::WATER | BlockFlags::FALL_DAMAGE_RESETTING,
-        )
+        && (surroundings.reset_fall_in_powder_snow == PowderSnowFallReset::Reset
+            || fall_system::box_has_block_flag(
+                context.dimension_view,
+                context.collision,
+                shrunk,
+                BlockFlags::WATER | BlockFlags::FALL_DAMAGE_RESETTING,
+            ))
     {
         file_state
             .reborrow()
@@ -626,37 +777,14 @@ fn evaluate_player_hazards(
             .set_if_neq(0.0);
     }
 
-    let fire_outcome = status_hazards::step_player_fire(&file_state, &surroundings);
-    if file_state.fire != fire_outcome.next_fire_ticks {
-        file_state
-            .reborrow()
-            .map_unchanged(|state| &mut state.fire)
-            .set_if_neq(fire_outcome.next_fire_ticks);
-    }
-    if context.fire_damage_enabled
-        && let Some(damage) = fire_outcome.burning_damage
-    {
-        push_env_hit(
-            &mut outputs.pending,
-            inputs.player,
-            inputs.uuid,
-            context.now,
-            sequence,
-            context.baked.on_fire,
-            damage,
-        );
-    }
-    if let Some(damage) = env_damage::void_damage(inputs.position.y, context.min_y) {
-        push_env_hit(
-            &mut outputs.pending,
-            inputs.player,
-            inputs.uuid,
-            context.now,
-            sequence,
-            context.baked.out_of_world,
-            damage,
-        );
-    }
+    let fire_outcome = apply_base_tick_fire_and_void(
+        context,
+        inputs,
+        &surroundings,
+        file_state.reborrow(),
+        sequence,
+        &mut outputs.pending,
+    );
     collect_suffocation_and_border(
         context,
         inputs,
@@ -677,11 +805,12 @@ fn evaluate_player_hazards(
     let frame = PlayerEvaluationFrame {
         inputs,
         status_inputs,
+        surroundings,
         shrunk,
         tick_state,
         fire_outcome,
     };
-    collect_step_eight_hazards(context, &frame, &file_state, sequence, outputs)
+    collect_step_eight_and_freeze(context, &frame, file_state, sequence, outputs)
 }
 
 fn build_hazard_context<'a>(
@@ -715,6 +844,7 @@ fn build_hazard_context<'a>(
         section_index: dimension.section_index,
     };
     HazardContext {
+        dimension_entity: dimension.entity,
         dimension_view: dimension.view,
         collision: tables.collision(),
         baked,
@@ -730,6 +860,10 @@ fn build_hazard_context<'a>(
             .rules
             .as_deref()
             .is_none_or(|game_rules| game_rules.is_on(GameRule::FireDamage)),
+        freeze_damage_enabled: access
+            .rules
+            .as_deref()
+            .is_none_or(|game_rules| game_rules.is_on(GameRule::FreezeDamage)),
         border_bounds: WorldBorderBounds {
             west: bounds.min_x,
             north: bounds.min_z,
@@ -764,6 +898,8 @@ pub(crate) fn collect_env_hazards(
             &ClientOnGround,
             &ShiftKey,
             &Vitals,
+            Option<&PlayerLivedTicks>,
+            Option<&OwnEquipment>,
             Option<&AttributeInstances>,
             &mut PlayerFileState,
             &mut EnvTickState,
@@ -778,6 +914,7 @@ pub(crate) fn collect_env_hazards(
     };
     let dimension_view = access.world.get(dimension_entity);
     let snapshot = DimensionSnapshot {
+        entity: dimension_entity,
         config: dimension_config,
         section_index,
         view: dimension_view.as_ref(),
@@ -803,6 +940,8 @@ pub(crate) fn collect_env_hazards(
         on_ground,
         shift,
         vitals,
+        lived_ticks,
+        equipment,
         attributes,
         file_state,
         mut tick_state,
@@ -817,6 +956,8 @@ pub(crate) fn collect_env_hazards(
                 mode: mode.0,
                 on_ground: on_ground.0,
                 shift: shift.0,
+                lived_ticks: lived_ticks.map(|ticks| ticks.0),
+                equipment,
                 attributes,
             };
             evaluate_player_hazards(
@@ -831,10 +972,15 @@ pub(crate) fn collect_env_hazards(
         } else {
             tick_state.extinguish_sound_cooldown.saturating_sub(1)
         };
+        let next_freeze_age_ticks = if lived_ticks.is_none() {
+            tick_state.freeze_age_ticks.saturating_add(1)
+        } else {
+            tick_state.freeze_age_ticks
+        };
         let next_tick_state = EnvTickState {
             tick_move_x: 0.0,
             tick_move_z: 0.0,
-            freeze_age_ticks: tick_state.freeze_age_ticks,
+            freeze_age_ticks: next_freeze_age_ticks,
             extinguish_sound_cooldown: next_cooldown,
         };
         tick_state.set_if_neq(next_tick_state);
