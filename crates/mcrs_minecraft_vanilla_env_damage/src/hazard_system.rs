@@ -2,10 +2,9 @@ use bevy_ecs::entity::Entity;
 use bevy_ecs::prelude::{DetectChangesMut, Mut, Populated, Query, Res, ResMut, With};
 use glam::DVec3;
 use mcrs_minecraft_damage::{DamageSource, Hit, Vitals};
-use mcrs_minecraft_engine as engine;
 use mcrs_minecraft_engine::client_on_ground::ClientOnGround;
 use mcrs_minecraft_engine::player_state::PlayerFileState;
-use mcrs_minecraft_engine::{PlayerBody, ShiftKey};
+use mcrs_minecraft_engine::{self as engine, PlayerBody, ShiftKey};
 use mcrs_minecraft_engine_damage::{DamageRequest, PendingHits};
 use mcrs_minecraft_engine_physics::PhysicsTables;
 use mcrs_minecraft_engine_world::birth_clock::BirthClock;
@@ -16,16 +15,16 @@ use mcrs_minecraft_engine_world::world::dimension::{Dimension, DimensionTypeConf
 use mcrs_minecraft_engine_world::world::storage::view::{DimensionView, WorldView};
 use mcrs_minecraft_engine_world::world_border::DimensionWorldBorder;
 use mcrs_minecraft_entity_key::{EntityUuid, WriterKey};
-use mcrs_minecraft_env_damage as env_damage;
 use mcrs_minecraft_env_damage::{
-    AxisAlignedBounds, CACTUS_DAMAGE, CAMPFIRE_DAMAGE, CONTACT_BOX_SHRINK, ContactHazard,
-    IN_WALL_DAMAGE, SOUL_CAMPFIRE_DAMAGE, SuffocationState, WorldBorderBounds,
+    self as env_damage, AxisAlignedBounds, CACTUS_DAMAGE, CAMPFIRE_DAMAGE, CONTACT_BOX_SHRINK,
+    ContactHazard, IN_WALL_DAMAGE, SOUL_CAMPFIRE_DAMAGE, SuffocationState, WorldBorderBounds,
     WorldBorderDamageConfig,
 };
 use mcrs_minecraft_game_mode::{GameMode, PlayerGameMode};
 use mcrs_minecraft_game_rule::GameRule;
-use mcrs_minecraft_physics as physics;
-use mcrs_minecraft_physics::{Aabb, BlockFlags, Collider, CollisionTable, ShapeClass};
+use mcrs_minecraft_physics::{
+    self as physics, Aabb, BlockFlags, Collider, CollisionTable, ShapeClass,
+};
 use mcrs_minecraft_pose::Dimensions;
 use mcrs_voxel::BlockPos;
 
@@ -450,7 +449,11 @@ pub(crate) fn collect_env_hazards(
             );
         }
         if tick_state.tick_move_x != 0.0 || tick_state.tick_move_z != 0.0 {
-            tick_state.set_if_neq(EnvTickState::default());
+            tick_state.set_if_neq(EnvTickState {
+                tick_move_x: 0.0,
+                tick_move_z: 0.0,
+                ..*tick_state
+            });
         }
     }
 }

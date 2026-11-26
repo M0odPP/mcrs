@@ -4,14 +4,11 @@ use bevy_ecs::prelude::{DetectChangesMut, Local, Mut, Query, Res, ResMut, Single
 use glam::DVec3;
 use mcrs_engine_muxer::{TileKey, View};
 use mcrs_minecraft_damage::{DamageSource, Hit, Vitals};
-use mcrs_minecraft_engine::PlayerBody;
-use mcrs_minecraft_engine::PlayerMoved;
 use mcrs_minecraft_engine::ability::PlayerFlying;
-use mcrs_minecraft_engine::bus;
-use mcrs_minecraft_engine::bus::{OutboundPlayerPacket, PacketPayload, PacketTarget};
-use mcrs_minecraft_engine::network_id;
+use mcrs_minecraft_engine::bus::{self, OutboundPlayerPacket, PacketPayload, PacketTarget};
 use mcrs_minecraft_engine::player_state::PlayerFileState;
 use mcrs_minecraft_engine::view_radius::VIEW_RADIUS;
+use mcrs_minecraft_engine::{PlayerBody, PlayerMoved, network_id};
 use mcrs_minecraft_engine_damage::{DamageRequest, PendingHits};
 use mcrs_minecraft_engine_physics::PhysicsTables;
 use mcrs_minecraft_engine_world::birth_clock::BirthClock;
@@ -25,15 +22,13 @@ use mcrs_minecraft_entity::mob_effect_keys::MobEffect;
 use mcrs_minecraft_entity_attribute::AttributeInstances;
 use mcrs_minecraft_entity_attribute::attribute_keys::Attribute;
 use mcrs_minecraft_entity_key::{EntityUuid, WriterKey};
-use mcrs_minecraft_env_damage as env_damage;
 use mcrs_minecraft_env_damage::{
-    CONTACT_BOX_SHRINK, FallBlockKind, FallDamageKind, FallResetMode, FallSoundKind, FallStepInput,
-    GroundState,
+    self as env_damage, CONTACT_BOX_SHRINK, FallBlockKind, FallDamageKind, FallResetMode,
+    FallSoundKind, FallStepInput, GroundState,
 };
 use mcrs_minecraft_game_mode::{GameMode, PlayerGameMode};
 use mcrs_minecraft_game_rule::GameRule;
-use mcrs_minecraft_physics as physics;
-use mcrs_minecraft_physics::{Aabb, BlockFlags, CollisionTable, EFFECT_OFFSET};
+use mcrs_minecraft_physics::{self as physics, Aabb, BlockFlags, CollisionTable, EFFECT_OFFSET};
 use mcrs_minecraft_pose::Dimensions;
 use mcrs_minecraft_protocol_game::clientbound::{ClientboundEntityEvent, ClientboundSound};
 use mcrs_minecraft_registries::{Ref, Wire};
@@ -42,9 +37,8 @@ use mcrs_minecraft_volume::BlockVolume;
 use mcrs_voxel::{BlockPos, BlockStateId};
 use smallvec::SmallVec;
 
-use crate::bake;
-use crate::bake::{BakedEnvDamage, EnvBlockTable};
-use crate::env_state::{EnvTickState, PendingEnvEffect, SoundSpec};
+use crate::bake::{self, BakedEnvDamage, EnvBlockTable};
+use crate::env_state::{self, EnvTickState, PendingEnvEffect, SoundSpec};
 
 const FALL_SOUND_RANGE: f64 = 16.0;
 
@@ -121,10 +115,8 @@ pub(crate) fn box_has_block_flag(
 }
 
 fn has_fall_immunity_effect(file_state: &PlayerFileState) -> bool {
-    file_state.active_effects.iter().any(|effect| {
-        effect.id == MobEffect::SlowFalling.as_static_str()
-            || effect.id == MobEffect::Levitation.as_static_str()
-    })
+    env_state::has_active_effect(file_state, MobEffect::SlowFalling)
+        || env_state::has_active_effect(file_state, MobEffect::Levitation)
 }
 
 struct FallContext<'a> {
@@ -325,6 +317,7 @@ pub(crate) fn track_horizontal_movement(
             tick_state.set_if_neq(EnvTickState {
                 tick_move_x: tick_state.tick_move_x.max(abs_x),
                 tick_move_z: tick_state.tick_move_z.max(abs_z),
+                ..*tick_state
             });
         }
     }
