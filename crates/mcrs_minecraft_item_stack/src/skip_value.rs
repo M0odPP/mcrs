@@ -108,14 +108,7 @@ pub(crate) fn skip_value(
         AttackRange => skip.bytes(input, 6 * F32),
         Equippable => value(BuiltinKey::Equippable, input),
         DeathProtection => skip.list(input, consume_effect),
-        BlocksAttacks => {
-            skip.bytes(input, 2 * F32)?;
-            skip.list(input, damage_reduction)?;
-            skip.bytes(input, 3 * F32)?;
-            skip.optional(input, ShapeSkip::holder_set)?;
-            skip.optional(input, sound)?;
-            skip.optional(input, sound)
-        }
+        BlocksAttacks => value(BuiltinKey::BlocksAttacks, input),
         PiercingWeapon => value(BuiltinKey::PiercingWeapon, input),
         KineticWeapon => {
             skip.var_int(input)?;
@@ -241,12 +234,6 @@ fn sign_messages(skip: ShapeSkip, input: &mut &[u8]) -> Result<(), WireError> {
 
 fn kinetic_condition(skip: ShapeSkip, input: &mut &[u8]) -> Result<(), WireError> {
     skip.var_int(input)?;
-    skip.bytes(input, 2 * F32)
-}
-
-fn damage_reduction(skip: ShapeSkip, input: &mut &[u8]) -> Result<(), WireError> {
-    skip.bytes(input, F32)?;
-    skip.optional(input, ShapeSkip::holder_set)?;
     skip.bytes(input, 2 * F32)
 }
 

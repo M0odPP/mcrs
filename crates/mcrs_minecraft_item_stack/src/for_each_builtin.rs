@@ -20,6 +20,7 @@ macro_rules! for_each_builtin {
             UseEffects => "use_effects",
             Food => "food",
             Tool => "tool",
+            BlocksAttacks => "blocks_attacks",
             MapId => "map_id",
             MapDecorations => "map_decorations",
             Profile => "profile",

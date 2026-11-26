@@ -33,6 +33,7 @@ use crate::BlockSet;
 use crate::BlockState;
 use crate::BlockStateProperty;
 use crate::BlockTagId;
+use crate::BlocksAttacks;
 use crate::Builtin;
 use crate::BuiltinKey;
 use crate::BundleContents;
@@ -44,6 +45,10 @@ use crate::CustomData;
 use crate::CustomModelData;
 use crate::CustomName;
 use crate::Damage;
+use crate::DamageReduction;
+use crate::DamageTypeId;
+use crate::DamageTypeSet;
+use crate::DamageTypeTagId;
 use crate::DimensionPos;
 use crate::DyeColor;
 use crate::DyedColor;
@@ -66,6 +71,7 @@ use crate::InlineInstrument;
 use crate::Instrument;
 use crate::InstrumentId;
 use crate::InteractAnimation;
+use crate::ItemDamage;
 use crate::ItemModel;
 use crate::ItemName;
 use crate::ItemStack;
@@ -245,6 +251,7 @@ fn read_flat_value<L: NameLookup>(
             interact_vibrations: reader.boolean(input)?,
             speed_multiplier: f32::from_be_bytes(reader.bytes(input)?),
         }),
+        BuiltinKey::BlocksAttacks => Builtin::BlocksAttacks(reader.blocks_attacks(input)?),
         BuiltinKey::CustomName => Builtin::CustomName(CustomName(read_text(input, component)?)),
         BuiltinKey::ItemName => Builtin::ItemName(ItemName(read_text(input, component)?)),
         BuiltinKey::Lore => Builtin::Lore(reader.lore(input)?),
@@ -303,11 +310,43 @@ fn read_flat_value<L: NameLookup>(
     })
 }
 
+struct HolderSetCodec<E: Clone + 'static, S> {
+    tag_table: NameTable,
+    entry_table: NameTable,
+    validate_known: bool,
+    make_tag: fn(u16) -> S,
+    make_entry: fn(u16) -> E,
+    make_list: fn(Cow<'static, [E]>) -> S,
+}
+
+const _: () = {
+    assert!(
+        mem::size_of::<HolderSetCodec<BlockId, BlockSet>>() == 4 * mem::size_of::<usize>(),
+        "HolderSetCodec packs metadata and three function pointers"
+    );
+    assert!(
+        mem::align_of::<HolderSetCodec<BlockId, BlockSet>>() == mem::align_of::<usize>(),
+        "HolderSetCodec aligns to pointer alignment"
+    );
+};
+
 struct Reader<'names, L> {
     component: BuiltinKey,
     names: &'names L,
     depth: u32,
 }
+
+const _: () = {
+    assert!(
+        mem::size_of::<Reader<'static, crate::any_names::AnyNames>>()
+            == mem::size_of::<usize>() + 8,
+        "Reader packs BuiltinKey, lookup reference, and depth"
+    );
+    assert!(
+        mem::align_of::<Reader<'static, crate::any_names::AnyNames>>() == mem::align_of::<usize>(),
+        "Reader aligns to pointer alignment"
+    );
+};
 
 impl<L: NameLookup> Reader<'_, L> {
     fn bad(&self) -> WireError {
@@ -484,28 +523,97 @@ impl<L: NameLookup> Reader<'_, L> {
         Ok(rule)
     }
 
-    fn block_set(&self, input: &mut &[u8]) -> Result<BlockSet, WireError> {
+    fn holder_set<E: Clone + 'static, S>(
+        &self,
+        input: &mut &[u8],
+        codec: HolderSetCodec<E, S>,
+    ) -> Result<S, WireError> {
         let form = self.var_int(input)?;
         if form == HOLDER_SET_TAG {
             let name = self.identifier(input)?;
-            let block_tag =
-                self.names
-                    .id(NameTable::BlockTag, name)
-                    .ok_or(WireError::UnknownEntry {
-                        component: self.component,
-                        table: NameTable::BlockTag,
-                    })?;
-            return Ok(BlockSet::Tag(BlockTagId(block_tag)));
+            let tag = self
+                .names
+                .id(codec.tag_table, name)
+                .ok_or(WireError::UnknownEntry {
+                    component: self.component,
+                    table: codec.tag_table,
+                })?;
+            return Ok((codec.make_tag)(tag));
         }
         let count = usize::try_from(form)
             .ok()
             .and_then(|form| form.checked_sub(1))
             .ok_or(self.bad())?;
-        let mut blocks: Vec<BlockId> = Vec::with_capacity(count.min(input.len()));
+        let mut entries: Vec<E> = Vec::with_capacity(count.min(input.len()));
         for _ in 0..count {
-            blocks.push(BlockId(self.id(input, NameTable::Block)?));
+            let id = if codec.validate_known {
+                self.known_id(input, codec.entry_table)?
+            } else {
+                self.id(input, codec.entry_table)?
+            };
+            entries.push((codec.make_entry)(id));
         }
-        Ok(BlockSet::Blocks(Cow::Owned(blocks)))
+        Ok((codec.make_list)(Cow::Owned(entries)))
+    }
+
+    fn block_set(&self, input: &mut &[u8]) -> Result<BlockSet, WireError> {
+        self.holder_set(
+            input,
+            HolderSetCodec {
+                tag_table: NameTable::BlockTag,
+                entry_table: NameTable::Block,
+                validate_known: false,
+                make_tag: |id| BlockSet::Tag(BlockTagId(id)),
+                make_entry: BlockId,
+                make_list: BlockSet::Blocks,
+            },
+        )
+    }
+
+    fn damage_type_set(&self, input: &mut &[u8]) -> Result<DamageTypeSet, WireError> {
+        self.holder_set(
+            input,
+            HolderSetCodec {
+                tag_table: NameTable::DamageTypeTag,
+                entry_table: NameTable::DamageType,
+                validate_known: true,
+                make_tag: |id| DamageTypeSet::Tag(DamageTypeTagId(id)),
+                make_entry: DamageTypeId,
+                make_list: DamageTypeSet::Types,
+            },
+        )
+    }
+
+    fn blocks_attacks(&self, input: &mut &[u8]) -> Result<BlocksAttacks, WireError> {
+        let block_delay_seconds = f32::from_be_bytes(self.bytes(input)?);
+        let disable_cooldown_scale = f32::from_be_bytes(self.bytes(input)?);
+        let damage_reductions = self.list(input, Self::damage_reduction)?;
+        let item_damage = ItemDamage {
+            threshold: f32::from_be_bytes(self.bytes(input)?),
+            base: f32::from_be_bytes(self.bytes(input)?),
+            factor: f32::from_be_bytes(self.bytes(input)?),
+        };
+        let bypassed_by = self.optional(input, Self::damage_type_set)?;
+        let block_sound = self.optional(input, Self::sound_event)?;
+        let disabled_sound = self.optional(input, Self::sound_event)?;
+        Ok(BlocksAttacks {
+            block_delay_seconds,
+            disable_cooldown_scale,
+            damage_reductions,
+            item_damage,
+            bypassed_by,
+            block_sound,
+            disabled_sound,
+        })
+    }
+
+    fn damage_reduction(&self, input: &mut &[u8]) -> Result<DamageReduction, WireError> {
+        Ok(DamageReduction {
+            horizontal_blocking_angle: f32::from_be_bytes(self.bytes(input)?),
+            kind: self.optional(input, Self::damage_type_set)?,
+            base: f32::from_be_bytes(self.bytes(input)?),
+            factor: f32::from_be_bytes(self.bytes(input)?),
+        })
     }
 
     fn equippable(&self, input: &mut &[u8]) -> Result<Equippable, WireError> {
@@ -580,28 +688,17 @@ impl<L: NameLookup> Reader<'_, L> {
     }
 
     fn entity_type_set(&self, input: &mut &[u8]) -> Result<EntityTypeSet, WireError> {
-        let form = self.var_int(input)?;
-        if form == HOLDER_SET_TAG {
-            let name = self.identifier(input)?;
-            let entity_tag =
-                self.names
-                    .id(NameTable::EntityTypeTag, name)
-                    .ok_or(WireError::UnknownEntry {
-                        component: self.component,
-                        table: NameTable::EntityTypeTag,
-                    })?;
-            return Ok(EntityTypeSet::Tag(EntityTypeTagId(entity_tag)));
-        }
-        let count = usize::try_from(form)
-            .ok()
-            .and_then(|form| form.checked_sub(1))
-            .ok_or(self.bad())?;
-        let mut entity_types: Vec<EntityTypeId> = Vec::with_capacity(count.min(input.len()));
-        for _ in 0..count {
-            let id = self.var_int(input)?;
-            entity_types.push(EntityTypeId(self.named_id(id, NameTable::EntityType)?));
-        }
-        Ok(EntityTypeSet::EntityTypes(Cow::Owned(entity_types)))
+        self.holder_set(
+            input,
+            HolderSetCodec {
+                tag_table: NameTable::EntityTypeTag,
+                entry_table: NameTable::EntityType,
+                validate_known: true,
+                make_tag: |id| EntityTypeSet::Tag(EntityTypeTagId(id)),
+                make_entry: EntityTypeId,
+                make_list: EntityTypeSet::EntityTypes,
+            },
+        )
     }
 
     fn color(&self, input: &mut &[u8]) -> Result<ArgbColor, WireError> {
@@ -896,6 +993,7 @@ pub(crate) fn write_value<L: NameLookup>(
             put_boolean(output, effects.interact_vibrations);
             output.extend_from_slice(&effects.speed_multiplier.to_be_bytes());
         }
+        Builtin::BlocksAttacks(blocks) => writer.blocks_attacks(blocks, output)?,
         Builtin::MapDecorations(_) => writer.saved_form_as_nbt(value, output)?,
         Builtin::Profile(profile) => profile
             .encode(&mut *output)
@@ -1045,25 +1143,88 @@ impl<L: NameLookup> Writer<'_, L> {
         Ok(())
     }
 
+    fn write_holder_tag(
+        &self,
+        tag_table: NameTable,
+        tag: u16,
+        output: &mut Vec<u8>,
+    ) -> Result<(), WireError> {
+        let name = self
+            .names
+            .name(tag_table, tag)
+            .ok_or(WireError::UnnamedId(tag_table))?;
+        put_var_int(output, HOLDER_SET_TAG);
+        self.identifier(name, output)
+    }
+
+    fn write_holder_entries<E>(
+        &self,
+        entries: &[E],
+        entry_id: impl Fn(&E) -> u16,
+        output: &mut Vec<u8>,
+    ) -> Result<(), WireError> {
+        let form = entries.len().checked_add(1).ok_or(WireError::TooLong)?;
+        put_length(output, form)?;
+        for entry in entries {
+            put_var_int(output, i32::from(entry_id(entry)));
+        }
+        Ok(())
+    }
+
     fn block_set(&self, blocks: &BlockSet, output: &mut Vec<u8>) -> Result<(), WireError> {
         match blocks {
             BlockSet::Tag(block_tag) => {
-                let name = self
-                    .names
-                    .name(NameTable::BlockTag, block_tag.0)
-                    .ok_or(WireError::UnnamedId(NameTable::BlockTag))?;
-                put_var_int(output, HOLDER_SET_TAG);
-                self.identifier(name, output)
+                self.write_holder_tag(NameTable::BlockTag, block_tag.0, output)
             }
-            BlockSet::Blocks(blocks) => {
-                let form = blocks.len().checked_add(1).ok_or(WireError::TooLong)?;
-                put_length(output, form)?;
-                for block in blocks.iter() {
-                    put_var_int(output, i32::from(block.0));
-                }
-                Ok(())
+            BlockSet::Blocks(blocks) => self.write_holder_entries(blocks, |block| block.0, output),
+        }
+    }
+
+    fn damage_type_set(
+        &self,
+        damage_types: &DamageTypeSet,
+        output: &mut Vec<u8>,
+    ) -> Result<(), WireError> {
+        match damage_types {
+            DamageTypeSet::Tag(tag) => {
+                self.write_holder_tag(NameTable::DamageTypeTag, tag.0, output)
+            }
+            DamageTypeSet::Types(types) => {
+                self.write_holder_entries(types, |damage_type| damage_type.0, output)
             }
         }
+    }
+
+    fn blocks_attacks(
+        &self,
+        blocks: &BlocksAttacks,
+        output: &mut Vec<u8>,
+    ) -> Result<(), WireError> {
+        output.extend_from_slice(&blocks.block_delay_seconds.to_be_bytes());
+        output.extend_from_slice(&blocks.disable_cooldown_scale.to_be_bytes());
+        self.list(
+            &blocks.damage_reductions,
+            output,
+            |writer, reduction, output| writer.damage_reduction(reduction, output),
+        )?;
+        output.extend_from_slice(&blocks.item_damage.threshold.to_be_bytes());
+        output.extend_from_slice(&blocks.item_damage.base.to_be_bytes());
+        output.extend_from_slice(&blocks.item_damage.factor.to_be_bytes());
+        self.optional(blocks.bypassed_by.as_ref(), output, Self::damage_type_set)?;
+        self.optional(blocks.block_sound.as_ref(), output, Self::sound_event)?;
+        self.optional(blocks.disabled_sound.as_ref(), output, Self::sound_event)
+    }
+
+    fn damage_reduction(
+        &self,
+        reduction: &DamageReduction,
+        output: &mut Vec<u8>,
+    ) -> Result<(), WireError> {
+        output.extend_from_slice(&reduction.horizontal_blocking_angle.to_be_bytes());
+        self.optional(reduction.kind.as_ref(), output, Self::damage_type_set)?;
+        output.extend_from_slice(&reduction.base.to_be_bytes());
+        output.extend_from_slice(&reduction.factor.to_be_bytes());
+        Ok(())
     }
 
     fn equippable(&self, equippable: &Equippable, output: &mut Vec<u8>) -> Result<(), WireError> {
@@ -1342,23 +1503,10 @@ impl<L: NameLookup> Writer<'_, L> {
     ) -> Result<(), WireError> {
         match entity_types {
             EntityTypeSet::Tag(entity_tag) => {
-                let name = self
-                    .names
-                    .name(NameTable::EntityTypeTag, entity_tag.0)
-                    .ok_or(WireError::UnnamedId(NameTable::EntityTypeTag))?;
-                put_var_int(output, HOLDER_SET_TAG);
-                self.identifier(name, output)
+                self.write_holder_tag(NameTable::EntityTypeTag, entity_tag.0, output)
             }
             EntityTypeSet::EntityTypes(entity_types) => {
-                let form = entity_types
-                    .len()
-                    .checked_add(1)
-                    .ok_or(WireError::TooLong)?;
-                put_length(output, form)?;
-                for entity_type in entity_types.iter() {
-                    put_var_int(output, i32::from(entity_type.0));
-                }
-                Ok(())
+                self.write_holder_entries(entity_types, |entity_type| entity_type.0, output)
             }
         }
     }

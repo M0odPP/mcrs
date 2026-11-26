@@ -3,6 +3,7 @@ use alloc::boxed::Box;
 use alloc::format;
 use alloc::string::ToString;
 use alloc::vec::Vec;
+use core::mem;
 use core::num::NonZeroU8;
 use core::ops::RangeInclusive;
 use std::io::Cursor;
@@ -35,6 +36,7 @@ use crate::BlockSet;
 use crate::BlockState;
 use crate::BlockStateProperty;
 use crate::BlockTagId;
+use crate::BlocksAttacks;
 use crate::Builtin;
 use crate::BuiltinKey;
 use crate::BundleContents;
@@ -47,6 +49,10 @@ use crate::CustomData;
 use crate::CustomModelData;
 use crate::CustomName;
 use crate::Damage;
+use crate::DamageReduction;
+use crate::DamageTypeId;
+use crate::DamageTypeSet;
+use crate::DamageTypeTagId;
 use crate::DimensionPos;
 use crate::DyeColor;
 use crate::DyedColor;
@@ -69,6 +75,7 @@ use crate::InlineInstrument;
 use crate::Instrument;
 use crate::InstrumentId;
 use crate::InteractAnimation;
+use crate::ItemDamage;
 use crate::ItemModel;
 use crate::ItemName;
 use crate::ItemStack;
@@ -447,6 +454,7 @@ fn read_flat_value<L: NameLookup>(
         }
         BuiltinKey::Weapon => Builtin::Weapon(reader.weapon(tag)?),
         BuiltinKey::UseEffects => Builtin::UseEffects(reader.use_effects(tag)?),
+        BuiltinKey::BlocksAttacks => Builtin::BlocksAttacks(reader.blocks_attacks(tag)?),
         BuiltinKey::CustomName => Builtin::CustomName(CustomName(read_text(tag, component)?)),
         BuiltinKey::ItemName => Builtin::ItemName(ItemName(read_text(tag, component)?)),
         BuiltinKey::Lore => Builtin::Lore(read_lore(tag)?),
@@ -491,6 +499,25 @@ fn read_flat_value<L: NameLookup>(
         }
     })
 }
+
+struct HolderSetSpecification<E: Clone + 'static, S> {
+    tag_table: NameTable,
+    entry_table: NameTable,
+    make_tag: fn(u16) -> S,
+    make_entry: fn(u16) -> E,
+    make_list: fn(Cow<'static, [E]>) -> S,
+}
+
+const _: () = {
+    assert!(
+        mem::size_of::<HolderSetSpecification<u16, u16>>() == 4 * mem::size_of::<usize>(),
+        "HolderSetSpecification layout matches two table tags and three function pointers"
+    );
+    assert!(
+        mem::align_of::<HolderSetSpecification<u16, u16>>() == mem::align_of::<usize>(),
+        "HolderSetSpecification alignment matches pointer width"
+    );
+};
 
 struct Reader<'names, L> {
     component: BuiltinKey,
@@ -694,29 +721,59 @@ impl<L: NameLookup> Reader<'_, L> {
         from_tag(tag.clone()).map_err(|_| self.bad())
     }
 
-    fn block_set(&self, tag: &NbtTag) -> Result<BlockSet, SavedError> {
-        let mut blocks: Vec<BlockId> = Vec::new();
+    fn holder_set<E: Clone + 'static, S>(
+        &self,
+        tag: &NbtTag,
+        specification: HolderSetSpecification<E, S>,
+    ) -> Result<S, SavedError> {
+        let mut entries: Vec<E> = Vec::new();
         match tag {
             NbtTag::String(text) => {
-                if let Some(block_tag) = text.strip_prefix(TAG_MARKER) {
-                    let block_tag = self.entry(NameTable::BlockTag, self.location(block_tag)?)?;
-                    return Ok(BlockSet::Tag(BlockTagId(block_tag)));
+                if let Some(tag_name) = text.strip_prefix(TAG_MARKER) {
+                    let id = self.entry(specification.tag_table, self.location(tag_name)?)?;
+                    return Ok((specification.make_tag)(id));
                 }
-                blocks.push(self.block(text)?);
+                let id = self.entry(specification.entry_table, self.location(text)?)?;
+                entries.push((specification.make_entry)(id));
             }
             NbtTag::List(list) => {
                 for element in list {
-                    blocks.push(self.block(self.string(element)?)?);
+                    let id = self.entry(
+                        specification.entry_table,
+                        self.location(self.string(element)?)?,
+                    )?;
+                    entries.push((specification.make_entry)(id));
                 }
             }
             _ => return Err(self.bad()),
         }
-        Ok(BlockSet::Blocks(Cow::Owned(blocks)))
+        Ok((specification.make_list)(Cow::Owned(entries)))
     }
 
-    fn block(&self, text: &str) -> Result<BlockId, SavedError> {
-        self.entry(NameTable::Block, self.location(text)?)
-            .map(BlockId)
+    fn block_set(&self, tag: &NbtTag) -> Result<BlockSet, SavedError> {
+        self.holder_set(
+            tag,
+            HolderSetSpecification {
+                tag_table: NameTable::BlockTag,
+                entry_table: NameTable::Block,
+                make_tag: |id| BlockSet::Tag(BlockTagId(id)),
+                make_entry: BlockId,
+                make_list: BlockSet::Blocks,
+            },
+        )
+    }
+
+    fn damage_type_set(&self, tag: &NbtTag) -> Result<DamageTypeSet, SavedError> {
+        self.holder_set(
+            tag,
+            HolderSetSpecification {
+                tag_table: NameTable::DamageTypeTag,
+                entry_table: NameTable::DamageType,
+                make_tag: |id| DamageTypeSet::Tag(DamageTypeTagId(id)),
+                make_entry: DamageTypeId,
+                make_list: DamageTypeSet::Types,
+            },
+        )
     }
 
     fn equippable(&self, tag: &NbtTag) -> Result<Equippable, SavedError> {
@@ -777,24 +834,16 @@ impl<L: NameLookup> Reader<'_, L> {
     }
 
     fn entity_type_set(&self, tag: &NbtTag) -> Result<EntityTypeSet, SavedError> {
-        let mut entity_types: Vec<EntityTypeId> = Vec::new();
-        match tag {
-            NbtTag::String(text) => {
-                if let Some(entity_tag) = text.strip_prefix(TAG_MARKER) {
-                    let entity_tag =
-                        self.entry(NameTable::EntityTypeTag, self.location(entity_tag)?)?;
-                    return Ok(EntityTypeSet::Tag(EntityTypeTagId(entity_tag)));
-                }
-                entity_types.push(self.entity_type(text)?);
-            }
-            NbtTag::List(list) => {
-                for element in list {
-                    entity_types.push(self.entity_type(self.string(element)?)?);
-                }
-            }
-            _ => return Err(self.bad()),
-        }
-        Ok(EntityTypeSet::EntityTypes(Cow::Owned(entity_types)))
+        self.holder_set(
+            tag,
+            HolderSetSpecification {
+                tag_table: NameTable::EntityTypeTag,
+                entry_table: NameTable::EntityType,
+                make_tag: |id| EntityTypeSet::Tag(EntityTypeTagId(id)),
+                make_entry: EntityTypeId,
+                make_list: EntityTypeSet::EntityTypes,
+            },
+        )
     }
 
     fn entity_type(&self, text: &str) -> Result<EntityTypeId, SavedError> {
@@ -1213,6 +1262,80 @@ impl<L: NameLookup> Reader<'_, L> {
             can_sprint,
             interact_vibrations,
             speed_multiplier,
+        })
+    }
+
+    fn blocks_attacks(&self, tag: &NbtTag) -> Result<BlocksAttacks, SavedError> {
+        let map = self.map(tag)?;
+        let block_delay_seconds = match map.get("block_delay_seconds") {
+            Some(tag) => {
+                let seconds = self.float(tag)?;
+                if !is_use_duration(seconds) {
+                    return Err(SavedError::OutOfRange(self.component));
+                }
+                seconds
+            }
+            None => BlocksAttacks::DEFAULT_BLOCK_DELAY_SECONDS,
+        };
+        let disable_cooldown_scale = match map.get("disable_cooldown_scale") {
+            Some(tag) => {
+                let scale = self.float(tag)?;
+                if !is_use_duration(scale) {
+                    return Err(SavedError::OutOfRange(self.component));
+                }
+                scale
+            }
+            None => BlocksAttacks::DEFAULT_DISABLE_COOLDOWN_SCALE,
+        };
+        let damage_reductions = match map.get("damage_reductions") {
+            Some(tag) => self.each(self.list(tag)?, Self::damage_reduction)?,
+            None => alloc::vec![DamageReduction::default()],
+        };
+        let item_damage = match map.get("item_damage") {
+            Some(tag) => self.item_damage(tag)?,
+            None => ItemDamage::default(),
+        };
+        Ok(BlocksAttacks {
+            block_delay_seconds,
+            disable_cooldown_scale,
+            damage_reductions,
+            item_damage,
+            bypassed_by: self.optional(map, "bypassed_by", Self::damage_type_set)?,
+            block_sound: self.optional(map, "block_sound", Self::sound_event)?,
+            disabled_sound: self.optional(map, "disabled_sound", Self::sound_event)?,
+        })
+    }
+
+    fn damage_reduction(&self, tag: &NbtTag) -> Result<DamageReduction, SavedError> {
+        let map = self.map(tag)?;
+        let horizontal_blocking_angle = match map.get("horizontal_blocking_angle") {
+            Some(tag) => {
+                let angle = self.float(tag)?;
+                if !is_instrument_range(angle) {
+                    return Err(SavedError::OutOfRange(self.component));
+                }
+                angle
+            }
+            None => DamageReduction::DEFAULT_HORIZONTAL_BLOCKING_ANGLE,
+        };
+        Ok(DamageReduction {
+            horizontal_blocking_angle,
+            kind: self.optional(map, "type", Self::damage_type_set)?,
+            base: self.float(self.necessary(map, "base")?)?,
+            factor: self.float(self.necessary(map, "factor")?)?,
+        })
+    }
+
+    fn item_damage(&self, tag: &NbtTag) -> Result<ItemDamage, SavedError> {
+        let map = self.map(tag)?;
+        let threshold = self.float(self.necessary(map, "threshold")?)?;
+        if !is_use_duration(threshold) {
+            return Err(SavedError::OutOfRange(self.component));
+        }
+        Ok(ItemDamage {
+            threshold,
+            base: self.float(self.necessary(map, "base")?)?,
+            factor: self.float(self.necessary(map, "factor")?)?,
         })
     }
 }

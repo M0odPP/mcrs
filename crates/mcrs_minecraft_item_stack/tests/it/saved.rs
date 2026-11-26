@@ -102,6 +102,8 @@ impl Names {
             NameTable::SoundEvent => &["item.armor.equip_iron", "entity.item.break"],
             NameTable::EntityType => &["pig", "zombie"],
             NameTable::EntityTypeTag => &["skeletons"],
+            NameTable::DamageType => &["in_fire", "lava"],
+            NameTable::DamageTypeTag => &["bypasses_shield"],
             NameTable::MobEffect => &["speed", "slowness", "haste"],
             NameTable::Potion => &["water"],
             NameTable::TrimMaterial => &["amethyst"],
@@ -936,7 +938,7 @@ fn weapon_round_trips_and_validates_saved_form() {
 }
 
 #[test]
-fn use_effects_validates_ranges_in_saved_form() {
+fn use_effects_and_blocks_attacks_validate_ranges_in_saved_form() {
     for bad_speed in [-0.0_f32, 1.5_f32] {
         let mut effects = NbtCompound::new();
         effects.put("speed_multiplier", NbtTag::Float(bad_speed));
@@ -947,4 +949,48 @@ fn use_effects_validates_ranges_in_saved_form() {
             "expected out of range for speed_multiplier={bad_speed}"
         );
     }
+
+    let mut bad_delay = NbtCompound::new();
+    bad_delay.put("block_delay_seconds", NbtTag::Float(-0.0));
+    assert_eq!(
+        read_saved(
+            &with_component("blocks_attacks", NbtTag::Compound(bad_delay)),
+            &Names
+        ),
+        Err(SavedError::OutOfRange(BuiltinKey::BlocksAttacks)),
+        "expected out of range for block_delay_seconds=-0.0"
+    );
+
+    let mut bad_angle = NbtCompound::new();
+    bad_angle.put("horizontal_blocking_angle", NbtTag::Float(0.0));
+    bad_angle.put("base", NbtTag::Float(0.0));
+    bad_angle.put("factor", NbtTag::Float(1.0));
+    let mut bad_blocks = NbtCompound::new();
+    bad_blocks.put(
+        "damage_reductions",
+        NbtTag::List(vec![NbtTag::Compound(bad_angle)]),
+    );
+    assert_eq!(
+        read_saved(
+            &with_component("blocks_attacks", NbtTag::Compound(bad_blocks)),
+            &Names
+        ),
+        Err(SavedError::OutOfRange(BuiltinKey::BlocksAttacks)),
+        "expected out of range for horizontal_blocking_angle=0.0"
+    );
+
+    let mut bad_threshold = NbtCompound::new();
+    bad_threshold.put("threshold", NbtTag::Float(-0.0));
+    bad_threshold.put("base", NbtTag::Float(0.0));
+    bad_threshold.put("factor", NbtTag::Float(1.0));
+    let mut bad_item_damage = NbtCompound::new();
+    bad_item_damage.put("item_damage", NbtTag::Compound(bad_threshold));
+    assert_eq!(
+        read_saved(
+            &with_component("blocks_attacks", NbtTag::Compound(bad_item_damage)),
+            &Names
+        ),
+        Err(SavedError::OutOfRange(BuiltinKey::BlocksAttacks)),
+        "expected out of range for item_damage.threshold=-0.0"
+    );
 }

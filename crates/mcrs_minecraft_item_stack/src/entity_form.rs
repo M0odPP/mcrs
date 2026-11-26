@@ -4,6 +4,7 @@ use crate::AttackAnimation;
 use crate::AttributeModifiers;
 use crate::BannerPatterns;
 use crate::Bees;
+use crate::BlocksAttacks;
 use crate::BundleContents;
 use crate::ChargedProjectiles;
 use crate::Container;
@@ -58,6 +59,7 @@ impl EntityForm for Unbreakable {}
 
 impl EntityForm for Food {}
 impl EntityForm for UseEffects {}
+impl EntityForm for BlocksAttacks {}
 
 impl EntityForm for MapId {}
 
