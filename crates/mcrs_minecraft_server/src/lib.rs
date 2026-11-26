@@ -32,6 +32,7 @@ use mcrs_minecraft_vanilla_inventory::InventoryPersistencePlugin;
 use mcrs_minecraft_vanilla_light::LightingPlugin;
 use mcrs_minecraft_vanilla_player_attack::PlayerAttackPlugin;
 use mcrs_minecraft_vanilla_respawn::RespawnPlugin;
+use mcrs_minecraft_vanilla_weather::{VanillaWeatherDimensionPlugin, VanillaWeatherHostPlugin};
 
 pub use falling_blocks::VanillaFallingBlockPlugin;
 pub use item_entities::VanillaItemEntityPlugin;
@@ -104,6 +105,7 @@ impl PluginGroup for MinecraftServerPlugins {
             .add(VanillaSwingPlugin)
             .add(VanillaPlayerAttackPlugin)
             .add(VanillaHungerPlugin)
+            .add(VanillaWeatherPlugin)
             .add(self.world_gen)
             .add(LightingPlugin)
             .add(self.network)
@@ -212,5 +214,14 @@ impl Plugin for VanillaChatPlugin {
     fn build(&self, app: &mut App) {
         app.add_dimension_plugin(ChatPlugin);
         app.add_dimension_plugin(operator_broadcast::OperatorBroadcastPlugin);
+    }
+}
+
+pub struct VanillaWeatherPlugin;
+
+impl Plugin for VanillaWeatherPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins(VanillaWeatherHostPlugin)
+            .add_dimension_plugin(VanillaWeatherDimensionPlugin);
     }
 }

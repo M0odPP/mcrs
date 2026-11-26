@@ -7110,8 +7110,10 @@ dependencies = [
  "mcrs_minecraft_vanilla_player_attack",
  "mcrs_minecraft_vanilla_respawn",
  "mcrs_minecraft_vanilla_swing",
+ "mcrs_minecraft_vanilla_weather",
  "mcrs_minecraft_vanilla_worldgen",
  "mcrs_minecraft_volume",
+ "mcrs_minecraft_weather",
  "mcrs_minecraft_worldgen_builtin",
  "mcrs_minecraft_worldgen_density",
  "mcrs_minecraft_worldgen_generator",
@@ -7585,6 +7587,21 @@ dependencies = [
  "mcrs_minecraft_protocol_game",
  "mcrs_minecraft_registries",
  "mcrs_voxel",
+]
+
+[[package]]
+name = "mcrs_minecraft_vanilla_weather"
+version = "0.5.8"
+dependencies = [
+ "bevy_app",
+ "bevy_ecs",
+ "mcrs_minecraft_dimension_environment",
+ "mcrs_minecraft_engine",
+ "mcrs_minecraft_engine_world",
+ "mcrs_minecraft_game_rule",
+ "mcrs_minecraft_protocol_game",
+ "mcrs_minecraft_weather",
+ "smallvec",
 ]
 
 [[package]]

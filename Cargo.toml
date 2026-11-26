@@ -224,6 +224,7 @@ mcrs_minecraft_vanilla_player_attack = { path = "crates/mcrs_minecraft_vanilla_p
 mcrs_minecraft_vanilla_respawn = { path = "crates/mcrs_minecraft_vanilla_respawn" }
 mcrs_minecraft_vanilla_death = { path = "crates/mcrs_minecraft_vanilla_death" }
 mcrs_minecraft_vanilla_hunger = { path = "crates/mcrs_minecraft_vanilla_hunger" }
+mcrs_minecraft_vanilla_weather = { path = "crates/mcrs_minecraft_vanilla_weather" }
 mcrs_minecraft_player_holders = { path = "crates/mcrs_minecraft_player_holders" }
 mcrs_minecraft_inventory_server = { path = "crates/mcrs_minecraft_inventory_server" }
 mcrs_minecraft_inventory_transaction = { path = "crates/mcrs_minecraft_inventory_transaction" }
