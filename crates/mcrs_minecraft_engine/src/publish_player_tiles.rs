@@ -22,6 +22,7 @@ use crate::game_mode::ListedGameMode;
 use crate::game_profile::GameProfile;
 use crate::hot_ticket::CellCrossing;
 use crate::network_id::player_network_id;
+use crate::own_equipment::OwnEquipment;
 use crate::player_sprinting::PlayerSprinting;
 use crate::publish_pose::pose_entries;
 use crate::replicated::{Replicated, Visibility};
@@ -78,6 +79,7 @@ pub fn publish_player_tiles(
                 &ShiftKey,
                 &PlayerSprinting,
                 Option<&Vitals>,
+                Option<&OwnEquipment>,
             ),
             Has<HiddenPlayer>,
         ),
@@ -96,7 +98,7 @@ pub fn publish_player_tiles(
         announce,
         crossed,
         attributes,
-        (&body_pose, &shift, &sprinting, vitals),
+        (&body_pose, &shift, &sprinting, vitals, own_equipment),
         hidden,
     ) in &mut players
     {
@@ -128,7 +130,7 @@ pub fn publish_player_tiles(
                         game_mode,
                         attributes: attributes.map(stored_attributes).unwrap_or_default(),
                         entries: pose_entries(body_pose, shift, sprinting, vitals),
-                        equipment: Vec::new(),
+                        equipment: own_equipment.map_or_else(Vec::new, OwnEquipment::to_wire_vec),
                     })
                     .into(),
                 ),
@@ -252,4 +254,87 @@ fn presence(profile: &GameProfile, key: &'static str) -> Option<Bytes> {
         overlay: false,
     })
     .ok()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bevy_ecs::message::MessageRegistry;
+    use bevy_ecs::system::{IntoSystem, System};
+    use mcrs_minecraft_equipment::EquipSlot;
+    use mcrs_minecraft_protocol_game::entity::EquipmentSlot;
+    use mcrs_minecraft_protocol_game::item::ProtoStack;
+    use mcrs_minecraft_registries::Wire;
+    use mcrs_minecraft_replication::ReplicationData;
+    use mcrs_minecraft_resource::Id;
+
+    fn wire_stack(raw: u16, count: i32) -> ProtoStack<Wire> {
+        let id = Id::checked(raw, 4096).expect("id").into();
+        ProtoStack {
+            count,
+            id,
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn publish_player_tiles_seeds_spawn_equipment_and_omits_when_empty() {
+        let mut world = bevy_ecs::world::World::new();
+        world.init_resource::<TileEvents>();
+        MessageRegistry::register_message::<crate::bus::InboundPlayerDespawn>(&mut world);
+        let dim = world.spawn(DimensionTypeConfig::new(-64, 384)).id();
+
+        let mut eq = OwnEquipment::default();
+        eq.0.set(EquipSlot::MainHand, Some(wire_stack(10, 1)));
+        eq.0.set(EquipSlot::Head, Some(wire_stack(20, 1)));
+        let base = || {
+            (
+                Player,
+                Transform::default(),
+                InDimension(dim),
+                mcrs_minecraft_pose::Pose::default(),
+                ShiftKey::default(),
+                PlayerSprinting::default(),
+            )
+        };
+        let armed = world.spawn((base(), Owner(PlayerSession(1)), eq)).id();
+        let empty = world
+            .spawn((base(), Owner(PlayerSession(2)), OwnEquipment::default()))
+            .id();
+
+        let mut sys = IntoSystem::into_system(publish_player_tiles);
+        sys.initialize(&mut world);
+        let _ = sys.run((), &mut world);
+        sys.apply_deferred(&mut world);
+
+        assert!(
+            world.get::<Replicated>(armed).is_some() && world.get::<Replicated>(empty).is_some(),
+            "spawn attaches Replicated"
+        );
+        let taken = world.resource_mut::<TileEvents>().take();
+        let spawns: Vec<_> = taken
+            .tiles
+            .iter()
+            .flat_map(|d| d.events.iter())
+            .filter_map(|ev| match &ev.event {
+                EntityEvent::Spawn(ReplicationData::Player(PlayerData::Spawn(s))) => {
+                    Some((s.viewer, s.equipment.clone()))
+                }
+                _ => None,
+            })
+            .collect();
+        assert_eq!(
+            spawns,
+            vec![
+                (
+                    ViewerId(1),
+                    vec![
+                        (EquipmentSlot::MainHand, wire_stack(10, 1)),
+                        (EquipmentSlot::Head, wire_stack(20, 1))
+                    ]
+                ),
+                (ViewerId(2), Vec::new()),
+            ]
+        );
+    }
 }

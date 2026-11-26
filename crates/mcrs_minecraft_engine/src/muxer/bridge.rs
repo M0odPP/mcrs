@@ -653,6 +653,7 @@ fn write_payload<W: WritePacket>(sink: &mut W, data: PacketPayload) -> anyhow::R
         PacketPayload::SetCursorItem(p) => sink.write_packet_fallible(&p),
         PacketPayload::OpenScreen(p) => sink.write_packet_fallible(&p),
         PacketPayload::ContainerClose(p) => sink.write_packet_fallible(&p),
+        PacketPayload::Sound(p) => sink.write_packet_fallible(&p),
     }
 }
 
@@ -1043,5 +1044,73 @@ mod tests {
             });
 
         run(&mut world, bridge_player_attach);
+    }
+
+    #[test]
+    fn outbound_sound_packet_encodes_once_and_reaches_player_set() {
+        use mcrs_minecraft_protocol::{Decode, Packet, VarInt};
+        use mcrs_minecraft_protocol_game::clientbound::ClientboundSound;
+        use mcrs_minecraft_registries::{Ref, WireId};
+        use smallvec::smallvec;
+
+        let mut world = world();
+        world.init_resource::<BridgeTelemetry>();
+        world.init_resource::<PendingConnections>();
+        MessageRegistry::register_message::<OutboundPlayerPacket>(&mut world);
+
+        let anchor_a = world.spawn(SessionBundle::new(PlayerSession(11))).id();
+        let anchor_b = world.spawn(SessionBundle::new(PlayerSession(12))).id();
+        let conn_a = world
+            .spawn((HostAnchorRef(anchor_a), OutboundQueue::default()))
+            .id();
+        let conn_b = world
+            .spawn((HostAnchorRef(anchor_b), OutboundQueue::default()))
+            .id();
+
+        let sound = ClientboundSound {
+            sound_event: Ref::Id(WireId::new(1)),
+            source: ClientboundSound::SOURCE_PLAYERS,
+            x: ClientboundSound::eighths(0.5),
+            y: ClientboundSound::eighths(-60.0),
+            z: ClientboundSound::eighths(0.5),
+            volume: 1.0,
+            pitch: 1.0,
+            seed: 42,
+        };
+        world
+            .resource_mut::<Messages<OutboundPlayerPacket>>()
+            .write(OutboundPlayerPacket::sound(
+                PacketTarget::PlayerSet(smallvec![PlayerSession(11), PlayerSession(12)]),
+                sound.clone(),
+            ));
+
+        run(&mut world, bridge_outbound);
+
+        let qa = world.get::<OutboundQueue>(conn_a).expect("queue A");
+        let qb = world.get::<OutboundQueue>(conn_b).expect("queue B");
+        let Some(QueuedPacket::Encoded(pa)) = qa.iter().next() else {
+            panic!("expected pre-encoded packet in queue A");
+        };
+        let Some(QueuedPacket::Encoded(pb)) = qb.iter().next() else {
+            panic!("expected pre-encoded packet in queue B");
+        };
+        assert_eq!(qa.total_len(), 1);
+        assert_eq!(qb.total_len(), 1);
+        assert!(
+            std::ptr::eq(pa.packet.as_ptr(), pb.packet.as_ptr()),
+            "PlayerSet broadcast must share encoded ClientboundSound bytes"
+        );
+        let mut reader = pa.packet.as_ref();
+        assert_eq!(
+            VarInt::decode(&mut reader).expect("packet id").0,
+            ClientboundSound::ID
+        );
+        let decoded = ClientboundSound::decode(&mut reader).expect("decode sound");
+        assert!(
+            reader.is_empty(),
+            "{} trailing bytes left after decoding sound packet",
+            reader.len()
+        );
+        assert_eq!(decoded, sound);
     }
 }

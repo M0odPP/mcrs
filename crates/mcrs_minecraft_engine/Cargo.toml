@@ -16,6 +16,7 @@ mcrs_minecraft_entity_key = { workspace = true, features = ["bevy"] }
 time.workspace = true
 mcrs_minecraft_protocol_game.workspace = true
 mcrs_minecraft_pose = { workspace = true, features = ["bevy"] }
+mcrs_minecraft_equipment.workspace = true
 mcrs_minecraft_swing = { workspace = true, features = ["bevy"] }
 mcrs_minecraft_physics.workspace = true
 mcrs_minecraft_text.workspace = true
