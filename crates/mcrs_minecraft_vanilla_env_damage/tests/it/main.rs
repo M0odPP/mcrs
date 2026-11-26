@@ -1,5 +1,7 @@
 #![expect(clippy::expect_used, reason = "integration tests")]
 
+mod hazards;
+
 use bevy_app::{App, FixedUpdate};
 use bevy_ecs::entity::Entity;
 use bevy_ecs::message::Messages;
@@ -53,7 +55,7 @@ use mcrs_minecraft_volume::BlockVolumeMut;
 use mcrs_voxel::{BlockPos, BlockStateId, SectionPos};
 
 #[derive(Resource, Default)]
-struct RecordedPendingOrder(Vec<u32>);
+pub(crate) struct RecordedPendingOrder(pub(crate) Vec<u32>);
 
 fn record_pending_order(pending: Res<PendingHits>, mut order: ResMut<RecordedPendingOrder>) {
     order.0.clear();
@@ -88,7 +90,7 @@ fn spawn_player(app: &mut App, session: u64, translation: DVec3) -> Entity {
         .id()
 }
 
-fn build_test_app() -> (App, Entity, Entity) {
+pub(crate) fn build_test_app() -> (App, Entity, Entity) {
     let mut app = App::new();
     app.add_plugins((
         DimensionPlugin,
@@ -122,7 +124,7 @@ fn build_test_app() -> (App, Entity, Entity) {
     (app, dimension, player)
 }
 
-fn set_block(app: &mut App, dimension: Entity, position: BlockPos, state: BlockStateId) {
+pub(crate) fn set_block(app: &mut App, dimension: Entity, position: BlockPos, state: BlockStateId) {
     let section_pos = SectionPos::from(position);
     let already_loaded = app
         .world()
@@ -155,7 +157,7 @@ fn set_block(app: &mut App, dimension: Entity, position: BlockPos, state: BlockS
     view.set_block(position, state).expect("set test block");
 }
 
-fn block_property_state(
+pub(crate) fn block_property_state(
     blocks: &Blocks,
     identifier: &str,
     key: &str,
