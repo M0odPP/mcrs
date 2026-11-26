@@ -7131,6 +7131,7 @@ dependencies = [
  "mcrs_minecraft_entity_attribute",
  "mcrs_minecraft_entity_key",
  "mcrs_minecraft_environment",
+ "mcrs_minecraft_equipment",
  "mcrs_minecraft_falling_block",
  "mcrs_minecraft_fixtures",
  "mcrs_minecraft_game_mode",
