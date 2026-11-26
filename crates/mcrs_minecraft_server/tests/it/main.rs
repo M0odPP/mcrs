@@ -44,6 +44,7 @@ mod disconnect;
 mod durability;
 mod entity_ids;
 mod entity_replication;
+mod env_damage;
 mod epoch_round_trip;
 mod equipment_sync;
 mod falling_block;
