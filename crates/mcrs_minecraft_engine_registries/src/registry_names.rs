@@ -1,6 +1,7 @@
 use mcrs_minecraft_block::block_keys::Block;
 use mcrs_minecraft_entity::damage_type::DamageType;
 use mcrs_minecraft_entity::entity_type_keys::EntityType;
+use mcrs_minecraft_entity::mob_effect_keys::MobEffect;
 use mcrs_minecraft_item_stack::NameLookup;
 use mcrs_minecraft_item_stack::NameTable;
 use mcrs_minecraft_item_table::ItemTable;
@@ -15,6 +16,7 @@ pub struct RegistryNames<'a> {
     block_tags: Option<Tags<Block>>,
     entity_type_tags: Option<Tags<EntityType>>,
     damage_type_tags: Option<Tags<DamageType>>,
+    mob_effect_tags: Option<Tags<MobEffect>>,
 }
 
 impl<'a> RegistryNames<'a> {
@@ -26,6 +28,7 @@ impl<'a> RegistryNames<'a> {
             block_tags: registries.tags::<Block>(),
             entity_type_tags: registries.tags::<EntityType>(),
             damage_type_tags: registries.tags::<DamageType>(),
+            mob_effect_tags: registries.tags::<MobEffect>(),
         }
     }
 
@@ -36,6 +39,7 @@ impl<'a> RegistryNames<'a> {
             block_tags: registries.tags::<Block>(),
             entity_type_tags: registries.tags::<EntityType>(),
             damage_type_tags: registries.tags::<DamageType>(),
+            mob_effect_tags: registries.tags::<MobEffect>(),
         }
     }
 }
@@ -141,6 +145,9 @@ impl NameLookup for RegistryNames<'_> {
         if table == NameTable::DamageTypeTag {
             return tag_id(self.damage_type_tags.as_ref()?, name);
         }
+        if table == NameTable::MobEffectTag {
+            return tag_id(self.mob_effect_tags.as_ref()?, name);
+        }
         let key = ResourceLocation::read(registry_key(table)?).ok()?;
         self.registries.id_of(key, name)
     }
@@ -157,6 +164,9 @@ impl NameLookup for RegistryNames<'_> {
         }
         if table == NameTable::DamageTypeTag {
             return tag_name(self.damage_type_tags.as_ref()?, id);
+        }
+        if table == NameTable::MobEffectTag {
+            return tag_name(self.mob_effect_tags.as_ref()?, id);
         }
         let key = ResourceLocation::read(registry_key(table)?).ok()?;
         let names = self.registries.names_of(key)?;

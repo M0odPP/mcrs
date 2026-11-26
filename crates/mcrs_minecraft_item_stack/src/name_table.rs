@@ -12,6 +12,7 @@ pub enum NameTable {
     EntityType,
     EntityTypeTag,
     MobEffect,
+    MobEffectTag,
     DamageType,
     DamageTypeTag,
     Potion,
