@@ -1,0 +1,18 @@
+[package]
+name = "mcrs_minecraft_env_damage"
+description = "Pure no_std environmental damage rules for fall, fire, air, freeze, suffocation, contact, void, and world border."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+doctest = false
+
+[dependencies]
+libm.workspace = true
+
+[dev-dependencies]
+mcrs_test_alloc.workspace = true
+
+[lints]
+workspace = true

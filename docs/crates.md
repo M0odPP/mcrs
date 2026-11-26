@@ -244,6 +244,7 @@ Use the crate that owns the item. Do not write a second copy.
 - `mcrs_minecraft_decorated_pot_pattern`: The decorated pot pattern registry value and its keys
 - `mcrs_minecraft_durability`: Pure item durability math, unbreaking rolls, armour bypass and slot break events without Bevy
 - `mcrs_minecraft_enchantment`: The enchantment file and the keys of the enchantment registries
+- `mcrs_minecraft_env_damage`: Pure no_std environmental damage rules for fall, fire, air, freeze, suffocation, contact, void, and world border.
 - `mcrs_minecraft_environment`: Environment attributes, timelines and world clocks
 - `mcrs_minecraft_equipment`: Pure equipment slot mapping, snapshot comparison, and hand-swap suppression rules for replicated players
 - `mcrs_minecraft_falling_block`: The rules of a falling block: which blocks fall, the start, the tick and the landing
