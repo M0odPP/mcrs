@@ -116,6 +116,14 @@ impl Registries {
                 NameTable::EntityTypeTag,
                 pack_table(&vanilla_dir().join("tags/entity_type")),
             ),
+            (
+                NameTable::DamageType,
+                pack_table(&vanilla_dir().join("damage_type")),
+            ),
+            (
+                NameTable::DamageTypeTag,
+                pack_table(&vanilla_dir().join("tags/damage_type")),
+            ),
         ]);
         Self { tables }
     }

@@ -67,6 +67,7 @@ impl Names {
             NameTable::Instrument => &[(4, "ponder_goat_horn")],
             NameTable::Potion => &[(13, "swiftness")],
             NameTable::PaintingVariant => &[(0, "alban"), (1, "aztec"), (24, "kebab")],
+            NameTable::DamageType => &[(21, "in_fire"), (24, "lava")],
             _ => &[],
         };
         let indexed: &'static [&'static str] = match table {
@@ -74,6 +75,7 @@ impl Names {
             NameTable::ComponentType => &COMPONENT_TYPES,
             NameTable::MapDecorationType => &["player", "red_x", "target_x", "banner_red"],
             NameTable::EntityTypeTag => &["skeletons"],
+            NameTable::DamageTypeTag => &["bypasses_shield"],
             NameTable::MobEffect => &["speed", "slowness", "haste"],
             NameTable::Potion => &["water"],
             NameTable::TrimMaterial => &["amethyst"],
@@ -299,6 +301,7 @@ fn a_component_has_the_hash_that_the_game_recorded() {
         "tool",
         "piercing_weapon",
         "use_effects",
+        "blocks_attacks",
         "attack_animation",
         "interact_animation",
         "map_id",

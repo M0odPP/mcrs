@@ -1,4 +1,5 @@
 use mcrs_minecraft_block::block_keys::Block;
+use mcrs_minecraft_entity::damage_type::DamageType;
 use mcrs_minecraft_entity::entity_type_keys::EntityType;
 use mcrs_minecraft_item_stack::NameLookup;
 use mcrs_minecraft_item_stack::NameTable;
@@ -13,6 +14,7 @@ pub struct RegistryNames<'a> {
     items: Option<&'a ItemTable>,
     block_tags: Option<Tags<Block>>,
     entity_type_tags: Option<Tags<EntityType>>,
+    damage_type_tags: Option<Tags<DamageType>>,
 }
 
 impl<'a> RegistryNames<'a> {
@@ -23,6 +25,7 @@ impl<'a> RegistryNames<'a> {
             items: Some(items),
             block_tags: registries.tags::<Block>(),
             entity_type_tags: registries.tags::<EntityType>(),
+            damage_type_tags: registries.tags::<DamageType>(),
         }
     }
 
@@ -32,6 +35,7 @@ impl<'a> RegistryNames<'a> {
             items: None,
             block_tags: registries.tags::<Block>(),
             entity_type_tags: registries.tags::<EntityType>(),
+            damage_type_tags: registries.tags::<DamageType>(),
         }
     }
 }
@@ -41,7 +45,7 @@ pub(crate) struct NamedRegistry {
     pub(crate) key: &'static str,
 }
 
-pub(crate) const NAMED_REGISTRIES: [NamedRegistry; 14] = [
+pub(crate) const NAMED_REGISTRIES: [NamedRegistry; 15] = [
     NamedRegistry {
         table: NameTable::Attribute,
         key: "minecraft:attribute",
@@ -98,6 +102,10 @@ pub(crate) const NAMED_REGISTRIES: [NamedRegistry; 14] = [
         table: NameTable::PaintingVariant,
         key: "minecraft:painting_variant",
     },
+    NamedRegistry {
+        table: NameTable::DamageType,
+        key: "minecraft:damage_type",
+    },
 ];
 
 fn registry_key(table: NameTable) -> Option<&'static str> {
@@ -130,6 +138,9 @@ impl NameLookup for RegistryNames<'_> {
         if table == NameTable::EntityTypeTag {
             return tag_id(self.entity_type_tags.as_ref()?, name);
         }
+        if table == NameTable::DamageTypeTag {
+            return tag_id(self.damage_type_tags.as_ref()?, name);
+        }
         let key = ResourceLocation::read(registry_key(table)?).ok()?;
         self.registries.id_of(key, name)
     }
@@ -143,6 +154,9 @@ impl NameLookup for RegistryNames<'_> {
         }
         if table == NameTable::EntityTypeTag {
             return tag_name(self.entity_type_tags.as_ref()?, id);
+        }
+        if table == NameTable::DamageTypeTag {
+            return tag_name(self.damage_type_tags.as_ref()?, id);
         }
         let key = ResourceLocation::read(registry_key(table)?).ok()?;
         let names = self.registries.names_of(key)?;

@@ -1,4 +1,5 @@
 use mcrs_minecraft_block::block_keys::Block;
+use mcrs_minecraft_entity::damage_type::DamageType;
 use mcrs_minecraft_entity::entity_type_keys::EntityType;
 use mcrs_minecraft_registries::Registries;
 use mcrs_minecraft_registries::Tags;
@@ -15,6 +16,7 @@ pub struct ItemTableInputs {
     names: [Vec<ResourceLocationBuf>; NAMED_REGISTRIES.len()],
     block_tags: Vec<TagName>,
     entity_type_tags: Vec<TagName>,
+    damage_type_tags: Vec<TagName>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -31,6 +33,7 @@ impl ItemTableInputs {
             names: NAMED_REGISTRIES.map(|named| names(registries, named.key)),
             block_tags: tag_names(registries.tags::<Block>()),
             entity_type_tags: tag_names(registries.tags::<EntityType>()),
+            damage_type_tags: tag_names(registries.tags::<DamageType>()),
         }
     }
 }

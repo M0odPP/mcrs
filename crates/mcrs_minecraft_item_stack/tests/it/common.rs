@@ -200,10 +200,14 @@ const OLDER_RECORDS: [(&str, &str); 5] = [
     ("item_model", "item_model"),
 ];
 
-const HOLDERS: [(&str, &str); 9] = [
+const HOLDERS: [(&str, &str); 13] = [
     ("piercing_weapon_default", "piercing_weapon"),
     ("piercing_weapon_explicit", "piercing_weapon"),
     ("piercing_weapon_full", "piercing_weapon"),
+    ("blocks_attacks_default", "blocks_attacks"),
+    ("blocks_attacks_neg_zero", "blocks_attacks"),
+    ("blocks_attacks_explicit", "blocks_attacks"),
+    ("blocks_attacks_full", "blocks_attacks"),
     ("trim_ref", "trim"),
     ("trim_inline", "trim"),
     ("trim_mixed", "trim"),

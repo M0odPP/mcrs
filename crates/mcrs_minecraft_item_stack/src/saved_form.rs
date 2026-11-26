@@ -1,3 +1,4 @@
+use core::mem;
 use core::ops::RangeInclusive;
 
 use mcrs_minecraft_resource::ResourceLocation;
@@ -10,6 +11,7 @@ use crate::BannerLayer;
 use crate::BannerPatterns;
 use crate::Bees;
 use crate::BlockSet;
+use crate::BlocksAttacks;
 use crate::Builtin;
 use crate::BuiltinKey;
 use crate::BundleContents;
@@ -21,6 +23,9 @@ use crate::CustomData;
 use crate::CustomModelData;
 use crate::CustomName;
 use crate::Damage;
+use crate::DamageReduction;
+use crate::DamageTypeId;
+use crate::DamageTypeSet;
 use crate::DyedColor;
 use crate::EffectInstance;
 use crate::EnchantmentGlintOverride;
@@ -36,6 +41,7 @@ use crate::InlineInstrument;
 use crate::Instrument;
 use crate::InstrumentId;
 use crate::InteractAnimation;
+use crate::ItemDamage;
 use crate::ItemName;
 use crate::ItemStack;
 use crate::LodestoneTracker;
@@ -216,6 +222,7 @@ fn flat_saved_form<S: SavedSink, L: NameLookup>(
         | Builtin::InteractAnimation(InteractAnimation(swing)) => walk.swing_animation(sink, swing),
         Builtin::Weapon(weapon) => walk.weapon(sink, weapon),
         Builtin::UseEffects(effects) => walk.use_effects(sink, effects),
+        Builtin::BlocksAttacks(blocks) => walk.blocks_attacks(sink, blocks),
         Builtin::CustomName(CustomName(text)) | Builtin::ItemName(ItemName(text)) => {
             walk.text(sink, text)
         }
@@ -286,6 +293,22 @@ pub(crate) fn is_instrument_range(value: f32) -> bool {
 pub(crate) fn is_unit_float(value: f32) -> bool {
     value.total_cmp(&0.0).is_ge() && value.total_cmp(&1.0).is_le()
 }
+
+enum HolderSetReference<'entries, E> {
+    Tag(u16),
+    Entries(&'entries [E]),
+}
+
+const _: () = {
+    assert!(
+        mem::size_of::<HolderSetReference<'static, u16>>() == 2 * mem::size_of::<usize>(),
+        "HolderSetReference niches the tag variant inside the slice pointer"
+    );
+    assert!(
+        mem::align_of::<HolderSetReference<'static, u16>>() == mem::align_of::<usize>(),
+        "HolderSetReference alignment matches pointer width"
+    );
+};
 
 fn listed<S: SavedSink, T>(
     sink: &mut S,
@@ -482,21 +505,52 @@ impl<L: NameLookup> Walk<'_, L> {
         })
     }
 
-    fn block_set<S: SavedSink>(&self, sink: &mut S, blocks: &BlockSet) -> Result<S::Node, Fault> {
-        match blocks {
-            BlockSet::Tag(block_tag) => {
-                let name = self.name(NameTable::BlockTag, block_tag.0)?;
+    fn holder_set<S: SavedSink, E>(
+        &self,
+        sink: &mut S,
+        tag_table: NameTable,
+        entry_table: NameTable,
+        set: HolderSetReference<'_, E>,
+        entry_id: impl Fn(&E) -> u16,
+    ) -> Result<S::Node, Fault> {
+        match set {
+            HolderSetReference::Tag(tag) => {
+                let name = self.name(tag_table, tag)?;
                 Ok(sink.leaf(Leaf::TagName(name)))
             }
-            BlockSet::Blocks(blocks) => {
-                if let [block] = blocks.as_ref() {
-                    return self.entry(sink, NameTable::Block, block.0);
-                }
-                sink.list(blocks.iter(), |sink, block| {
-                    self.entry(sink, NameTable::Block, block.0)
-                })
-            }
+            HolderSetReference::Entries([only]) => self.entry(sink, entry_table, entry_id(only)),
+            HolderSetReference::Entries(entries) => sink.list(entries.iter(), |sink, entry| {
+                self.entry(sink, entry_table, entry_id(entry))
+            }),
         }
+    }
+
+    fn block_set<S: SavedSink>(&self, sink: &mut S, blocks: &BlockSet) -> Result<S::Node, Fault> {
+        let set = match blocks {
+            BlockSet::Tag(block_tag) => HolderSetReference::Tag(block_tag.0),
+            BlockSet::Blocks(blocks) => HolderSetReference::Entries(blocks.as_ref()),
+        };
+        self.holder_set(sink, NameTable::BlockTag, NameTable::Block, set, |block| {
+            block.0
+        })
+    }
+
+    fn damage_type_set<S: SavedSink>(
+        &self,
+        sink: &mut S,
+        damage_types: &DamageTypeSet,
+    ) -> Result<S::Node, Fault> {
+        let set = match damage_types {
+            DamageTypeSet::Tag(tag) => HolderSetReference::Tag(tag.0),
+            DamageTypeSet::Types(types) => HolderSetReference::Entries(types.as_ref()),
+        };
+        self.holder_set(
+            sink,
+            NameTable::DamageTypeTag,
+            NameTable::DamageType,
+            set,
+            |damage_type: &DamageTypeId| damage_type.0,
+        )
     }
 
     fn equippable<S: SavedSink>(
@@ -702,20 +756,19 @@ impl<L: NameLookup> Walk<'_, L> {
         sink: &mut S,
         entity_types: &EntityTypeSet,
     ) -> Result<S::Node, Fault> {
-        match entity_types {
-            EntityTypeSet::Tag(entity_tag) => {
-                let name = self.name(NameTable::EntityTypeTag, entity_tag.0)?;
-                Ok(sink.leaf(Leaf::TagName(name)))
-            }
+        let set = match entity_types {
+            EntityTypeSet::Tag(entity_tag) => HolderSetReference::Tag(entity_tag.0),
             EntityTypeSet::EntityTypes(entity_types) => {
-                if let [entity_type] = entity_types.as_ref() {
-                    return self.entry(sink, NameTable::EntityType, entity_type.0);
-                }
-                sink.list(entity_types.iter(), |sink, entity_type| {
-                    self.entry(sink, NameTable::EntityType, entity_type.0)
-                })
+                HolderSetReference::Entries(entity_types.as_ref())
             }
-        }
+        };
+        self.holder_set(
+            sink,
+            NameTable::EntityTypeTag,
+            NameTable::EntityType,
+            set,
+            |entity_type| entity_type.0,
+        )
     }
 
     fn template<S: SavedSink>(
@@ -923,6 +976,92 @@ impl<L: NameLookup> Walk<'_, L> {
             Field::optional("interact_vibrations", interact_vibrations),
             Field::optional("speed_multiplier", speed_multiplier),
         ]))
+    }
+
+    fn blocks_attacks<S: SavedSink>(
+        &self,
+        sink: &mut S,
+        blocks: &BlocksAttacks,
+    ) -> Result<S::Node, Fault> {
+        if !is_use_duration(blocks.block_delay_seconds)
+            || !is_use_duration(blocks.disable_cooldown_scale)
+            || !is_use_duration(blocks.item_damage.threshold)
+        {
+            return Err(Fault::OutOfRange(self.component));
+        }
+        let block_delay_seconds = (blocks.block_delay_seconds.to_bits()
+            != BlocksAttacks::DEFAULT_BLOCK_DELAY_SECONDS.to_bits())
+        .then(|| sink.leaf(Leaf::Float(blocks.block_delay_seconds)));
+        let disable_cooldown_scale = (blocks.disable_cooldown_scale.to_bits()
+            != BlocksAttacks::DEFAULT_DISABLE_COOLDOWN_SCALE.to_bits())
+        .then(|| sink.leaf(Leaf::Float(blocks.disable_cooldown_scale)));
+        let damage_reductions = if blocks.has_default_reductions() {
+            None
+        } else {
+            Some(
+                sink.list(blocks.damage_reductions.iter(), |sink, reduction| {
+                    self.damage_reduction(sink, reduction)
+                })?,
+            )
+        };
+        let item_damage = (!blocks.item_damage.is_default_exact())
+            .then(|| self.item_damage(sink, blocks.item_damage));
+        let bypassed_by = blocks
+            .bypassed_by
+            .as_ref()
+            .map(|damage_types| self.damage_type_set(sink, damage_types))
+            .transpose()?;
+        let block_sound = blocks
+            .block_sound
+            .as_ref()
+            .map(|sound| self.sound_event(sink, sound))
+            .transpose()?;
+        let disabled_sound = blocks
+            .disabled_sound
+            .as_ref()
+            .map(|sound| self.sound_event(sink, sound))
+            .transpose()?;
+        Ok(sink.fields([
+            Field::optional("block_delay_seconds", block_delay_seconds),
+            Field::optional("disable_cooldown_scale", disable_cooldown_scale),
+            Field::optional("damage_reductions", damage_reductions),
+            Field::optional("item_damage", item_damage),
+            Field::optional("bypassed_by", bypassed_by),
+            Field::optional("block_sound", block_sound),
+            Field::optional("disabled_sound", disabled_sound),
+        ]))
+    }
+
+    fn damage_reduction<S: SavedSink>(
+        &self,
+        sink: &mut S,
+        reduction: &DamageReduction,
+    ) -> Result<S::Node, Fault> {
+        if !is_instrument_range(reduction.horizontal_blocking_angle) {
+            return Err(Fault::OutOfRange(self.component));
+        }
+        let horizontal_blocking_angle = (reduction.horizontal_blocking_angle.to_bits()
+            != DamageReduction::DEFAULT_HORIZONTAL_BLOCKING_ANGLE.to_bits())
+        .then(|| sink.leaf(Leaf::Float(reduction.horizontal_blocking_angle)));
+        let kind = reduction
+            .kind
+            .as_ref()
+            .map(|damage_types| self.damage_type_set(sink, damage_types))
+            .transpose()?;
+        Ok(sink.fields([
+            Field::optional("horizontal_blocking_angle", horizontal_blocking_angle),
+            Field::optional("type", kind),
+            Field::new("base", sink.leaf(Leaf::Float(reduction.base))),
+            Field::new("factor", sink.leaf(Leaf::Float(reduction.factor))),
+        ]))
+    }
+
+    fn item_damage<S: SavedSink>(&self, sink: &S, item_damage: ItemDamage) -> S::Node {
+        sink.fields([
+            Field::new("threshold", sink.leaf(Leaf::Float(item_damage.threshold))),
+            Field::new("base", sink.leaf(Leaf::Float(item_damage.base))),
+            Field::new("factor", sink.leaf(Leaf::Float(item_damage.factor))),
+        ])
     }
 }
 

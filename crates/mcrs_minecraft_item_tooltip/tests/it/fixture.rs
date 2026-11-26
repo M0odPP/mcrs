@@ -65,6 +65,8 @@ impl Registries {
             (NameTable::TrimMaterial, pack("trim_material")),
             (NameTable::TrimPattern, pack("trim_pattern")),
             (NameTable::EntityTypeTag, pack("tags/entity_type")),
+            (NameTable::DamageType, pack("damage_type")),
+            (NameTable::DamageTypeTag, pack("tags/damage_type")),
         ]);
         Self { tables }
     }
