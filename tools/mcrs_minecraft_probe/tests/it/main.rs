@@ -130,6 +130,7 @@ fn normalize_per_client_removes_cross_client_interleaving_while_preserving_order
             },
             player_bans: None,
             inventory: None,
+            recipe_book: None,
             sounds: None,
             command_trees: None,
             swings: Some(swings),

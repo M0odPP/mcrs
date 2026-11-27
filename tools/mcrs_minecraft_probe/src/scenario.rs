@@ -1,6 +1,7 @@
 use crate::run::is_sequence_step;
 use crate::{
     Click, Direction, PlayerActionStatus, PlayerBan, PredictedStack, ProbeHand, ProbePlayerCommand,
+    ProbeRecipeBookType,
 };
 use mcrs_minecraft_protocol::setting::MainArm;
 use serde::{Deserialize, Serialize};
@@ -186,6 +187,8 @@ pub struct Observe {
     #[serde(default, skip_serializing_if = "is_false")]
     pub inventory: bool,
     #[serde(default, skip_serializing_if = "is_false")]
+    pub recipe_book: bool,
+    #[serde(default, skip_serializing_if = "is_false")]
     pub sound: bool,
     #[serde(default, skip_serializing_if = "is_false")]
     pub swing: bool,
@@ -284,6 +287,12 @@ pub enum Action {
     Close {
         client: String,
         container: Option<i32>,
+    },
+    RecipeBookChangeSettings {
+        client: String,
+        book_type: ProbeRecipeBookType,
+        is_open: bool,
+        is_filtering: bool,
     },
     SelectSlot {
         client: String,
