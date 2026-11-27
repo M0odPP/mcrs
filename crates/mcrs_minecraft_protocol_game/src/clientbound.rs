@@ -139,6 +139,12 @@ pub struct ClientboundContainerSetSlot {
     pub item: ProtoStack<Wire>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Encode, Decode)]
+pub struct ClientboundCooldown {
+    pub cooldown_group: mcrs_minecraft_resource::ResourceLocationBuf,
+    pub duration: VarInt,
+}
+
 #[derive(Clone, Debug, PartialEq, Encode, Decode)]
 pub struct ClientboundDamageEvent {
     pub entity_id: VarInt,
@@ -1021,5 +1027,20 @@ mod tests {
         .unwrap();
 
         assert_eq!(bytes, [5]);
+    }
+
+    #[test]
+    fn cooldown_round_trips_group_and_duration() {
+        let packet = ClientboundCooldown {
+            cooldown_group: mcrs_minecraft_resource::ResourceLocationBuf::minecraft("ender_pearl")
+                .expect("valid identifier"),
+            duration: VarInt(20),
+        };
+        let mut bytes = Vec::new();
+        packet.encode(&mut bytes).expect("encode cooldown");
+        let mut slice = &bytes[..];
+        let decoded = ClientboundCooldown::decode(&mut slice).expect("decode cooldown");
+        assert!(slice.is_empty(), "cooldown should consume all bytes");
+        assert_eq!(decoded, packet, "cooldown should round-trip");
     }
 }

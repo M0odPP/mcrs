@@ -19,6 +19,7 @@ use crate::saved_sink::SavedSink;
 use crate::saved_sink::WireOnly;
 
 pub(crate) const STACK_LEVEL: u32 = 1;
+pub(crate) const DIRECT_TEMPLATE_LEVELS: u32 = 2;
 pub(crate) const LIST_TEMPLATE_LEVELS: u32 = 3;
 pub(crate) const SLOT_TEMPLATE_LEVELS: u32 = 4;
 

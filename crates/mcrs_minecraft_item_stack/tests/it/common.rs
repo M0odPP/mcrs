@@ -6,6 +6,7 @@ use mcrs_minecraft_nbt::compound::NbtCompound;
 use mcrs_minecraft_nbt::tag::NbtTag;
 use mcrs_minecraft_wire::Encode;
 use mcrs_minecraft_wire::VarInt;
+use serde::Deserialize;
 
 pub(crate) const COMPONENT_TYPES: [&str; 110] = [
     "custom_data",
@@ -179,7 +180,7 @@ pub(crate) struct GoldenCase {
     pub(crate) hash: i32,
 }
 
-const CHANGED_RECORDS: [(&str, &str); 10] = [
+const CHANGED_RECORDS: [(&str, &str); 12] = [
     ("cmd_empty", "custom_model_data"),
     ("cmd_full", "custom_model_data"),
     ("block_state_empty", "block_state"),
@@ -190,6 +191,8 @@ const CHANGED_RECORDS: [(&str, &str); 10] = [
     ("use_effects_default", "use_effects"),
     ("use_effects_explicit", "use_effects"),
     ("use_effects_full", "use_effects"),
+    ("cooldown_min", "use_cooldown"),
+    ("cooldown_full", "use_cooldown"),
 ];
 
 const OLDER_RECORDS: [(&str, &str); 5] = [
@@ -256,4 +259,23 @@ pub(crate) fn golden_cases(set: GoldenSet) -> Vec<GoldenCase> {
         }
     }
     cases
+}
+
+#[derive(Deserialize)]
+pub(crate) struct NestedCase {
+    pub(crate) name: String,
+    pub(crate) nbt: String,
+    pub(crate) wire: String,
+    pub(crate) hash: i32,
+}
+
+pub(crate) fn nested_cases() -> Vec<NestedCase> {
+    #[derive(Deserialize)]
+    struct NestedGolden {
+        cases: Vec<NestedCase>,
+    }
+
+    let golden: NestedGolden =
+        serde_json::from_str(&fixture("item_nested").text()).expect("the golden is JSON");
+    golden.cases
 }

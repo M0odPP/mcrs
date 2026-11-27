@@ -22,6 +22,7 @@ use mcrs_minecraft_item_stack::RepairCost;
 use mcrs_minecraft_item_stack::Tool;
 use mcrs_minecraft_item_stack::ToolRule;
 use mcrs_minecraft_item_stack::TooltipDisplay;
+use mcrs_minecraft_item_stack::UseCooldown;
 use mcrs_minecraft_resource::ResourceLocation;
 use mcrs_minecraft_resource::ResourceLocationBuf;
 use mcrs_minecraft_sound::SoundEventValue;
@@ -100,6 +101,12 @@ fn floats_are_equal_by_bit_pattern_with_one_nan() {
             &format!("sound range: {name}"),
             &sound(left),
             &sound(right),
+            equal,
+        );
+        assert_relation(
+            &format!("use cooldown: {name}"),
+            &UseCooldown::new(left),
+            &UseCooldown::new(right),
             equal,
         );
     }
@@ -217,4 +224,20 @@ fn an_identifier_is_equal_in_its_borrowed_and_owned_forms() {
     let other =
         ItemModel::new(ResourceLocationBuf::read("minecraft:stone").expect("a valid identifier"));
     assert_relation("two models", &other, &borrowed, false);
+
+    const GROUP: ResourceLocation<'static> =
+        match ResourceLocation::new_static("minecraft:ender_pearl") {
+            Ok(location) => location,
+            Err(_) => panic!("a valid identifier"),
+        };
+    let owned_cooldown = UseCooldown::new(1.5).with_cooldown_group(
+        ResourceLocationBuf::read("minecraft:ender_pearl").expect("a valid identifier"),
+    );
+    let borrowed_cooldown = UseCooldown::new(1.5).with_static_cooldown_group(GROUP);
+    assert_relation(
+        "cooldown group in two forms",
+        &owned_cooldown,
+        &borrowed_cooldown,
+        true,
+    );
 }

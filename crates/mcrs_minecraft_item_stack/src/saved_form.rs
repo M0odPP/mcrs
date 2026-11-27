@@ -78,7 +78,9 @@ use crate::TooltipDisplay;
 use crate::Trim;
 use crate::Unbreakable;
 use crate::UseAnimation;
+use crate::UseCooldown;
 use crate::UseEffects;
+use crate::UseRemainder;
 use crate::Weapon;
 use crate::WireError;
 use crate::check_saved_form::NOT_NEGATIVE;
@@ -87,6 +89,7 @@ use crate::check_saved_form::POSITIVE;
 use crate::check_saved_form::STACK_SIZE;
 use crate::effect_details::EffectFields;
 use crate::lore::MAX_LINES;
+use crate::nbt_depth::DIRECT_TEMPLATE_LEVELS;
 use crate::nbt_depth::LIST_TEMPLATE_LEVELS;
 use crate::nbt_depth::SLOT_TEMPLATE_LEVELS;
 use crate::nbt_depth::STACK_LEVEL;
@@ -189,6 +192,9 @@ fn saved_form_at<S: SavedSink, L: NameLookup>(
             .list(stacks.iter(), |sink, stack| {
                 walk.template(sink, stack, LIST_TEMPLATE_LEVELS)
             }),
+        Builtin::UseRemainder(UseRemainder(stack)) => {
+            walk.template(sink, stack, DIRECT_TEMPLATE_LEVELS)
+        }
         Builtin::Container(container) => walk.container(sink, container),
         _ => flat_saved_form(&walk, value, sink),
     }
@@ -229,6 +235,7 @@ fn flat_saved_form<S: SavedSink, L: NameLookup>(
         | Builtin::InteractAnimation(InteractAnimation(swing)) => walk.swing_animation(sink, swing),
         Builtin::Weapon(weapon) => walk.weapon(sink, weapon),
         Builtin::UseEffects(effects) => walk.use_effects(sink, effects),
+        Builtin::UseCooldown(cooldown) => walk.use_cooldown(sink, cooldown),
         Builtin::BlocksAttacks(blocks) => walk.blocks_attacks(sink, blocks),
         Builtin::CustomName(CustomName(text)) | Builtin::ItemName(ItemName(text)) => {
             walk.text(sink, text)
@@ -263,9 +270,10 @@ fn flat_saved_form<S: SavedSink, L: NameLookup>(
             walk.int(sink, *amplifier, OMINOUS_AMPLIFIER)
         }
         Builtin::Instrument(Instrument(instrument)) => walk.instrument(sink, instrument),
-        Builtin::ChargedProjectiles(_) | Builtin::BundleContents(_) | Builtin::Container(_) => {
-            saved_form_at(value, walk.names, sink, walk.depth)
-        }
+        Builtin::ChargedProjectiles(_)
+        | Builtin::BundleContents(_)
+        | Builtin::Container(_)
+        | Builtin::UseRemainder(_) => saved_form_at(value, walk.names, sink, walk.depth),
         Builtin::FireworkExplosion(explosion) => walk.firework_explosion(sink, explosion),
         Builtin::Fireworks(fireworks) => walk.fireworks(sink, fireworks),
         Builtin::BannerPatterns(BannerPatterns(layers)) => {
@@ -1133,6 +1141,23 @@ impl<L: NameLookup> Walk<'_, L> {
             Field::optional("can_sprint", can_sprint),
             Field::optional("interact_vibrations", interact_vibrations),
             Field::optional("speed_multiplier", speed_multiplier),
+        ]))
+    }
+
+    fn use_cooldown<S: SavedSink>(
+        &self,
+        sink: &S,
+        cooldown: &UseCooldown,
+    ) -> Result<S::Node, Fault> {
+        if !is_instrument_range(cooldown.seconds) {
+            return Err(Fault::OutOfRange(self.component));
+        }
+        let cooldown_group = cooldown
+            .cooldown_group()
+            .map(|group| sink.leaf(Leaf::Name(group)));
+        Ok(sink.fields([
+            Field::new("seconds", sink.leaf(Leaf::Float(cooldown.seconds))),
+            Field::optional("cooldown_group", cooldown_group),
         ]))
     }
 

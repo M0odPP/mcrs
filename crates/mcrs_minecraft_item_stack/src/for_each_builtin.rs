@@ -20,6 +20,8 @@ macro_rules! for_each_builtin {
             UseEffects => "use_effects",
             Food => "food",
             Consumable => "consumable",
+            UseRemainder => "use_remainder",
+            UseCooldown => "use_cooldown",
             Tool => "tool",
             BlocksAttacks => "blocks_attacks",
             MapId => "map_id",

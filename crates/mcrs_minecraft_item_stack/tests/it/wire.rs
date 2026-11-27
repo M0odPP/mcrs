@@ -51,6 +51,8 @@ use mcrs_minecraft_item_stack::Tool;
 use mcrs_minecraft_item_stack::ToolRule;
 use mcrs_minecraft_item_stack::TooltipDisplay;
 use mcrs_minecraft_item_stack::Unbreakable;
+use mcrs_minecraft_item_stack::UseCooldown;
+use mcrs_minecraft_item_stack::UseRemainder;
 use mcrs_minecraft_item_stack::WireError;
 use mcrs_minecraft_item_stack::WireStack;
 use mcrs_minecraft_item_stack::WireStackWithLength;
@@ -80,6 +82,7 @@ use serde::Deserialize;
 use crate::common::COMPONENT_TYPES;
 use crate::common::GoldenSet;
 use crate::common::golden_cases;
+use crate::common::nested_cases;
 use crate::common::same;
 use crate::common::stack;
 use crate::common::unhex;
@@ -499,6 +502,7 @@ fn saved(snbt: &str) -> NbtCompound {
 enum Nesting {
     Bundle,
     Container,
+    Remainder,
 }
 
 impl Nesting {
@@ -506,6 +510,7 @@ impl Nesting {
         match self {
             Self::Bundle => "bundle_contents",
             Self::Container => "container",
+            Self::Remainder => "use_remainder",
         }
     }
 
@@ -513,26 +518,28 @@ impl Nesting {
         match self {
             Self::Bundle => vec![0x01],
             Self::Container => vec![0x01, 0x01],
+            Self::Remainder => Vec::new(),
         }
     }
 
     fn saved_list(self, item: NbtCompound) -> NbtTag {
-        let element = match self {
-            Self::Bundle => item,
+        match self {
+            Self::Bundle => NbtTag::List(vec![NbtTag::Compound(item)]),
             Self::Container => {
                 let mut slot = NbtCompound::new();
                 slot.put("slot", NbtTag::Int(0));
                 slot.put("item", NbtTag::Compound(item));
-                slot
+                NbtTag::List(vec![NbtTag::Compound(slot)])
             }
-        };
-        NbtTag::List(vec![NbtTag::Compound(element)])
+            Self::Remainder => NbtTag::Compound(item),
+        }
     }
 
     fn json_list(self, item: &str) -> String {
         match self {
             Self::Bundle => format!("[{item}]"),
             Self::Container => format!(r#"[{{"slot":0,"item":{item}}}]"#),
+            Self::Remainder => item.to_owned(),
         }
     }
 }
@@ -738,13 +745,42 @@ fn depth_rows() -> [Row; 12] {
     ]
 }
 
+fn remainder_depth_rows() -> [Row; 4] {
+    let row = |levels, innermost, expect| Row {
+        chain: Chain {
+            nesting: Nesting::Remainder,
+            levels,
+            innermost,
+        },
+        readers: Readers::All,
+        expect,
+    };
+    let max_stack = Component {
+        kind: "max_stack_size",
+        wire: "40",
+        saved: "64",
+    };
+    let lore = Component {
+        kind: "lore",
+        wire: "00",
+        saved: "[]",
+    };
+    [
+        row(255, None, Expect::Valid),
+        row(255, Some(max_stack), Expect::Valid),
+        row(255, Some(lore), Expect::TooDeep),
+        row(256, None, Expect::TooDeep),
+    ]
+}
+
 #[test]
 fn each_reader_refuses_a_stack_deeper_than_512_nbt_levels() {
+    let rows = depth_rows().into_iter().chain(remainder_depth_rows());
     for Row {
         chain,
         readers,
         expect,
-    } in depth_rows()
+    } in rows
     {
         let label = format!("{chain:?}");
         let (bare, prefixed) = chain.wire();
@@ -1810,5 +1846,62 @@ fn hidden_effect_depth_enforces_512_in_wire_form_and_round_trips_mob_effect_tag(
     assert_eq!(
         decoded_tag, tagged,
         "MobEffectSet::Tag should round-trip through wire"
+    );
+}
+
+#[test]
+fn use_cooldown_validates_seconds_and_use_remainder_matches_nested_goldens() {
+    for bad in [0.0_f32, -0.0, -1.0, f32::NAN, f32::INFINITY] {
+        let mut raw = vec![0x01, 0x01, 0x01, 0x00, 26];
+        raw.extend_from_slice(&bad.to_be_bytes());
+        raw.push(0x00);
+        let error = WireError::OutOfRange(BuiltinKey::UseCooldown);
+        assert_eq!(read_all(&raw, read_wire), Err(error), "read bad {bad:?}");
+        let invalid = stack(STONE, 1).set(UseCooldown::new(bad));
+        assert_eq!(
+            write_wire(Some(&invalid), &Names, &mut Vec::new()),
+            Err(error),
+            "write bad {bad:?}"
+        );
+    }
+
+    let cases = nested_cases();
+    for name in ["use_remainder_plain", "use_remainder_full"] {
+        let case = cases.iter().find(|entry| entry.name == name).expect("case");
+        let bare = with_one_component("use_remainder", &case.wire);
+        let read = read_all(&bare, read_wire).expect("valid").expect("item");
+        let written_wire = wire(Some(&read));
+        if name == "use_remainder_plain" {
+            assert_eq!(hex(&written_wire), hex(&bare), "{name} bytes");
+        }
+        assert_eq!(
+            read_all(&written_wire, read_wire),
+            Ok(Some(read.clone())),
+            "{name} wire"
+        );
+        let tag = NbtTag::deserialize(&mut NbtReadHelper::new(Cursor::new(unhex(&case.nbt))))
+            .expect("NBT");
+        let mut patch = NbtCompound::new();
+        patch.put("minecraft:use_remainder", tag);
+        let mut saved_stack = saved(r#"{id:"minecraft:stone"}"#);
+        saved_stack.put("components", NbtTag::Compound(patch));
+        assert_eq!(read_saved(&saved_stack, &Names), Ok(read.clone()), "{name}");
+        let written = write_saved(&read, &Names).expect("writable");
+        assert_eq!(read_saved(&written, &Names), Ok(read), "{name} round-trip");
+    }
+
+    for (bytes, error) in [
+        ("00 01 00 00", WireError::EmptyStack),
+        ("01 00 00 00", WireError::EmptyStack),
+        ("01 64 00 00", WireError::CountOutOfRange),
+    ] {
+        let raw = with_one_component("use_remainder", bytes);
+        assert_eq!(read_all(&raw, read_wire), Err(error), "bad {bytes}");
+    }
+    let custom = stack(STONE, 1).set(UseRemainder(stack(STONE, 2)));
+    assert_eq!(
+        read_all(&wire(Some(&custom)), read_wire),
+        Ok(Some(custom)),
+        "round-trip"
     );
 }

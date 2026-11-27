@@ -97,11 +97,8 @@ pub(crate) fn skip_value(
             skip.boolean(input)?;
             skip.list(input, consume_effect)
         }
-        UseRemainder | SulfurCubeContent => skip.list_template(input),
-        UseCooldown => {
-            skip.bytes(input, F32)?;
-            skip.optional(input, ShapeSkip::string)
-        }
+        UseRemainder | SulfurCubeContent => skip.direct_template(input),
+        UseCooldown => value(BuiltinKey::UseCooldown, input),
         DamageResistant | Repairable | ProvidesBannerPatterns => skip.holder_set(input),
         Tool => value(BuiltinKey::Tool, input),
         Weapon => value(BuiltinKey::Weapon, input),

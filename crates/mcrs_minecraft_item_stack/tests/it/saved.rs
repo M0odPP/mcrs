@@ -46,6 +46,8 @@ use mcrs_minecraft_item_stack::Tool;
 use mcrs_minecraft_item_stack::ToolRule;
 use mcrs_minecraft_item_stack::TooltipDisplay;
 use mcrs_minecraft_item_stack::Unbreakable;
+use mcrs_minecraft_item_stack::UseCooldown;
+use mcrs_minecraft_item_stack::UseRemainder;
 use mcrs_minecraft_item_stack::read_saved;
 use mcrs_minecraft_item_stack::read_saved_optional;
 use mcrs_minecraft_item_stack::read_saved_with_slot;
@@ -1151,5 +1153,37 @@ fn hidden_effect_depth_enforces_512_in_saved_form_and_round_trips_mob_effect_tag
     assert_eq!(
         round_tripped, tagged,
         "MobEffectSet::Tag should round-trip through saved NBT"
+    );
+}
+
+#[test]
+fn use_cooldown_and_use_remainder_saved_edge_cases() {
+    let bare = saved(
+        r#"{id:"minecraft:stone",components:{"minecraft:use_cooldown":{seconds:1.25f,cooldown_group:"ender_pearl"}}}"#,
+    );
+    let group = ResourceLocationBuf::minecraft("ender_pearl").expect("valid identifier");
+    let expected = stack(STONE, 1).set(UseCooldown::new(1.25).with_cooldown_group(group));
+    assert_eq!(read_saved(&bare, &Names), Ok(expected), "bare group");
+
+    for suffix in ["", "seconds:0.0f", "seconds:-0.0f", "seconds:-2.0f"] {
+        let snbt = format!(
+            r#"{{id:"minecraft:stone",components:{{"minecraft:use_cooldown":{{{suffix}}}}}}}"#
+        );
+        assert!(read_saved(&saved(&snbt), &Names).is_err(), "reject {snbt}");
+    }
+
+    let shorthand =
+        saved(r#"{id:"minecraft:stone",components:{"minecraft:use_remainder":"stone"}}"#);
+    let read_shorthand = read_saved(&shorthand, &Names).expect("shorthand reads");
+    assert_eq!(
+        read_shorthand,
+        stack(STONE, 1).set(UseRemainder(stack(STONE, 1))),
+        "use_remainder shorthand reads"
+    );
+    let written = write_saved(&read_shorthand, &Names).expect("saves cleanly");
+    assert_eq!(
+        read_saved(&written, &Names),
+        Ok(read_shorthand),
+        "use_remainder shorthand should round-trip"
     );
 }

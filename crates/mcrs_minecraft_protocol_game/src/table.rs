@@ -15,6 +15,7 @@ mcrs_minecraft_protocol::extend_packet_table! {
         "container_set_content" => ClientboundContainerSetContent,
         "container_set_data" => ClientboundContainerSetData,
         "container_set_slot" => ClientboundContainerSetSlot,
+        "cooldown" => ClientboundCooldown,
         "custom_chat_completions" => ClientboundCustomChatCompletions<'a>,
         "damage_event" => ClientboundDamageEvent,
         "disguised_chat" => ClientboundDisguisedChat<'a>,
