@@ -108,6 +108,7 @@ mcrs_minecraft_entity_key = { path = "crates/mcrs_minecraft_entity_key" }
 mcrs_minecraft_physics = { path = "crates/mcrs_minecraft_physics" }
 mcrs_minecraft_pose = { path = "crates/mcrs_minecraft_pose" }
 mcrs_minecraft_swing = { path = "crates/mcrs_minecraft_swing" }
+mcrs_minecraft_beds = { path = "crates/mcrs_minecraft_beds" }
 mcrs_minecraft_item_use = { path = "crates/mcrs_minecraft_item_use" }
 mcrs_minecraft_equipment = { path = "crates/mcrs_minecraft_equipment" }
 mcrs_minecraft_collision_table = { path = "crates/mcrs_minecraft_collision_table" }

@@ -4201,6 +4201,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "mcrs_minecraft_beds"
+version = "0.5.8"
+dependencies = [
+ "libm",
+ "mcrs_minecraft_pose",
+ "mcrs_test_alloc",
+ "mcrs_voxel",
+]
+
+[[package]]
 name = "mcrs_minecraft_bench_support"
 version = "0.5.8"
 dependencies = [
