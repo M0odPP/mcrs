@@ -238,6 +238,25 @@ pub struct ClientboundEntityPositionSync {
     pub on_ground: bool,
 }
 
+#[derive(Clone, Debug, PartialEq, Encode, Decode)]
+pub struct ExplosionParticleEntry {
+    pub particle: ParticleOptions<Wire>,
+    pub scaling: f32,
+    pub speed: f32,
+    pub weight: VarInt,
+}
+
+#[derive(Clone, Debug, PartialEq, Encode, Decode)]
+pub struct ClientboundExplode {
+    pub center: DVec3,
+    pub radius: f32,
+    pub block_count: i32,
+    pub player_knockback: Option<DVec3>,
+    pub explosion_particle: Option<ParticleOptions<Wire>>,
+    pub explosion_sound: Option<Sound<Wire>>,
+    pub block_particles: Vec<ExplosionParticleEntry>,
+}
+
 #[derive(Clone, Debug, Encode, Decode)]
 pub struct ClientboundForgetLevelChunk {
     pub z: i32,

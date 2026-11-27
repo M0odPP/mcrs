@@ -658,6 +658,7 @@ fn write_payload<W: WritePacket>(sink: &mut W, data: PacketPayload) -> anyhow::R
         PacketPayload::OpenScreen(p) => sink.write_packet_fallible(&p),
         PacketPayload::ContainerClose(p) => sink.write_packet_fallible(&p),
         PacketPayload::Sound(p) => sink.write_packet_fallible(&p),
+        PacketPayload::Explode(packet) => sink.write_packet_fallible(&packet),
     }
 }
 
@@ -1117,5 +1118,79 @@ mod tests {
             reader.len()
         );
         assert_eq!(decoded, sound);
+    }
+
+    #[test]
+    fn outbound_explode_packet_encodes_once_and_tracks_prediction_flag() {
+        use bevy_math::DVec3;
+        use mcrs_minecraft_protocol::{Decode, Packet, VarInt};
+        use mcrs_minecraft_protocol_game::clientbound::ClientboundExplode;
+        use smallvec::smallvec;
+
+        let mut world = world();
+        world.init_resource::<BridgeTelemetry>();
+        world.init_resource::<PendingConnections>();
+        MessageRegistry::register_message::<OutboundPlayerPacket>(&mut world);
+
+        let mut spawn_connection = |session_id| {
+            let anchor = world
+                .spawn(SessionBundle::new(PlayerSession(session_id)))
+                .id();
+            world
+                .spawn((HostAnchorRef(anchor), OutboundQueue::default()))
+                .id()
+        };
+        let (connection_a, connection_b) = (spawn_connection(21), spawn_connection(22));
+        let shared = ClientboundExplode {
+            center: DVec3::new(0.5, 64.0, 0.5),
+            radius: 4.0,
+            block_count: 12,
+            player_knockback: None,
+            explosion_particle: None,
+            explosion_sound: None,
+            block_particles: Vec::new(),
+        };
+        assert!(
+            QueuedPacket::from(PacketPayload::Explode(ClientboundExplode {
+                player_knockback: Some(DVec3::new(0.25, 0.5, 0.0)),
+                ..shared.clone()
+            }))
+            .changes_prediction(),
+            "knockback must mark prediction"
+        );
+        world
+            .resource_mut::<Messages<OutboundPlayerPacket>>()
+            .write(OutboundPlayerPacket::explode(
+                PacketTarget::PlayerSet(smallvec![PlayerSession(21), PlayerSession(22)]),
+                shared.clone(),
+            ));
+        run(&mut world, bridge_outbound);
+
+        let (queue_a, queue_b) = (
+            world.get::<OutboundQueue>(connection_a).expect("queue A"),
+            world.get::<OutboundQueue>(connection_b).expect("queue B"),
+        );
+        let (Some(QueuedPacket::Encoded(packet_a)), Some(QueuedPacket::Encoded(packet_b))) =
+            (queue_a.iter().next(), queue_b.iter().next())
+        else {
+            panic!("expected pre-encoded broadcast explode packets");
+        };
+        assert!(
+            queue_a.total_len() == 1 && queue_b.total_len() == 1 && !packet_a.changes_prediction,
+            "single explode without knockback must reach both queues without marking prediction"
+        );
+        assert!(
+            std::ptr::eq(packet_a.packet.as_ptr(), packet_b.packet.as_ptr()),
+            "PlayerSet broadcast must share bytes"
+        );
+        let mut reader = packet_a.packet.as_ref();
+        assert_eq!(
+            (
+                VarInt::decode(&mut reader).expect("id").0,
+                ClientboundExplode::decode(&mut reader).expect("decode"),
+                reader.is_empty()
+            ),
+            (ClientboundExplode::ID, shared, true)
+        );
     }
 }

@@ -1,0 +1,21 @@
+[package]
+name = "mcrs_minecraft_explosions"
+description = "Pure no_std raycast, exposure, damage, knockback, and primed TNT rules."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+test = false
+doctest = false
+
+[dependencies]
+glam = { workspace = true, features = ["nostd-libm"] }
+libm.workspace = true
+mcrs_voxel.workspace = true
+
+[dev-dependencies]
+mcrs_test_alloc.workspace = true
+
+[lints]
+workspace = true

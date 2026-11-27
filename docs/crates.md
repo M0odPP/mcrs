@@ -250,6 +250,7 @@ Use the crate that owns the item. Do not write a second copy.
 - `mcrs_minecraft_env_damage`: Pure no_std environmental damage rules for fall, fire, air, freeze, suffocation, contact, void, and world border.
 - `mcrs_minecraft_environment`: Environment attributes, timelines and world clocks
 - `mcrs_minecraft_equipment`: Pure equipment slot mapping, snapshot comparison, and hand-swap suppression rules for replicated players
+- `mcrs_minecraft_explosions`: Pure no_std raycast, exposure, damage, knockback, and primed TNT rules.
 - `mcrs_minecraft_falling_block`: The rules of a falling block: which blocks fall, the start, the tick and the landing
 - `mcrs_minecraft_fog`: The fog parameters of one frame of the client: the fog colour and the fog distances
 - `mcrs_minecraft_goal_world`: The read-only block world of the goals of mobs: the ground cell of a block position, the build height, the line of sight and the straight route on walkable ground

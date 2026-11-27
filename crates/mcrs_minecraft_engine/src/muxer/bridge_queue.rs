@@ -48,15 +48,16 @@ pub struct EncodedPacket {
 }
 
 pub(crate) fn payload_changes_prediction(payload: &PacketPayload) -> bool {
-    matches!(
-        payload,
+    match payload {
         PacketPayload::BlockUpdate(_)
-            | PacketPayload::SectionBlocksUpdate(_)
-            | PacketPayload::ChunkLoad { .. }
-            | PacketPayload::ChunkUnload(_)
-            | PacketPayload::PlayerAbilities(_)
-            | PacketPayload::OwnEntityState(_)
-    )
+        | PacketPayload::SectionBlocksUpdate(_)
+        | PacketPayload::ChunkLoad { .. }
+        | PacketPayload::ChunkUnload(_)
+        | PacketPayload::PlayerAbilities(_)
+        | PacketPayload::OwnEntityState(_) => true,
+        PacketPayload::Explode(explode) => explode.player_knockback.is_some(),
+        _ => false,
+    }
 }
 
 impl QueuedPacket {

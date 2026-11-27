@@ -14,7 +14,7 @@ use mcrs_minecraft_protocol_game::clientbound::{
     ClientboundBlockEvent, ClientboundBlockUpdate, ClientboundChunkBatchFinished,
     ClientboundChunkBatchStart, ClientboundChunkCacheRadius, ClientboundCommandSuggestions,
     ClientboundContainerClose, ClientboundContainerSetContent, ClientboundContainerSetSlot,
-    ClientboundCooldown, ClientboundEntityEvent, ClientboundEntityPositionSync,
+    ClientboundCooldown, ClientboundEntityEvent, ClientboundEntityPositionSync, ClientboundExplode,
     ClientboundForgetLevelChunk, ClientboundGameEvent, ClientboundHurtAnimation,
     ClientboundLevelEvent, ClientboundLightUpdate, ClientboundLogin, ClientboundOpenScreen,
     ClientboundPlayerAbilities, ClientboundPlayerCombatKill, ClientboundPlayerLookAt,
@@ -158,12 +158,18 @@ pub enum PacketPayload {
     OpenScreen(ClientboundOpenScreen<'static>),
     ContainerClose(ClientboundContainerClose),
     Sound(ClientboundSound),
+    Explode(ClientboundExplode),
 }
 
 impl OutboundPlayerPacket {
     #[must_use]
     pub fn sound(target: PacketTarget, sound: ClientboundSound) -> Self {
         to_target(target, PacketPayload::Sound(sound))
+    }
+
+    #[must_use]
+    pub fn explode(target: PacketTarget, explode: ClientboundExplode) -> Self {
+        to_target(target, PacketPayload::Explode(explode))
     }
 }
 

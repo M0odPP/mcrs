@@ -28,7 +28,7 @@ const WASM32_PACKAGES: [&str; 11] = [
     "mcrs_minecraft_biome_file",
 ];
 
-const NO_STD_PACKAGES: [&str; 22] = [
+const NO_STD_PACKAGES: [&str; 23] = [
     "mcrs_command",
     "mcrs_minecraft_bedrock_wire",
     "mcrs_minecraft_block_break",
@@ -39,6 +39,7 @@ const NO_STD_PACKAGES: [&str; 22] = [
     "mcrs_minecraft_damage",
     "mcrs_minecraft_entity_key",
     "mcrs_minecraft_env_damage",
+    "mcrs_minecraft_explosions",
     "mcrs_minecraft_fog",
     "mcrs_minecraft_goal_world",
     "mcrs_minecraft_goals",
@@ -53,7 +54,7 @@ const NO_STD_PACKAGES: [&str; 22] = [
     "mcrs_voxel",
 ];
 
-const NO_BEVY_PACKAGES: [&str; 144] = [
+const NO_BEVY_PACKAGES: [&str; 145] = [
     "mcrs_command",
     "mcrs_engine_cell",
     "mcrs_engine_link",
@@ -110,6 +111,7 @@ const NO_BEVY_PACKAGES: [&str; 144] = [
     "mcrs_minecraft_entity_model",
     "mcrs_minecraft_env_damage",
     "mcrs_minecraft_environment",
+    "mcrs_minecraft_explosions",
     "mcrs_minecraft_falling_block",
     "mcrs_minecraft_fixtures",
     "mcrs_minecraft_fog",
