@@ -1,5 +1,6 @@
 extern crate alloc;
 
+mod additional_trade_cost;
 mod any_names;
 mod argb_color;
 mod array_serializer;
@@ -50,6 +51,7 @@ mod dye_color;
 mod dyed_color;
 mod effect_details;
 mod effect_instance;
+mod enchantable;
 mod enchantment_glint_override;
 mod enchantment_id;
 mod enchantment_level;
@@ -160,6 +162,7 @@ mod wire_stack_with_length;
 mod wire_text;
 mod wire_value;
 
+pub use additional_trade_cost::AdditionalTradeCost;
 pub use argb_color::ArgbColor;
 pub use attack_animation::AttackAnimation;
 pub use attribute_id::AttributeId;
@@ -203,6 +206,7 @@ pub use dye_color::DyeColor;
 pub use dyed_color::DyedColor;
 pub use effect_details::EffectDetails;
 pub use effect_instance::EffectInstance;
+pub use enchantable::Enchantable;
 pub use enchantment_glint_override::EnchantmentGlintOverride;
 pub use enchantment_id::EnchantmentId;
 pub use enchantment_level::EnchantmentLevel;

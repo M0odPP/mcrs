@@ -1,9 +1,10 @@
-use std::collections::BTreeMap;
-use std::fmt;
 use std::sync::LazyLock;
 
 use glam::DVec3;
+use mcrs_minecraft_biome::Biome;
 use mcrs_minecraft_engine_registries::{RegistryNames, test_item_table};
+use mcrs_minecraft_environment::environment_attribute_keys::EnvironmentAttribute;
+use mcrs_minecraft_environment::{AttributeValue, WorldClock};
 use mcrs_minecraft_fixtures::fixture;
 use mcrs_minecraft_game_registries::registry_load::{
     load_registries, test_additions, test_packs, test_registries,
@@ -11,36 +12,26 @@ use mcrs_minecraft_game_registries::registry_load::{
 use mcrs_minecraft_item_stack::{ItemStack, read_saved};
 use mcrs_minecraft_item_table::ItemTable;
 use mcrs_minecraft_loot::context_key_set_keys::ContextKeySet;
+use mcrs_minecraft_loot::loot::LootTable;
 use mcrs_minecraft_loot_condition::{
-    Condition, ConditionBaker, ConditionFile, FloatProvider, FloatProviderFile, IntProvider,
-    IntProviderFile, LootContext, LootInputs, NamedEntries, Tool,
+    BlockEntityView, ClockView, Condition, ConditionBaker, ConditionFile, EnvironmentView,
+    FloatProvider, FloatProviderFile, IntProvider, IntProviderFile, LootContext, LootInputs,
+    NamedEntries, NbtNumber, ScoreHolder, ScoreView, StorageView, Tool, WeatherView,
 };
 use mcrs_minecraft_loot_table::{LootIssue, LootScratch, LootTableFile, LootTables};
-use mcrs_minecraft_predicate::{BlockHost, PredicateScratch};
+use mcrs_minecraft_nbt_path::NbtPath;
+use mcrs_minecraft_predicate::{EntityView, LocationView, PredicateScratch};
 use mcrs_minecraft_random::legacy::LegacyRandom;
 use mcrs_minecraft_registries::Registries;
-use mcrs_minecraft_resource::ResourceLocation;
+use mcrs_minecraft_resource::{Id, ResourceLocation};
 use mcrs_minecraft_snbt::parse_compound;
-use mcrs_voxel::BlockStateId;
-use serde::de::{MapAccess, SeqAccess, Visitor};
-use serde::{Deserialize, Deserializer};
+use mcrs_voxel::{BlockPos, BlockStateId};
 
 use crate::fixture::{blocks, state};
 
 const MAGIC: &[u8; 8] = b"MCLOOTR0";
 
-const UNEVALUATED_TYPES: [&str; 1] = ["minecraft:enchant_with_levels"];
-
-const STORED_ENCHANTMENTS: &str = "minecraft:stored_enchantments";
-
-const REPLAYED: usize = 81;
-
-const REPLAYED_WITHOUT_STORED_ENCHANTMENTS: usize = 3;
-
-const PENDING: [(&str, usize); 2] = [
-    ("minecraft:enchant_with_levels", 6),
-    ("the container spread", 80),
-];
+const REPLAYED: usize = 167;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum CaseKind {
@@ -76,7 +67,10 @@ struct ContextEntry {
 
 enum Outcome {
     Stacks(Vec<SavedStack>),
-    Fill,
+    Fill {
+        slots: u32,
+        items: Vec<(u32, SavedStack)>,
+    },
     Tests(Vec<bool>),
     Ints(Vec<i32>),
     Floats(Vec<f32>),
@@ -85,6 +79,7 @@ enum Outcome {
 struct Case {
     kind: CaseKind,
     name: String,
+    biome: String,
     source: Source,
     key_set: String,
     luck: f32,
@@ -168,7 +163,7 @@ impl Reader<'_> {
         }
         .expect("a case kind of the layout");
         let name = self.text();
-        let _biome = self.text();
+        let biome = self.text();
         let source = match (self.byte(), self.text()) {
             (0, _) => Some(Source::Table),
             (1, text) => Some(Source::Inline(text)),
@@ -182,11 +177,10 @@ impl Reader<'_> {
         let seed = self.i64();
         let outcome = match kind {
             CaseKind::Roll => Outcome::Stacks(self.samples(Self::stack)),
-            CaseKind::Fill => {
-                let _slots = self.u32();
-                self.samples(|reader| (reader.u32(), reader.stack()));
-                Outcome::Fill
-            }
+            CaseKind::Fill => Outcome::Fill {
+                slots: self.u32(),
+                items: self.samples(|reader| (reader.u32(), reader.stack())),
+            },
             CaseKind::Condition => Outcome::Tests(self.samples(|reader| reader.byte() == 1)),
             CaseKind::IntProvider => Outcome::Ints(self.samples(Self::i32)),
             CaseKind::FloatProvider => Outcome::Floats(self.samples(Self::f32)),
@@ -195,6 +189,7 @@ impl Reader<'_> {
         Case {
             kind,
             name,
+            biome,
             source,
             key_set,
             luck,
@@ -258,9 +253,7 @@ impl CaseTool {
 static REPLAY: LazyLock<Replay> = LazyLock::new(|| {
     let mut additions = test_additions();
     for (index, case) in CASES.iter().enumerate() {
-        if let (CaseKind::Roll, Source::Inline(table), None) =
-            (case.kind, &case.source, pending(case))
-        {
+        if let (CaseKind::Roll, Source::Inline(table)) = (case.kind, &case.source) {
             additions.files.insert(
                 "replay",
                 format!("data/replay/loot_table/case_{index}.json"),
@@ -280,109 +273,57 @@ static REPLAY: LazyLock<Replay> = LazyLock::new(|| {
     }
 });
 
-fn pending(case: &Case) -> Option<String> {
-    if case.kind == CaseKind::Fill {
-        return Some("the container spread".to_owned());
-    }
-    if case.luck != 0.0 {
-        return Some("a luck other than 0".to_owned());
-    }
-    if key_set(case).is_none() {
-        return Some(format!("the key set {}", case.key_set));
-    }
-    if let Some(entry) = case.values.iter().find(|entry| !read_key(&entry.key)) {
-        return Some(format!("the context parameter {}", entry.key));
-    }
-    let Source::Inline(text) = &case.source else {
-        return Some("a table of the data pack".to_owned());
-    };
-    let types: TypeNames = serde_json::from_str(text).expect("the source is JSON");
-    UNEVALUATED_TYPES
-        .iter()
-        .find(|&&name| types.names.iter().any(|found| found == name))
-        .map(|&name| name.to_owned())
+struct ReplayWorld {
+    biome: Option<Id<Biome>>,
 }
 
-fn stores_enchantments(case: &Case) -> bool {
-    match &case.outcome {
-        Outcome::Stacks(stacks) => stacks
-            .iter()
-            .any(|stack| stack.patch.contains(STORED_ENCHANTMENTS)),
-        _ => false,
+impl LocationView for ReplayWorld {
+    fn block_state(&self, _pos: BlockPos) -> Option<BlockStateId> {
+        Some(BlockStateId::AIR)
+    }
+
+    fn biome(&self, _pos: BlockPos) -> Option<Id<Biome>> {
+        self.biome
     }
 }
 
-#[derive(Default)]
-struct TypeNames {
-    text: Option<String>,
-    names: Vec<String>,
+impl EntityView for ReplayWorld {
+    type Entity = ();
 }
 
-impl<'de> Deserialize<'de> for TypeNames {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        deserializer.deserialize_any(TypeNamesVisitor)
+impl BlockEntityView for ReplayWorld {}
+
+impl<E> ScoreView<E> for ReplayWorld {
+    fn score(&self, _: ScoreHolder<'_, E>, _: &str) -> Option<i32> {
+        None
     }
 }
 
-struct TypeNamesVisitor;
-
-impl<'de> Visitor<'de> for TypeNamesVisitor {
-    type Value = TypeNames;
-
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("a JSON value")
+impl StorageView for ReplayWorld {
+    fn storage_number(&self, _: ResourceLocation<'_>, _: &NbtPath) -> Option<NbtNumber> {
+        None
     }
+}
 
-    fn visit_bool<E>(self, _: bool) -> Result<TypeNames, E> {
-        Ok(TypeNames::default())
+impl EnvironmentView for ReplayWorld {
+    fn environment_value(
+        &self,
+        _: EnvironmentAttribute,
+        _: Option<DVec3>,
+    ) -> Option<AttributeValue> {
+        None
     }
+}
 
-    fn visit_i64<E>(self, _: i64) -> Result<TypeNames, E> {
-        Ok(TypeNames::default())
+impl WeatherView for ReplayWorld {
+    fn rain_strength(&self) -> Option<f32> {
+        None
     }
+}
 
-    fn visit_u64<E>(self, _: u64) -> Result<TypeNames, E> {
-        Ok(TypeNames::default())
-    }
-
-    fn visit_f64<E>(self, _: f64) -> Result<TypeNames, E> {
-        Ok(TypeNames::default())
-    }
-
-    fn visit_unit<E>(self) -> Result<TypeNames, E> {
-        Ok(TypeNames::default())
-    }
-
-    fn visit_str<E>(self, text: &str) -> Result<TypeNames, E> {
-        Ok(TypeNames {
-            text: Some(text.to_owned()),
-            names: Vec::new(),
-        })
-    }
-
-    fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<TypeNames, A::Error> {
-        let mut names = Vec::new();
-        while let Some(element) = seq.next_element::<TypeNames>()? {
-            names.extend(element.names);
-        }
-        Ok(TypeNames { text: None, names })
-    }
-
-    fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<TypeNames, A::Error> {
-        let mut names = Vec::new();
-        while let Some(key) = map.next_key::<String>()? {
-            let value: TypeNames = map.next_value()?;
-            if key == "type"
-                && let Some(text) = value.text
-            {
-                names.push(match text.contains(':') {
-                    true => text,
-                    false => format!("minecraft:{text}"),
-                });
-            }
-            names.extend(value.names);
-        }
-        Ok(TypeNames { text: None, names })
+impl ClockView for ReplayWorld {
+    fn total_ticks(&self, _: Id<WorldClock>) -> Option<i64> {
+        None
     }
 }
 
@@ -506,59 +447,81 @@ fn replay(index: usize, case: &Case, replay: &Replay) -> Option<String> {
         .map(|difference| format!("{label}: {difference}"))
 }
 
+fn find_table(replay: &Replay, name: &str) -> Result<Id<LootTable>, String> {
+    let issues: Vec<&LootIssue> = (replay.issues.iter())
+        .filter(|issue| issue.name.as_str() == name)
+        .collect();
+    if !issues.is_empty() {
+        return Err(format!("bake issues {issues:?}"));
+    }
+    Ok(replay
+        .registries
+        .registry::<LootTableFile>()
+        .and_then(|tables| tables.by_name(ResourceLocation::read(name).expect("a table name")))
+        .expect("a table of the data pack"))
+}
+
 fn differences(index: usize, case: &Case, replay: &Replay) -> Result<(), String> {
+    assert_eq!(case.luck, 0.0, "unexpected luck on {}", case.name);
+    for entry in &case.values {
+        assert!(read_key(&entry.key), "unexpected key {}", entry.key);
+    }
     let tool = tool_of(case, replay);
     let context = context(case, &tool);
     let mut random = LegacyRandom::new(case.seed.cast_unsigned());
+    let biome = ResourceLocation::read(&case.biome)
+        .ok()
+        .and_then(|name| replay.registries.entries::<Biome>()?.by_name(name));
+    let world = ReplayWorld { biome };
     let inputs = LootInputs {
         named: &ENTRIES,
         context: &context,
-        world: &BlockHost::none(),
+        world: &world,
     };
     let mut scratch = PredicateScratch::default();
     let differs = match &case.outcome {
         Outcome::Stacks(expected) => {
-            let name = format!("replay:case_{index}");
-            let issues: Vec<&LootIssue> = (replay.issues.iter())
-                .filter(|issue| issue.name.as_str() == name)
-                .collect();
-            if !issues.is_empty() {
-                return Err(format!("bake issues {issues:?}"));
-            }
-            let table = replay
-                .registries
-                .registry::<LootTableFile>()
-                .and_then(|tables| {
-                    tables.by_name(ResourceLocation::read(&name).expect("a table name"))
-                })
-                .expect("an added table");
+            let table = find_table(replay, &format!("replay:case_{index}"))?;
             let mut stacks = Vec::new();
             replay
                 .loot
                 .roll(
                     table,
                     &context,
-                    &BlockHost::none(),
+                    &world,
                     &mut random,
                     &mut LootScratch::new(),
                     &mut stacks,
                 )
                 .expect("the context of the case");
-            let expected: Vec<Option<ItemStack>> = expected
-                .iter()
-                .map(|stack| match stack.patch.contains(STORED_ENCHANTMENTS) {
-                    true => decode(
-                        &SavedStack {
-                            item: stack.item.clone(),
-                            count: stack.count,
-                            patch: "{}".to_owned(),
-                        },
-                        replay,
-                    ),
-                    false => decode(stack, replay),
-                })
-                .collect();
+            let expected: Vec<Option<ItemStack>> =
+                expected.iter().map(|stack| decode(stack, replay)).collect();
             (stacks != expected).then(|| format!("stacks {stacks:?}, expected {expected:?}"))
+        }
+        Outcome::Fill { slots, items } => {
+            let name = case
+                .name
+                .split_once(' ')
+                .map_or(case.name.as_str(), |(t, _)| t);
+            let table = find_table(replay, name)?;
+            let count = usize::try_from(*slots).expect("slot count");
+            let (mut actual, mut expected) = (vec![None; count], vec![None; count]);
+            replay
+                .loot
+                .fill(
+                    table,
+                    &context,
+                    &world,
+                    &mut random,
+                    &mut LootScratch::new(),
+                    &mut actual,
+                )
+                .expect("context");
+            for (slot, saved) in items {
+                let slot = usize::try_from(*slot).expect("slot index");
+                *expected.get_mut(slot).expect("slot in range") = decode(saved, replay);
+            }
+            (actual != expected).then(|| format!("slots {actual:?}, expected {expected:?}"))
         }
         Outcome::Tests(expected) => {
             let condition = condition(case)?;
@@ -585,7 +548,6 @@ fn differences(index: usize, case: &Case, replay: &Replay) -> Result<(), String>
             let expected: Vec<u32> = expected.iter().map(|value| value.to_bits()).collect();
             (floats != expected).then(|| format!("float bits {floats:?}, expected {expected:?}"))
         }
-        Outcome::Fill => Some("a fill has no replay".to_owned()),
     };
     if let Some(difference) = differs {
         return Err(difference);
@@ -599,28 +561,10 @@ fn differences(index: usize, case: &Case, replay: &Replay) -> Result<(), String>
 
 #[test]
 fn the_captured_loot_cases_replay_in_exact_mode() {
-    let mut pending_by_reason: BTreeMap<String, usize> = BTreeMap::new();
-    let mut replayed = 0;
-    let mut without_stored_enchantments = 0;
     let mut differences = Vec::new();
     for (index, case) in CASES.iter().enumerate() {
-        if let Some(reason) = pending(case) {
-            *pending_by_reason.entry(reason).or_default() += 1;
-            continue;
-        }
-        replayed += 1;
-        without_stored_enchantments += usize::from(stores_enchantments(case));
         differences.extend(replay(index, case, &REPLAY));
     }
-    let expected: BTreeMap<String, usize> = PENDING
-        .iter()
-        .map(|&(reason, count)| (reason.to_owned(), count))
-        .collect();
-    assert_eq!(pending_by_reason, expected);
-    assert_eq!(replayed, REPLAYED);
-    assert_eq!(
-        without_stored_enchantments,
-        REPLAYED_WITHOUT_STORED_ENCHANTMENTS
-    );
+    assert_eq!(CASES.len(), REPLAYED, "expected {REPLAYED} replay cases");
     assert_eq!(differences, Vec::<String>::new());
 }

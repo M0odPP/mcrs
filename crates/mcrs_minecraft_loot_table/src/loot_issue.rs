@@ -26,6 +26,8 @@ pub enum LootProblem {
     UnknownModifier(String),
     UnknownSlotSource(String),
     UnknownAttribute(String),
+    UnknownEntry(&'static str, String),
+    InvalidComponent(String),
     Condition(ConditionProblem),
     ParamNotAllowed(ParamNotAllowed),
     Cycle(Vec<ResourceLocationBuf>),
@@ -60,6 +62,8 @@ impl fmt::Display for LootIssue {
             LootProblem::UnknownModifier(name) => write!(f, "no item modifier {name}"),
             LootProblem::UnknownSlotSource(name) => write!(f, "no slot source {name}"),
             LootProblem::UnknownAttribute(name) => write!(f, "no attribute {name}"),
+            LootProblem::UnknownEntry(kind, name) => write!(f, "no {kind} {name}"),
+            LootProblem::InvalidComponent(name) => write!(f, "invalid component {name}"),
             LootProblem::Condition(problem) => write!(f, "{problem}"),
             LootProblem::ParamNotAllowed(problem) => write!(f, "{problem}"),
             LootProblem::Cycle(tables) => {
