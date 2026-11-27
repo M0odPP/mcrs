@@ -1,4 +1,5 @@
 use glam::DVec3;
+use mcrs_minecraft_physics::ItemUse;
 use mcrs_minecraft_physics::MotionAttributes;
 use mcrs_minecraft_physics::MotionEffects;
 use mcrs_minecraft_physics::PlayerState;
@@ -21,6 +22,7 @@ pub enum Change {
         sprint_speed: SprintSpeed,
     },
     Effects(MotionEffects),
+    ItemUse(ItemUse),
     Block {
         at: BlockPos,
         old: BlockStateId,
@@ -51,6 +53,7 @@ impl Change {
                 state.sprint_speed = sprint_speed;
             }
             Change::Effects(effects) => state.effects = effects,
+            Change::ItemUse(item_use) => state.item_use = item_use,
             Change::Block { .. } | Change::BlockAck => {}
         }
     }

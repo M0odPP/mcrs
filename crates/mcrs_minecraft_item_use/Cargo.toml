@@ -1,0 +1,23 @@
+[package]
+name = "mcrs_minecraft_item_use"
+description = "Pure active item use timing, living flags metadata, movement speed scaling, and slot-change rules without Bevy"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+test = false
+doctest = false
+
+[lints]
+workspace = true
+
+[dependencies]
+bevy_ecs = { workspace = true, optional = true }
+
+[dev-dependencies]
+mcrs_test_alloc.workspace = true
+
+[features]
+default = []
+bevy = ["dep:bevy_ecs"]

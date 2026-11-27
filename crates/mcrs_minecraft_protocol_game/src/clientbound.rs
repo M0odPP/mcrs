@@ -156,6 +156,7 @@ pub struct ClientboundEntityEvent {
 
 impl ClientboundEntityEvent {
     pub const DIED: i8 = 3;
+    pub const USE_ITEM_FINISH: i8 = 9;
     pub const HONEY_SLIDE: i8 = 54;
     pub const SWAP_HANDS: i8 = 55;
     pub const REMOVED: i8 = 60;
