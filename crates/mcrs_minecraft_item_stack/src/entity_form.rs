@@ -39,7 +39,9 @@ use crate::SuspiciousStewEffects;
 use crate::Tool;
 use crate::Trim;
 use crate::Unbreakable;
+use crate::UseCooldown;
 use crate::UseEffects;
+use crate::UseRemainder;
 use crate::Weapon;
 
 pub(crate) trait EntityForm: Clone + 'static {
@@ -100,6 +102,14 @@ impl EntityForm for BundleContents {}
 impl EntityForm for ChargedProjectiles {}
 
 impl EntityForm for Container {}
+
+impl EntityForm for UseRemainder {}
+
+impl EntityForm for UseCooldown {
+    fn borrow_static(&'static self) -> Self {
+        Self::borrow_static(self)
+    }
+}
 
 impl EntityForm for ContainerLoot {}
 

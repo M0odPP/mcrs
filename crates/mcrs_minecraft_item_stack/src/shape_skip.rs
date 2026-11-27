@@ -2,6 +2,7 @@ use mcrs_minecraft_nbt::MAX_DEPTH;
 
 use crate::ComponentType;
 use crate::WireError;
+use crate::nbt_depth::DIRECT_TEMPLATE_LEVELS;
 use crate::nbt_depth::LIST_TEMPLATE_LEVELS;
 use crate::nbt_depth::SLOT_TEMPLATE_LEVELS;
 use crate::wire_scan::scan_template;
@@ -112,6 +113,10 @@ impl ShapeSkip {
             return Err(WireError::TooDeep);
         }
         Ok(Self { depth, ..self })
+    }
+
+    pub(crate) fn direct_template(self, input: &mut &[u8]) -> Result<(), WireError> {
+        scan_template(input, self.depth, DIRECT_TEMPLATE_LEVELS)
     }
 
     pub(crate) fn list_template(self, input: &mut &[u8]) -> Result<(), WireError> {

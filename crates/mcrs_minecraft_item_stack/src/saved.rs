@@ -126,7 +126,9 @@ use crate::TrimPatternId;
 use crate::Unbreakable;
 use crate::UndecodedValue;
 use crate::UseAnimation;
+use crate::UseCooldown;
 use crate::UseEffects;
+use crate::UseRemainder;
 use crate::Weapon;
 use crate::builtin_key::NAMESPACE;
 use crate::check_saved_form::NOT_NEGATIVE;
@@ -134,6 +136,7 @@ use crate::check_saved_form::OMINOUS_AMPLIFIER;
 use crate::check_saved_form::POSITIVE;
 use crate::check_saved_form::STACK_SIZE;
 use crate::entity_data::ENTITY_TYPE_KEY;
+use crate::nbt_depth::DIRECT_TEMPLATE_LEVELS;
 use crate::nbt_depth::LIST_TEMPLATE_LEVELS;
 use crate::nbt_depth::SLOT_TEMPLATE_LEVELS;
 use crate::nbt_depth::STACK_LEVEL;
@@ -405,6 +408,9 @@ fn read_value_at<L: NameLookup>(
         BuiltinKey::BundleContents => reader
             .templates(reader.list(tag)?)
             .map(|stacks| Builtin::BundleContents(BundleContents(stacks))),
+        BuiltinKey::UseRemainder => reader
+            .template(tag, DIRECT_TEMPLATE_LEVELS)
+            .map(|stack| Builtin::UseRemainder(UseRemainder(stack))),
         BuiltinKey::Container => reader.container(tag).map(Builtin::Container),
         _ => read_flat_value(&reader, tag),
     }
@@ -461,6 +467,7 @@ fn read_flat_value<L: NameLookup>(
         }
         BuiltinKey::Weapon => Builtin::Weapon(reader.weapon(tag)?),
         BuiltinKey::UseEffects => Builtin::UseEffects(reader.use_effects(tag)?),
+        BuiltinKey::UseCooldown => Builtin::UseCooldown(reader.use_cooldown(tag)?),
         BuiltinKey::BlocksAttacks => Builtin::BlocksAttacks(reader.blocks_attacks(tag)?),
         BuiltinKey::CustomName => Builtin::CustomName(CustomName(read_text(tag, component)?)),
         BuiltinKey::ItemName => Builtin::ItemName(ItemName(read_text(tag, component)?)),
@@ -482,7 +489,10 @@ fn read_flat_value<L: NameLookup>(
             OminousBottleAmplifier(reader.int(tag, OMINOUS_AMPLIFIER)?),
         ),
         BuiltinKey::Instrument => Builtin::Instrument(Instrument(reader.instrument(tag)?)),
-        BuiltinKey::ChargedProjectiles | BuiltinKey::BundleContents | BuiltinKey::Container => {
+        BuiltinKey::ChargedProjectiles
+        | BuiltinKey::BundleContents
+        | BuiltinKey::Container
+        | BuiltinKey::UseRemainder => {
             return read_value_at(component, tag, reader.names, reader.depth);
         }
         BuiltinKey::FireworkExplosion => {
@@ -1423,6 +1433,19 @@ impl<L: NameLookup> Reader<'_, L> {
             interact_vibrations,
             speed_multiplier,
         })
+    }
+
+    fn use_cooldown(&self, tag: &NbtTag) -> Result<UseCooldown, SavedError> {
+        let map = self.map(tag)?;
+        let seconds = self.float(self.necessary(map, "seconds")?)?;
+        if !is_instrument_range(seconds) {
+            return Err(SavedError::OutOfRange(self.component));
+        }
+        let cooldown_group = match map.get("cooldown_group") {
+            Some(tag) => Some(self.identifier(tag)?.to_buf()),
+            None => None,
+        };
+        Ok(UseCooldown::from_parts(seconds, cooldown_group))
     }
 
     fn blocks_attacks(&self, tag: &NbtTag) -> Result<BlocksAttacks, SavedError> {

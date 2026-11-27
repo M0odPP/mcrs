@@ -1,10 +1,15 @@
 use core::mem::{align_of, size_of};
 
 use mcrs_minecraft_item_use::{
-    DEFAULT_CONSUME_SECONDS, DEFAULT_USE_SPEED_MULTIPLIER, ItemUseState, LIVING_FLAG_OFFHAND,
-    LIVING_FLAG_SPIN_ATTACK, LIVING_FLAG_USING_ITEM, SHIELD_USE_DURATION_TICKS, SprintPolicy,
-    UseHand, UseKind, UseOutcome, UseSpec, cancel_on_slot_change, consume_ticks, living_flags_bits,
-    release_use, should_emit_consume_tick_effects, start_use, tick_use,
+    AppliedConsumeEffect, ConsumableEffectInstance, ConsumeMode, CooldownMap,
+    DEFAULT_CONSUME_SECONDS, DEFAULT_POTION_DURATION_SCALE, DEFAULT_USE_SPEED_MULTIPLIER,
+    EffectTiming, INFINITE_EFFECT_DURATION_TICKS, ItemUseState, LIVING_FLAG_OFFHAND,
+    LIVING_FLAG_SPIN_ATTACK, LIVING_FLAG_USING_ITEM, OMINOUS_BOTTLE_DURATION_TICKS,
+    OMINOUS_BOTTLE_EFFECT_ID, RemainderOutcome, SHIELD_USE_DURATION_TICKS, SprintPolicy,
+    StewEffectEntry, UseHand, UseKind, UseOutcome, UseSpec, cancel_on_slot_change,
+    collect_potion_effects, collect_stew_effects, compute_consume_remainder, consume_ticks,
+    cooldown_ticks, living_flags_bits, ominous_bottle_effect, release_use, resolve_cooldown_group,
+    scale_potion_duration, should_emit_consume_tick_effects, start_use, tick_use,
 };
 use mcrs_test_alloc::{CountingAllocator, allocations};
 
@@ -247,5 +252,166 @@ fn rules_perform_zero_heap_allocations() {
         after - before,
         0,
         "mcrs_minecraft_item_use must allocate zero bytes"
+    );
+}
+
+#[test]
+fn cooldown_rules_resolve_groups_expiry_and_removal() {
+    let pearl = "minecraft:ender_pearl";
+    assert_eq!(resolve_cooldown_group(None, pearl), pearl, "fallback");
+    assert_eq!(
+        resolve_cooldown_group(Some("mcrs:x"), pearl),
+        "mcrs:x",
+        "override"
+    );
+    for (seconds, ticks) in [(1.0, 20), (0.5, 10), (0.0, 0), (-1.0, 0), (f32::NAN, 0)] {
+        assert_eq!(cooldown_ticks(seconds), ticks, "cooldown_ticks({seconds})");
+    }
+
+    let mut cooldowns = CooldownMap::with_capacity(2);
+    cooldowns.start_cooldown(pearl, 100, 20);
+    assert!(cooldowns.is_on_cooldown(pearl, 100), "active at start");
+    assert_eq!(cooldowns.remaining_cooldown(pearl, 119), 1, "1 left");
+    assert!(!cooldowns.is_on_cooldown(pearl, 120), "expired at end_tick");
+    assert_eq!(cooldowns.remaining_cooldown(pearl, 120), 0, "0 left");
+    let big = (1_u64 << 30) + 100;
+    cooldowns.start_cooldown(pearl, big, 20);
+    assert!(cooldowns.remove_cooldown(pearl, big + 10), "remove active");
+    assert!(!cooldowns.remove_cooldown(pearl, big + 10), "remove absent");
+}
+
+#[test]
+fn consume_remainder_rules_cover_survival_and_creative() {
+    let bottle = Some("glass_bottle");
+    let (survival, creative) = (ConsumeMode::Survival, ConsumeMode::Creative);
+    let replace = RemainderOutcome::ReplaceSlot {
+        remainder: "glass_bottle",
+    };
+    let give = RemainderOutcome::DecrementAndGive {
+        remaining_count: 15,
+        remainder: "glass_bottle",
+    };
+    let decrement = RemainderOutcome::DecrementSource { remaining_count: 1 };
+    for (count, mode, remainder, expected) in [
+        (1, survival, bottle, replace),
+        (16, survival, bottle, give),
+        (16, creative, bottle, RemainderOutcome::Unchanged),
+        (2, survival, None, decrement),
+        (1, survival, None, RemainderOutcome::EmptySlot),
+    ] {
+        assert_eq!(
+            compute_consume_remainder(count, mode, remainder),
+            expected,
+            "count={count}"
+        );
+    }
+}
+
+#[test]
+fn consume_effect_rules_scale_potions_stew_and_ominous_bottle() {
+    for (duration, timing, scale, expected) in [
+        (
+            INFINITE_EFFECT_DURATION_TICKS,
+            EffectTiming::Timed,
+            0.25,
+            -1,
+        ),
+        (1, EffectTiming::Instant, 2.0, 1),
+        (3600, EffectTiming::Timed, 0.25, 900),
+        (2, EffectTiming::Timed, 0.1, 1),
+    ] {
+        assert_eq!(
+            scale_potion_duration(duration, timing, scale),
+            expected,
+            "scale {duration}"
+        );
+    }
+
+    let instance = |effect, duration, timing, amplifier, show_particles| {
+        let mut built = ConsumableEffectInstance::new(effect, duration, timing);
+        built.amplifier = amplifier;
+        built.show_particles = show_particles;
+        built
+    };
+    let mut collected = [None; 2];
+    let mut index = 0;
+    collect_potion_effects(
+        [instance(1_u16, 1800, EffectTiming::Timed, 0, true)],
+        [instance(2_u16, 1, EffectTiming::Instant, 1, false)],
+        0.25,
+        |effect| {
+            if let Some(slot) = collected.get_mut(index) {
+                *slot = Some(effect);
+            }
+            index += 1;
+        },
+    );
+    assert_eq!(
+        (
+            index,
+            collected[0].map(|item| item.duration),
+            collected[1].map(|item| item.duration)
+        ),
+        (2, Some(450), Some(1)),
+        "potion scaling"
+    );
+
+    let mut stew_output = None;
+    collect_stew_effects([StewEffectEntry::new(7_u16, 160)], |effect| {
+        stew_output = Some(effect);
+    });
+    assert_eq!(
+        stew_output,
+        Some(AppliedConsumeEffect::new(7_u16, 160)),
+        "stew effect"
+    );
+    let mut expected_omen =
+        AppliedConsumeEffect::new(OMINOUS_BOTTLE_EFFECT_ID, OMINOUS_BOTTLE_DURATION_TICKS);
+    expected_omen.amplifier = 4;
+    expected_omen.show_particles = false;
+    assert_eq!(
+        ominous_bottle_effect(9),
+        expected_omen,
+        "ominous bottle bad_omen"
+    );
+}
+
+#[test]
+fn hot_cooldown_remainder_and_effect_paths_allocate_zero_bytes() {
+    let (pearl, wind, reused) = (
+        "minecraft:ender_pearl",
+        "minecraft:wind_charge",
+        "mcrs:reused",
+    );
+    let mut cooldowns = CooldownMap::with_capacity(2);
+    cooldowns.start_cooldown(pearl, 10, 20);
+    cooldowns.start_cooldown(wind, 10, 10);
+    let potion = [ConsumableEffectInstance::new(
+        5_u16,
+        1200,
+        EffectTiming::Timed,
+    )];
+    let stew = [StewEffectEntry::new(9_u16, 160)];
+
+    let before = allocations();
+    let _group = resolve_cooldown_group(None, pearl);
+    let _ticks = cooldown_ticks(1.5);
+    assert!(cooldowns.is_on_cooldown(pearl, 15), "pearl active");
+    assert_eq!(cooldowns.remaining_cooldown(wind, 15), 5, "wind 5 ticks");
+    cooldowns.start_cooldown(pearl, 16, 40);
+    cooldowns.start_cooldown(reused, 25, 15);
+    assert!(cooldowns.is_on_cooldown(reused, 25), "reused active");
+    assert!(!cooldowns.is_on_cooldown(wind, 25), "expired evicted");
+    cooldowns.start_cooldown(reused, 26, 0);
+    let _ = cooldowns.iter_active(26).count();
+    let _ = compute_consume_remainder(4, ConsumeMode::Survival, Some(1_u8));
+    collect_potion_effects(potion, [], DEFAULT_POTION_DURATION_SCALE, |_| {});
+    collect_stew_effects(stew, |_| {});
+    let _ = ominous_bottle_effect(2);
+    cooldowns.clear();
+    assert_eq!(
+        allocations() - before,
+        0,
+        "hot cooldown, slot reuse after expiry, remainder, and effect helpers allocate zero bytes"
     );
 }

@@ -117,11 +117,14 @@ use crate::TrimMaterialId;
 use crate::TrimPatternId;
 use crate::Unbreakable;
 use crate::UseAnimation;
+use crate::UseCooldown;
 use crate::UseEffects;
+use crate::UseRemainder;
 use crate::Weapon;
 use crate::WireError;
 use crate::effect_details::EffectFields;
 use crate::lore::MAX_LINES;
+use crate::nbt_depth::DIRECT_TEMPLATE_LEVELS;
 use crate::nbt_depth::LIST_TEMPLATE_LEVELS;
 use crate::nbt_depth::SLOT_TEMPLATE_LEVELS;
 use crate::saved;
@@ -209,6 +212,9 @@ pub(crate) fn read_value_at<L: NameLookup>(
         BuiltinKey::BundleContents => reader
             .list_templates(input, usize::MAX)
             .map(|stacks| Builtin::BundleContents(BundleContents(stacks))),
+        BuiltinKey::UseRemainder => reader
+            .template(input, DIRECT_TEMPLATE_LEVELS)
+            .map(|stack| Builtin::UseRemainder(UseRemainder(stack))),
         BuiltinKey::Container => reader.container(input).map(Builtin::Container),
         _ => read_flat_value(&reader, input),
     }
@@ -272,6 +278,7 @@ fn read_flat_value<L: NameLookup>(
             interact_vibrations: reader.boolean(input)?,
             speed_multiplier: f32::from_be_bytes(reader.bytes(input)?),
         }),
+        BuiltinKey::UseCooldown => Builtin::UseCooldown(reader.use_cooldown(input)?),
         BuiltinKey::BlocksAttacks => Builtin::BlocksAttacks(reader.blocks_attacks(input)?),
         BuiltinKey::CustomName => Builtin::CustomName(CustomName(read_text(input, component)?)),
         BuiltinKey::ItemName => Builtin::ItemName(ItemName(read_text(input, component)?)),
@@ -308,7 +315,10 @@ fn read_flat_value<L: NameLookup>(
             Builtin::OminousBottleAmplifier(OminousBottleAmplifier(reader.var_int(input)?))
         }
         BuiltinKey::Instrument => Builtin::Instrument(Instrument(reader.instrument(input)?)),
-        BuiltinKey::ChargedProjectiles | BuiltinKey::BundleContents | BuiltinKey::Container => {
+        BuiltinKey::ChargedProjectiles
+        | BuiltinKey::BundleContents
+        | BuiltinKey::Container
+        | BuiltinKey::UseRemainder => {
             return read_value_at(component, input, reader.names, reader.depth);
         }
         BuiltinKey::FireworkExplosion => {
@@ -666,6 +676,13 @@ impl<L: NameLookup> Reader<'_, L> {
 
     fn identifier_buf(&self, input: &mut &[u8]) -> Result<ResourceLocationBuf, WireError> {
         Ok(self.identifier(input)?.to_buf())
+    }
+
+    fn use_cooldown(&self, input: &mut &[u8]) -> Result<UseCooldown, WireError> {
+        Ok(UseCooldown::from_parts(
+            f32::from_be_bytes(self.bytes(input)?),
+            self.optional(input, Self::identifier_buf)?,
+        ))
     }
 
     fn piercing_weapon(&self, input: &mut &[u8]) -> Result<PiercingWeapon, WireError> {
@@ -1082,6 +1099,10 @@ pub(crate) fn write_value<L: NameLookup>(
             put_boolean(output, effects.interact_vibrations);
             output.extend_from_slice(&effects.speed_multiplier.to_be_bytes());
         }
+        Builtin::UseCooldown(cooldown) => {
+            output.extend_from_slice(&cooldown.seconds.to_be_bytes());
+            writer.optional(cooldown.cooldown_group(), output, Writer::identifier)?;
+        }
         Builtin::BlocksAttacks(blocks) => writer.blocks_attacks(blocks, output)?,
         Builtin::MapDecorations(_) => writer.saved_form_as_nbt(value, output)?,
         Builtin::Profile(profile) => profile
@@ -1139,6 +1160,9 @@ pub(crate) fn write_value<L: NameLookup>(
         Builtin::Instrument(Instrument(instrument)) => writer.instrument(instrument, output)?,
         Builtin::ChargedProjectiles(value) => writer.charged_projectiles(value, output)?,
         Builtin::BundleContents(value) => writer.list(&value.0, output, Writer::list_template)?,
+        Builtin::UseRemainder(UseRemainder(stack)) => {
+            writer.template(stack, output, DIRECT_TEMPLATE_LEVELS)?
+        }
         Builtin::FireworkExplosion(explosion) => writer.firework_explosion(explosion, output)?,
         Builtin::Fireworks(fireworks) => writer.fireworks(fireworks, output)?,
         Builtin::BannerPatterns(value) => writer.list(&value.0, output, Writer::banner_layer)?,

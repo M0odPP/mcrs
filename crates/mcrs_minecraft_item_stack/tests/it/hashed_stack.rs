@@ -37,6 +37,7 @@ use serde::Deserialize;
 use crate::common::COMPONENT_TYPES;
 use crate::common::GoldenSet;
 use crate::common::golden_cases;
+use crate::common::nested_cases;
 use crate::common::stack;
 use crate::common::unhex;
 use crate::common::var_int;
@@ -328,6 +329,7 @@ fn a_component_has_the_hash_that_the_game_recorded() {
         "custom_data",
         "suspicious_stew_effects",
         "ominous_bottle_amplifier",
+        "use_cooldown",
         "instrument",
     ] {
         assert!(
@@ -657,6 +659,28 @@ fn hidden_effect_depth_enforces_512_when_hashing_and_hashes_mob_effect_tag() {
         hashed(Some(&tagged)).is_some(),
         "hashing consumable with MobEffectSet::Tag should succeed"
     );
+}
+
+#[test]
+fn use_remainder_hashes_match_nested_goldens() {
+    let cases = nested_cases();
+    let component = component_type("use_remainder");
+    let mut scratch = HashScratch::default();
+    for name in ["use_remainder_plain", "use_remainder_full"] {
+        let case = cases.iter().find(|entry| entry.name == name).expect("case");
+        let built = stack_with(component, &case.wire);
+        let hashed_value = hash_stack(Some(&built), &Names, &mut scratch)
+            .expect("hash succeeds")
+            .expect("non-empty");
+        assert_eq!(
+            hashed_value.values,
+            [HashedComponent {
+                component,
+                hash: case.hash
+            }],
+            "{name} hash"
+        );
+    }
 }
 
 fn wire_error(error: mcrs_minecraft_wire::Error) -> Option<WireError> {
