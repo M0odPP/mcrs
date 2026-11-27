@@ -2,10 +2,11 @@ use crate::client::{self, Event, LoadSignal, Login, Order, QueuedOrder, Signal};
 use crate::gameplay::GameplaySignal;
 use crate::swing::CapturedSwing;
 use crate::{
-    Action, AnimateObserved, ChatMessage, Checkpoint, CommandTree, ConnectionState,
-    DamageEventObserved, Direction, Disconnect, EntityDataObserved, EntityEventObserved,
-    EquipmentObserved, ExpectedPacket, GameEventObserved, HealthObserved, Host, MenuEvent, Observe,
-    Observed, PacketKind, PacketObserved, Scenario, StepTrace, SwingWireCheck, Trace, TraceVersion,
+    Action, AnimateObserved, BlockEventObserved, ChatMessage, Checkpoint, CommandTree,
+    ConnectionState, DamageEventObserved, Direction, Disconnect, EntityDataObserved,
+    EntityEventObserved, EquipmentObserved, ExpectedPacket, GameEventObserved, HealthObserved,
+    Host, MenuEvent, Observe, Observed, PacketKind, PacketObserved, Scenario, StepTrace,
+    SwingWireCheck, Trace, TraceVersion,
 };
 use anyhow::Context;
 use mcrs_minecraft_core::VERSION;
@@ -70,6 +71,7 @@ struct SettleSink {
     damage_events: Vec<DamageEventObserved>,
     entity_events: Vec<EntityEventObserved>,
     game_events: Vec<GameEventObserved>,
+    block_events: Vec<BlockEventObserved>,
     packets: Vec<PacketObserved>,
     checkpoints: Vec<Checkpoint>,
     orders: BTreeMap<String, UnboundedSender<QueuedOrder>>,
@@ -92,6 +94,7 @@ impl SettleSink {
             damage_events: Vec::new(),
             entity_events: Vec::new(),
             game_events: Vec::new(),
+            block_events: Vec::new(),
             packets: Vec::new(),
             checkpoints: Vec::new(),
             orders: BTreeMap::new(),
@@ -234,6 +237,7 @@ pub async fn run<H: Host>(
             damage_events: obs.damage_event.then(|| mem::take(&mut sink.damage_events)),
             entity_events: obs.entity_event.then(|| mem::take(&mut sink.entity_events)),
             game_events: obs.game_event.then(|| mem::take(&mut sink.game_events)),
+            block_events: obs.block_event.then(|| mem::take(&mut sink.block_events)),
             packets: (obs.packet_order && step.packet_order).then_some(packets),
             checkpoints: mem::take(&mut clients.sink.checkpoints),
             player_file,
@@ -786,6 +790,7 @@ impl SettleSink {
             GameplaySignal::DamageEvent(packet) => self.damage_events.push(packet),
             GameplaySignal::EntityEvent(packet) => self.entity_events.push(packet),
             GameplaySignal::GameEvent(packet) => self.game_events.push(packet),
+            GameplaySignal::BlockEvent(packet) => self.block_events.push(packet),
         }
     }
 

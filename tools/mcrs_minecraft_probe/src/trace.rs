@@ -1,7 +1,7 @@
 use crate::{
-    AnimateObserved, CommandTree, DamageEventObserved, EntityDataObserved, EntityEventObserved,
-    EquipmentObserved, ExpectedPacket, GameEventObserved, HealthObserved, MenuEvent, PlayerBan,
-    SoundPlayed, SwingObserved,
+    AnimateObserved, BlockEventObserved, CommandTree, DamageEventObserved, EntityDataObserved,
+    EntityEventObserved, EquipmentObserved, ExpectedPacket, GameEventObserved, HealthObserved,
+    MenuEvent, PlayerBan, SoundPlayed, SwingObserved,
 };
 use mcrs_minecraft_text::Text;
 use serde::{Deserialize, Serialize};
@@ -50,6 +50,8 @@ pub struct StepTrace {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub game_events: Option<Vec<GameEventObserved>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub block_events: Option<Vec<BlockEventObserved>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub packets: Option<Vec<PacketObserved>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub checkpoints: Vec<Checkpoint>,
@@ -89,6 +91,7 @@ impl StepTrace {
         sort_by_client(&mut self.damage_events, |item| &item.client);
         sort_by_client(&mut self.entity_events, |item| &item.client);
         sort_by_client(&mut self.game_events, |item| &item.client);
+        sort_by_client(&mut self.block_events, |item| &item.client);
         sort_by_client(&mut self.packets, |item| &item.client);
         match &mut self.observed {
             Observed::Command { chat, .. } | Observed::Console { chat, .. } => {
@@ -164,6 +167,7 @@ pub enum PacketKind {
     DamageEvent,
     EntityEvent,
     GameEvent,
+    BlockEvent,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]

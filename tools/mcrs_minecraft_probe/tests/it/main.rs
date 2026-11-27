@@ -141,6 +141,7 @@ fn normalize_per_client_removes_cross_client_interleaving_while_preserving_order
             damage_events: None,
             entity_events: None,
             game_events: None,
+            block_events: None,
             packets: Some(packets),
             checkpoints: Vec::new(),
             player_file: None,

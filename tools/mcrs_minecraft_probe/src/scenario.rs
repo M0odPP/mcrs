@@ -142,7 +142,7 @@ impl fmt::Display for ScenarioError {
                  set at least one of `observe.inventory`, `observe.swing`, `observe.animate`, \
                  `observe.equipment`, `observe.entity_data`, `observe.health`, \
                  `observe.damage_event`, `observe.entity_event`, `observe.game_event`, \
-                 or `observe.packet_order` to true"
+                 `observe.block_event`, or `observe.packet_order` to true"
             ),
             Self::SwingObservationNeeded { step } => write!(
                 formatter,
@@ -203,6 +203,8 @@ pub struct Observe {
     pub entity_event: bool,
     #[serde(default, skip_serializing_if = "is_false")]
     pub game_event: bool,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub block_event: bool,
     #[serde(default, skip_serializing_if = "is_false")]
     pub packet_order: bool,
     #[serde(default, skip_serializing_if = "is_false")]

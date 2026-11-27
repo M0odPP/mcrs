@@ -1,0 +1,22 @@
+[package]
+name = "mcrs_minecraft_containers"
+description = "Pure no_std chest, barrel, shulker box, dispenser, dropper, and hopper layout, double-chest pairing, obstruction, nesting, and lid state rules"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+doctest = false
+
+[lints]
+workspace = true
+
+[dependencies]
+bevy_ecs = { workspace = true, optional = true }
+mcrs_voxel.workspace = true
+
+[features]
+default = []
+bevy = ["dep:bevy_ecs"]
+
+[dev-dependencies]
+mcrs_test_alloc.workspace = true

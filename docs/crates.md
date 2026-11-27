@@ -242,6 +242,7 @@ Use the crate that owns the item. Do not write a second copy.
 - `mcrs_minecraft_collision_table`: Builds the collision table of the physics kernel from the block definitions and the block tags
 - `mcrs_minecraft_console`: The server console: command lines from the standard input, run as the server, and their answers in the log in English
 - `mcrs_minecraft_container_click`: The content of a container click as a plain value: the click kind, the button and the clicked menu entry, with its wire codec
+- `mcrs_minecraft_containers`: Pure no_std chest, barrel, shulker box, dispenser, dropper, and hopper layout, double-chest pairing, obstruction, nesting, and lid state rules
 - `mcrs_minecraft_core`: Directions and axes, bounding boxes, voxel shapes, rotation and mirror, heightmap names, codec helpers such as is_default, and the game version
 - `mcrs_minecraft_damage`: The hit procedure of a living entity without Bevy: the damage cooldown, the reductions, the absorption, the health change, the start of the death and the hit record
 - `mcrs_minecraft_datapack`: The data pack stack: pack selection, pack.mcmeta, overlays, filters and the files each pack contributes
