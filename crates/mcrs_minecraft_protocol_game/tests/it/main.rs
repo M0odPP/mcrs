@@ -21,6 +21,7 @@ mod decoder_advances_reader;
 mod entity_movement_codecs;
 mod entity_packets;
 mod equipment_sound_packets;
+mod explode_packet;
 mod inventory_packets;
 mod item;
 mod join_packets;

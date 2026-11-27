@@ -5729,6 +5729,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "mcrs_minecraft_explosions"
+version = "0.5.8"
+dependencies = [
+ "glam",
+ "libm",
+ "mcrs_test_alloc",
+ "mcrs_voxel",
+]
+
+[[package]]
 name = "mcrs_minecraft_falling_block"
 version = "0.5.8"
 dependencies = [

@@ -21,6 +21,7 @@ mcrs_minecraft_protocol::extend_packet_table! {
         "disguised_chat" => ClientboundDisguisedChat<'a>,
         "entity_event" => ClientboundEntityEvent,
         "entity_position_sync" => ClientboundEntityPositionSync,
+        "explode" => ClientboundExplode,
         "forget_level_chunk" => ClientboundForgetLevelChunk,
         "game_event" => ClientboundGameEvent,
         "hurt_animation" => ClientboundHurtAnimation,
