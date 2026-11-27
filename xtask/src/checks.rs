@@ -28,7 +28,7 @@ const WASM32_PACKAGES: [&str; 11] = [
     "mcrs_minecraft_biome_file",
 ];
 
-const NO_STD_PACKAGES: [&str; 27] = [
+const NO_STD_PACKAGES: [&str; 28] = [
     "mcrs_command",
     "mcrs_minecraft_bedrock_wire",
     "mcrs_minecraft_beds",
@@ -51,6 +51,7 @@ const NO_STD_PACKAGES: [&str; 27] = [
     "mcrs_minecraft_inventory_transaction",
     "mcrs_minecraft_item_use",
     "mcrs_minecraft_pose",
+    "mcrs_minecraft_projectiles",
     "mcrs_minecraft_status_effects",
     "mcrs_minecraft_swing",
     "mcrs_molang",
@@ -58,7 +59,7 @@ const NO_STD_PACKAGES: [&str; 27] = [
     "mcrs_voxel",
 ];
 
-const NO_BEVY_PACKAGES: [&str; 149] = [
+const NO_BEVY_PACKAGES: [&str; 150] = [
     "mcrs_command",
     "mcrs_engine_cell",
     "mcrs_engine_link",
@@ -168,6 +169,7 @@ const NO_BEVY_PACKAGES: [&str; 149] = [
     "mcrs_minecraft_probe",
     "mcrs_minecraft_predicate",
     "mcrs_minecraft_profile",
+    "mcrs_minecraft_projectiles",
     "mcrs_minecraft_protocol",
     "mcrs_minecraft_protocol_game",
     "mcrs_minecraft_random",

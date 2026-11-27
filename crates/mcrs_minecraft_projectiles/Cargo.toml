@@ -1,0 +1,31 @@
+[package]
+name = "mcrs_minecraft_projectiles"
+description = "Pure no_std rules for projectile launch, flight physics, and swept block and entity collision without Bevy"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+test = false
+doctest = false
+
+[lints]
+workspace = true
+
+[dependencies]
+bevy_ecs = { workspace = true, optional = true }
+glam = { workspace = true, features = ["nostd-libm"] }
+libm.workspace = true
+mcrs_minecraft_entity_key.workspace = true
+mcrs_minecraft_random = { workspace = true, optional = true }
+mcrs_voxel.workspace = true
+
+[features]
+default = []
+bevy = ["dep:bevy_ecs"]
+random = ["dep:mcrs_minecraft_random"]
+
+[dev-dependencies]
+mcrs_minecraft_projectiles = { path = ".", features = ["random"] }
+mcrs_minecraft_random.workspace = true
+mcrs_test_alloc.workspace = true
