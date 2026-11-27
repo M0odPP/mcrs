@@ -5,6 +5,7 @@ use mcrs_minecraft_resource::ResourceLocation;
 use mcrs_minecraft_text::Text;
 
 use crate::AttackAnimation;
+use crate::AttackRange;
 use crate::AttributeModifier;
 use crate::AttributeModifiers;
 use crate::BannerLayer;
@@ -28,6 +29,7 @@ use crate::Damage;
 use crate::DamageReduction;
 use crate::DamageTypeId;
 use crate::DamageTypeSet;
+use crate::DeathProtection;
 use crate::DyedColor;
 use crate::EffectInstance;
 use crate::Enchantable;
@@ -53,6 +55,7 @@ use crate::MapDecorations;
 use crate::MapId;
 use crate::MaxDamage;
 use crate::MaxStackSize;
+use crate::MinimumAttackCharge;
 use crate::MobEffectId;
 use crate::MobEffectSet;
 use crate::ModifierDisplay;
@@ -236,6 +239,9 @@ fn flat_saved_form<S: SavedSink, L: NameLookup>(
         Builtin::AttackAnimation(AttackAnimation(swing))
         | Builtin::InteractAnimation(InteractAnimation(swing)) => walk.swing_animation(sink, swing),
         Builtin::Weapon(weapon) => walk.weapon(sink, weapon),
+        Builtin::MinimumAttackCharge(MinimumAttackCharge(charge)) => walk.charge(sink, *charge),
+        Builtin::AttackRange(range) => walk.attack_range(sink, range),
+        Builtin::DeathProtection(protection) => walk.death_protection(sink, protection),
         Builtin::UseEffects(effects) => walk.use_effects(sink, effects),
         Builtin::UseCooldown(cooldown) => walk.use_cooldown(sink, cooldown),
         Builtin::BlocksAttacks(blocks) => walk.blocks_attacks(sink, blocks),
@@ -1132,6 +1138,49 @@ impl<L: NameLookup> Walk<'_, L> {
             Field::optional("item_damage_per_attack", item_damage_per_attack),
             Field::optional("disable_blocking_for_seconds", disable_blocking_for_seconds),
         ]))
+    }
+
+    fn charge<S: SavedSink>(&self, sink: &S, value: f32) -> Result<S::Node, Fault> {
+        is_unit_float(value)
+            .then(|| sink.leaf(Leaf::Float(value)))
+            .ok_or(Fault::OutOfRange(self.component))
+    }
+
+    fn attack_range<S: SavedSink>(&self, sink: &S, range: &AttackRange) -> Result<S::Node, Fault> {
+        let valid = AttackRange::is_valid_reach(range.min_reach)
+            && AttackRange::is_valid_reach(range.max_reach)
+            && AttackRange::is_valid_reach(range.min_creative_reach)
+            && AttackRange::is_valid_reach(range.max_creative_reach)
+            && is_unit_float(range.hitbox_margin)
+            && AttackRange::is_valid_mob_factor(range.mob_factor);
+        if !valid {
+            return Err(Fault::OutOfRange(self.component));
+        }
+        let field = |name, value: f32, fallback: f32| {
+            Field::optional(
+                name,
+                (value.to_bits() != fallback.to_bits()).then(|| sink.leaf(Leaf::Float(value))),
+            )
+        };
+        Ok(sink.fields([
+            field("min_reach", range.min_reach, 0.0),
+            field("max_reach", range.max_reach, 3.0),
+            field("min_creative_reach", range.min_creative_reach, 0.0),
+            field("max_creative_reach", range.max_creative_reach, 5.0),
+            field("hitbox_margin", range.hitbox_margin, 0.3),
+            field("mob_factor", range.mob_factor, 1.0),
+        ]))
+    }
+
+    fn death_protection<S: SavedSink>(
+        &self,
+        sink: &mut S,
+        protection: &DeathProtection,
+    ) -> Result<S::Node, Fault> {
+        let effects = listed(sink, &protection.death_effects, |sink, entry| {
+            self.consume_effect(sink, entry)
+        })?;
+        Ok(sink.fields([Field::optional("death_effects", effects)]))
     }
 
     fn use_effects<S: SavedSink>(&self, sink: &S, effects: &UseEffects) -> Result<S::Node, Fault> {

@@ -2,6 +2,7 @@ use alloc::borrow::Cow;
 
 use crate::AdditionalTradeCost;
 use crate::AttackAnimation;
+use crate::AttackRange;
 use crate::AttributeModifiers;
 use crate::BannerPatterns;
 use crate::Bees;
@@ -15,6 +16,7 @@ use crate::CustomData;
 use crate::CustomModelData;
 use crate::CustomName;
 use crate::Damage;
+use crate::DeathProtection;
 use crate::DyedColor;
 use crate::Enchantable;
 use crate::EnchantmentGlintOverride;
@@ -30,6 +32,7 @@ use crate::Lore;
 use crate::MapId;
 use crate::MaxDamage;
 use crate::MaxStackSize;
+use crate::MinimumAttackCharge;
 use crate::Neutral;
 use crate::OminousBottleAmplifier;
 use crate::PaintingVariant;
@@ -173,3 +176,7 @@ impl EntityForm for Weapon {}
 impl EntityForm for Enchantable {}
 
 impl EntityForm for AdditionalTradeCost {}
+
+impl EntityForm for MinimumAttackCharge {}
+impl EntityForm for AttackRange {}
+impl EntityForm for DeathProtection {}

@@ -134,6 +134,7 @@ mcrs_minecraft_region_disk = { path = "crates/mcrs_minecraft_region_disk" }
 mcrs_minecraft_resource = { path = "crates/mcrs_minecraft_resource" }
 mcrs_minecraft_core = { path = "crates/mcrs_minecraft_core", default-features = false }
 mcrs_minecraft_damage = { path = "crates/mcrs_minecraft_damage" }
+mcrs_minecraft_combat_rules = { path = "crates/mcrs_minecraft_combat_rules" }
 mcrs_minecraft_durability = { path = "crates/mcrs_minecraft_durability" }
 mcrs_minecraft_env_damage = { path = "crates/mcrs_minecraft_env_damage" }
 mcrs_minecraft_explosions = { path = "crates/mcrs_minecraft_explosions" }

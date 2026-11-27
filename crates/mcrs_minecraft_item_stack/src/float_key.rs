@@ -1,4 +1,4 @@
-pub(crate) fn of_f32(value: f32) -> u32 {
+pub(crate) const fn of_f32(value: f32) -> u32 {
     if value.is_nan() {
         f32::NAN.to_bits()
     } else {

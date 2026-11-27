@@ -34,7 +34,8 @@ pub(crate) fn skip_value(
         Unbreakable => value(BuiltinKey::Unbreakable, input),
         UseEffects => value(BuiltinKey::UseEffects, input),
         CustomName => value(BuiltinKey::CustomName, input),
-        MinimumAttackCharge | PotionDurationScale => skip.bytes(input, F32),
+        MinimumAttackCharge => value(BuiltinKey::MinimumAttackCharge, input),
+        PotionDurationScale => skip.bytes(input, F32),
         DamageType
         | BlockTransformer
         | VillagerVariant
@@ -102,9 +103,9 @@ pub(crate) fn skip_value(
         Weapon => value(BuiltinKey::Weapon, input),
         Enchantable => value(BuiltinKey::Enchantable, input),
         AdditionalTradeCost => value(BuiltinKey::AdditionalTradeCost, input),
-        AttackRange => skip.bytes(input, 6 * F32),
+        AttackRange => value(BuiltinKey::AttackRange, input),
         Equippable => value(BuiltinKey::Equippable, input),
-        DeathProtection => skip.list(input, consume_effect),
+        DeathProtection => value(BuiltinKey::DeathProtection, input),
         BlocksAttacks => value(BuiltinKey::BlocksAttacks, input),
         PiercingWeapon => value(BuiltinKey::PiercingWeapon, input),
         KineticWeapon => {

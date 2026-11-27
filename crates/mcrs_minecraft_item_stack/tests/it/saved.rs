@@ -115,7 +115,14 @@ impl Names {
             NameTable::EntityTypeTag => &["skeletons"],
             NameTable::DamageType => &["in_fire", "lava"],
             NameTable::DamageTypeTag => &["bypasses_shield"],
-            NameTable::MobEffect => &["speed", "slowness", "haste"],
+            NameTable::MobEffect => &[
+                "speed",
+                "slowness",
+                "haste",
+                "regeneration",
+                "fire_resistance",
+                "absorption",
+            ],
             NameTable::MobEffectTag => &["harmful_effects"],
             NameTable::Potion => &["water"],
             NameTable::TrimMaterial => &["amethyst"],
@@ -760,13 +767,14 @@ struct PlainError {
     error: String,
 }
 
-const PLAIN_KINDS: [(&str, BuiltinKey); 23] = [
+const PLAIN_KINDS: [(&str, BuiltinKey); 24] = [
     ("max_stack_size", BuiltinKey::MaxStackSize),
     ("max_damage", BuiltinKey::MaxDamage),
     ("damage", BuiltinKey::Damage),
     ("unbreakable", BuiltinKey::Unbreakable),
     ("rarity", BuiltinKey::Rarity),
     ("repair_cost", BuiltinKey::RepairCost),
+    ("minimum_attack_charge", BuiltinKey::MinimumAttackCharge),
     ("attack_animation", BuiltinKey::AttackAnimation),
     ("interact_animation", BuiltinKey::InteractAnimation),
     ("map_id", BuiltinKey::MapId),
@@ -799,8 +807,9 @@ fn plain_kind(kind: &str) -> Option<BuiltinKey> {
         .map(|(_, component)| *component)
 }
 
-const JSON_ONLY_ERRORS: [(&str, &str); 2] = [
+const JSON_ONLY_ERRORS: [(&str, &str); 3] = [
     ("enchantment_glint_override", "1"),
+    ("minimum_attack_charge", "-0.0"),
     (
         "instrument",
         r#"{"sound_event":"minecraft:entity.item.break","use_duration":-0.0,"range":1.0,"description":"x"}"#,
@@ -1150,10 +1159,19 @@ fn hidden_effect_depth_enforces_512_in_saved_form_and_round_trips_mob_effect_tag
     });
     let saved_tagged = write_saved(&tagged, &Names).expect("write remove_effects tag");
     let round_tripped = read_saved(&saved_tagged, &Names).expect("read remove_effects tag");
-    assert_eq!(
-        round_tripped, tagged,
-        "MobEffectSet::Tag should round-trip through saved NBT"
-    );
+    assert_eq!(round_tripped, tagged, "MobEffectSet::Tag saved NBT");
+
+    let mut range = NbtCompound::new();
+    range.put("min_reach", NbtTag::Float(-0.0));
+    let range_ok = read_saved(
+        &with_component("attack_range", NbtTag::Compound(range)),
+        &Names,
+    ) == Err(SavedError::OutOfRange(BuiltinKey::AttackRange));
+    let charge_ok = read_saved(
+        &with_component("minimum_attack_charge", NbtTag::Float(-0.0)),
+        &Names,
+    ) == Err(SavedError::OutOfRange(BuiltinKey::MinimumAttackCharge));
+    assert!(range_ok && charge_ok, "rejects minus zero reach and charge");
 }
 
 #[test]

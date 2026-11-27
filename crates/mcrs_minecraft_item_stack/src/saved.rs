@@ -23,6 +23,7 @@ use mcrs_voxel::BlockPos;
 
 use crate::ArgbColor;
 use crate::AttackAnimation;
+use crate::AttackRange;
 use crate::AttributeId;
 use crate::AttributeModifier;
 use crate::AttributeModifiers;
@@ -55,6 +56,7 @@ use crate::DamageReduction;
 use crate::DamageTypeId;
 use crate::DamageTypeSet;
 use crate::DamageTypeTagId;
+use crate::DeathProtection;
 use crate::DimensionPos;
 use crate::DyeColor;
 use crate::DyedColor;
@@ -91,6 +93,7 @@ use crate::MapDecorations;
 use crate::MapId;
 use crate::MaxDamage;
 use crate::MaxStackSize;
+use crate::MinimumAttackCharge;
 use crate::MobEffectId;
 use crate::MobEffectSet;
 use crate::MobEffectTagId;
@@ -468,6 +471,12 @@ fn read_flat_value<L: NameLookup>(
             Builtin::InteractAnimation(InteractAnimation(reader.swing_animation(tag)?))
         }
         BuiltinKey::Weapon => Builtin::Weapon(reader.weapon(tag)?),
+        BuiltinKey::MinimumAttackCharge => Builtin::MinimumAttackCharge(
+            MinimumAttackCharge::new(reader.float(tag)?)
+                .ok_or(SavedError::OutOfRange(component))?,
+        ),
+        BuiltinKey::AttackRange => Builtin::AttackRange(reader.attack_range(tag)?),
+        BuiltinKey::DeathProtection => Builtin::DeathProtection(reader.death_protection(tag)?),
         BuiltinKey::UseEffects => Builtin::UseEffects(reader.use_effects(tag)?),
         BuiltinKey::UseCooldown => Builtin::UseCooldown(reader.use_cooldown(tag)?),
         BuiltinKey::BlocksAttacks => Builtin::BlocksAttacks(reader.blocks_attacks(tag)?),
@@ -1425,6 +1434,43 @@ impl<L: NameLookup> Reader<'_, L> {
         Ok(Weapon {
             item_damage_per_attack,
             disable_blocking_for_seconds,
+        })
+    }
+
+    fn float_or(
+        &self,
+        map: &NbtCompound,
+        field: &str,
+        default: f32,
+        valid: fn(f32) -> bool,
+    ) -> Result<f32, SavedError> {
+        let Some(entry) = map.get(field) else {
+            return Ok(default);
+        };
+        let value = self.float(entry)?;
+        valid(value)
+            .then_some(value)
+            .ok_or(SavedError::OutOfRange(self.component))
+    }
+
+    fn attack_range(&self, tag: &NbtTag) -> Result<AttackRange, SavedError> {
+        let map = self.map(tag)?;
+        let reach =
+            |field, fallback| self.float_or(map, field, fallback, AttackRange::is_valid_reach);
+        Ok(AttackRange {
+            min_reach: reach("min_reach", 0.0)?,
+            max_reach: reach("max_reach", 3.0)?,
+            min_creative_reach: reach("min_creative_reach", 0.0)?,
+            max_creative_reach: reach("max_creative_reach", 5.0)?,
+            hitbox_margin: self.float_or(map, "hitbox_margin", 0.3, is_unit_float)?,
+            mob_factor: self.float_or(map, "mob_factor", 1.0, AttackRange::is_valid_mob_factor)?,
+        })
+    }
+
+    fn death_protection(&self, tag: &NbtTag) -> Result<DeathProtection, SavedError> {
+        let map = self.map(tag)?;
+        Ok(DeathProtection {
+            death_effects: self.listed(map, "death_effects", Self::consume_effect)?,
         })
     }
 
