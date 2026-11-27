@@ -13,3 +13,4 @@ mod spawn_blocks_tests;
 mod spawn_site;
 
 pub use respawn_plugin::RespawnPlugin;
+pub use respawn_plugin::RespawnWriteSet;

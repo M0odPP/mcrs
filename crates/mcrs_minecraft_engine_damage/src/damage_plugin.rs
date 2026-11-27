@@ -1,8 +1,8 @@
 use bevy_app::App;
 use bevy_app::FixedUpdate;
 use bevy_app::Plugin;
-use bevy_ecs::schedule::IntoScheduleConfigs;
 use bevy_ecs::schedule::common_conditions::resource_exists_and_changed;
+use bevy_ecs::schedule::{IntoScheduleConfigs, SystemSet};
 use bevy_ecs::system::IntoSystem;
 use mcrs_minecraft_damage::DamageTypeRules;
 use mcrs_minecraft_engine_entity_motion::MotionPass;
@@ -24,6 +24,9 @@ use crate::tick_vitals::tick_vitals;
 use crate::vitals_work::VitalsWork;
 use crate::vitals_work::has_vitals_work;
 use crate::vitals_work::track_inserted_vitals;
+
+#[derive(SystemSet, Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct VitalsTickSet;
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct DamagePlugin;
@@ -71,6 +74,7 @@ impl Plugin for DamagePlugin {
                     .in_set(TickSet::DomainInput),
                 tick_vitals
                     .run_if(has_vitals_work)
+                    .in_set(VitalsTickSet)
                     .in_set(TickSet::Simulate)
                     .before(MotionPass),
                 apply_hits

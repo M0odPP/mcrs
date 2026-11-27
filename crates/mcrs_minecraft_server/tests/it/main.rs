@@ -54,6 +54,7 @@ mod hostile_commands;
 mod hunger;
 mod inventory;
 mod item_summon;
+mod item_use;
 mod light_engine_e2e;
 mod login_handshake_e2e;
 mod login_profile;

@@ -15,6 +15,7 @@ mod vitals_work;
 
 pub use crowd_count::CrowdCount;
 pub use damage_plugin::DamagePlugin;
+pub use damage_plugin::VitalsTickSet;
 pub use damage_request::DamageRequest;
 pub use damage_set::DamageSet;
 pub use damage_type_ids::DamageTypeIds;
