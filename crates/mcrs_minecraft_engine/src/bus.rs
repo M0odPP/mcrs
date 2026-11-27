@@ -19,9 +19,10 @@ use mcrs_minecraft_protocol_game::clientbound::{
     ClientboundLevelEvent, ClientboundLightUpdate, ClientboundLogin, ClientboundOpenScreen,
     ClientboundPlayerAbilities, ClientboundPlayerCombatKill, ClientboundPlayerLookAt,
     ClientboundPlayerPosition, ClientboundRespawn, ClientboundSectionBlocksUpdate,
-    ClientboundSetChunkCacheCenter, ClientboundSetCursorItem, ClientboundSetHealth,
-    ClientboundSetHeldSlot, ClientboundSetTime, ClientboundSound, ClientboundSystemChatPacket,
-    ClientboundTabList, ClientboundTickingState, ClientboundTickingStep,
+    ClientboundSetChunkCacheCenter, ClientboundSetCursorItem, ClientboundSetExperience,
+    ClientboundSetHealth, ClientboundSetHeldSlot, ClientboundSetTime, ClientboundSound,
+    ClientboundSystemChatPacket, ClientboundTabList, ClientboundTickingState,
+    ClientboundTickingStep,
 };
 use mcrs_minecraft_resource::ResourceKeyBuf;
 use mcrs_minecraft_text::Text;
@@ -147,6 +148,7 @@ pub enum PacketPayload {
     SetTime(ClientboundSetTime),
     TickingState(ClientboundTickingState),
     TickingStep(ClientboundTickingStep),
+    SetExperience(ClientboundSetExperience),
     SetHealth(ClientboundSetHealth),
     HurtAnimation(ClientboundHurtAnimation),
     PlayerCombatKill(ClientboundPlayerCombatKill<'static>),

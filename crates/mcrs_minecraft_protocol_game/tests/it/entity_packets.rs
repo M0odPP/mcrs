@@ -17,7 +17,7 @@ use mcrs_minecraft_protocol::{Decode, Encode, VarInt};
 use mcrs_minecraft_protocol_game::block::BlockStateNumber;
 use mcrs_minecraft_protocol_game::clientbound::{
     AttributeSnapshot, ClientboundAddEntity, ClientboundSetEntityData, ClientboundSetEquipment,
-    ClientboundSetPassengers, ClientboundUpdateAttributes,
+    ClientboundSetExperience, ClientboundSetPassengers, ClientboundUpdateAttributes,
 };
 use mcrs_minecraft_protocol_game::entity::{
     DyeColor, EquipmentSlot, MetaDataValue, Metadata, MetadataEntry, OptionalBlockState,
@@ -454,4 +454,36 @@ fn particle_and_particles_entity_data_round_trip_and_check_registries() {
         invalid_item.check(registries()).is_err(),
         "unknown item id inside particles metadata must be rejected"
     );
+}
+
+#[test]
+fn set_experience_and_experience_orb_add_entity_match_wire_layout() {
+    use mcrs_minecraft_protocol::Packet;
+
+    assert_eq!(ClientboundSetExperience::ID, 105);
+    assert_eq!(EntityType::ExperienceOrb.id().number(), 50);
+
+    let packet = ClientboundSetExperience {
+        progress: 0.5,
+        level: VarInt(3),
+        total: VarInt(300),
+    };
+    let mut buffer = Vec::new();
+    let bytes = round_trip(&packet, &mut buffer);
+    assert_eq!(bytes, [0x3F, 0x00, 0x00, 0x00, 0x03, 0xAC, 0x02]);
+
+    let add_orb = ClientboundAddEntity {
+        id: VarInt(11),
+        uuid: Uuid::from_u128(99),
+        kind: EntityType::ExperienceOrb,
+        pos: DVec3::new(1.5, 64.0, -2.5),
+        movement: LpVec3(DVec3::ZERO),
+        pitch: ByteAngle(0),
+        yaw: ByteAngle(64),
+        head_yaw: ByteAngle(0),
+        data: VarInt(0),
+    };
+    let mut orb_buffer = Vec::new();
+    let orb_bytes = round_trip(&add_orb, &mut orb_buffer);
+    assert_eq!(orb_bytes.get(17).copied(), Some(50));
 }

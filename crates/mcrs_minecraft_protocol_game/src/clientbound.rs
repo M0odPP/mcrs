@@ -698,6 +698,13 @@ impl mcrs_minecraft_protocol::Decode<'_> for ClientboundSetEquipment {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Encode, Decode)]
+pub struct ClientboundSetExperience {
+    pub progress: f32,
+    pub level: VarInt,
+    pub total: VarInt,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Encode, Decode)]
 pub struct ClientboundSetHealth {
     pub health: f32,
     pub food: VarInt,
