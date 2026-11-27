@@ -25,6 +25,29 @@ pub struct ScheduledTick<T> {
     pub key: TickKey,
 }
 
+impl<T> ScheduledTick<T> {
+    #[must_use]
+    pub fn delay_at(&self, now: GameTick) -> i32 {
+        self.key
+            .due
+            .0
+            .saturating_sub(now.0)
+            .clamp(i64::from(i32::MIN), i64::from(i32::MAX)) as i32
+    }
+
+    #[must_use]
+    pub fn to_saved(self, now: GameTick) -> SavedTick<T> {
+        let delay = self.delay_at(now);
+        SavedTick {
+            pos: self.pos,
+            kind: self.kind,
+            delay,
+            priority: self.key.priority,
+            sequence: self.key.sequence,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Collected<T> {
     pub pos: BlockPos,
@@ -94,6 +117,27 @@ pub struct SavedTick<T> {
     pub delay: i32,
     pub priority: TickPriority,
     pub sequence: SubTick,
+}
+
+impl<T> SavedTick<T> {
+    #[must_use]
+    pub fn due_at(&self, now: GameTick) -> GameTick {
+        GameTick(now.0.saturating_add(i64::from(self.delay)))
+    }
+
+    #[must_use]
+    pub fn into_scheduled(self, now: GameTick) -> ScheduledTick<T> {
+        let due = self.due_at(now);
+        ScheduledTick {
+            pos: self.pos,
+            kind: self.kind,
+            key: TickKey {
+                due,
+                priority: self.priority,
+                sequence: self.sequence,
+            },
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

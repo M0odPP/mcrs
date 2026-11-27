@@ -19,6 +19,25 @@ pub type SavedFluidTick = SavedTick<Fluid>;
 const MIN_PRIORITY: i32 = -3;
 const MAX_PRIORITY: i32 = 3;
 
+impl<K> SavedTick<K> {
+    #[must_use]
+    pub fn from_due(kind: K, pos: BlockPos, due_tick: i64, game_time: i64, priority: i32) -> Self {
+        let delta = due_tick.saturating_sub(game_time);
+        let delay = delta.clamp(i64::from(i32::MIN), i64::from(i32::MAX)) as i32;
+        Self {
+            kind,
+            pos,
+            delay,
+            priority: priority.clamp(MIN_PRIORITY, MAX_PRIORITY),
+        }
+    }
+
+    #[must_use]
+    pub fn due_tick(&self, game_time: i64) -> i64 {
+        game_time.saturating_add(i64::from(self.delay))
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct RawTick<I> {
@@ -76,7 +95,7 @@ impl<K: Serialize> Serialize for SavedTick<K> {
             y: self.pos.y,
             z: self.pos.z,
             t: self.delay,
-            p: self.priority,
+            p: self.priority.clamp(MIN_PRIORITY, MAX_PRIORITY),
         }
         .serialize(s)
     }

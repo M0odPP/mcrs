@@ -20,6 +20,18 @@ pub fn precipitation_hits(
     random: &mut LegacyRandom,
     hits: &mut Vec<PrecipitationHit>,
 ) {
+    let mut chosen = Vec::new();
+    precipitation_hits_with_scratch(columns, speed, random, &mut chosen, hits);
+}
+
+pub(crate) fn precipitation_hits_with_scratch(
+    columns: &[ColumnPos],
+    speed: u32,
+    random: &mut LegacyRandom,
+    chosen: &mut Vec<u32>,
+    hits: &mut Vec<PrecipitationHit>,
+) {
+    chosen.clear();
     let Some(slots) = u32::try_from(columns.len())
         .ok()
         .and_then(|count| count.checked_mul(speed))
@@ -27,13 +39,16 @@ pub fn precipitation_hits(
         return;
     };
     let count = binomial(slots, random);
-    let mut chosen: Vec<u32> = Vec::with_capacity(count as usize);
+    if count == 0 {
+        return;
+    }
+    chosen.reserve(count as usize);
     for top in slots.saturating_sub(count)..slots {
         let slot = random.next_u32_bound(top.saturating_add(1));
         chosen.push(if chosen.contains(&slot) { top } else { slot });
     }
     chosen.sort_unstable();
-    for slot in chosen {
+    for &slot in chosen.iter() {
         let Some(column) = slot
             .checked_div(speed)
             .and_then(|index| columns.get(index as usize))

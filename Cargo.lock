@@ -7239,6 +7239,7 @@ dependencies = [
  "mcrs_minecraft_core",
  "mcrs_minecraft_random",
  "mcrs_minecraft_volume",
+ "mcrs_test_alloc",
  "mcrs_voxel",
  "proptest",
  "rustc-hash 2.1.3",

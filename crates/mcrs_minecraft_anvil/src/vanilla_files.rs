@@ -1,14 +1,18 @@
 use std::sync::LazyLock;
 
+use mcrs_minecraft_block::block_keys::Block;
+use mcrs_minecraft_block::fluid_keys::Fluid;
 use mcrs_minecraft_chunk::SectionKind;
 use mcrs_minecraft_chunk::section::{Biomes, NoiseBiomes};
 use mcrs_minecraft_fixtures::fixture;
 use mcrs_minecraft_nbt::compound::NbtCompound;
 use mcrs_minecraft_nbt::tag::NbtTag;
-use mcrs_voxel::ColumnPos;
+use mcrs_voxel::{BlockPos, ColumnPos};
 
 use crate::tests::write::{Named, assert_same_chunk, root};
-use crate::{ChunkStatus, PaletteNames, RetroGen, parse_chunk, write_chunk};
+use crate::{
+    ChunkStatus, PaletteNames, RetroGen, SavedBlockTick, SavedFluidTick, parse_chunk, write_chunk,
+};
 
 static FULL: LazyLock<Vec<u8>> =
     LazyLock::new(|| fixture("vanilla_chunk").file("chunk_full.nbt").bytes());
@@ -53,6 +57,11 @@ fn a_full_chunk_written_by_the_game_loads() {
     assert_eq!(chunk.status, ChunkStatus::Full);
     assert_eq!(chunk.retrogen, None);
     assert_eq!((chunk.last_update, chunk.inhabited_time), (100, 7));
+    assert_eq!(
+        (chunk.block_ticks.len(), chunk.fluid_ticks.len()),
+        (0, 0),
+        "vanilla fixture has no pending ticks"
+    );
     assert!(chunk.is_light_on);
     assert!(chunk.sections.iter().all(|s| s.noise_biomes.is_none()));
 
@@ -252,4 +261,30 @@ fn every_chunk_written_by_the_game_round_trips_over_what_the_shape_models() {
             "{name}: keys the game wrote that the shape leaves out: {left_out:?}"
         );
     }
+}
+
+#[test]
+fn pending_block_and_fluid_ticks_round_trip_over_a_vanilla_chunk() {
+    let mut loaded = load(&FULL);
+    let save_tick = loaded.chunk.last_update;
+    let load_tick = save_tick + 5_000;
+    let (base_x, base_z) = (loaded.chunk.pos.x * 16, loaded.chunk.pos.z * 16);
+    let at = |offset_x, y, offset_z| BlockPos::new(base_x + offset_x, y, base_z + offset_z);
+    let due = |delta| save_tick + delta;
+    loaded.chunk.block_ticks = vec![
+        SavedBlockTick::from_due(Block::Stone, at(2, 64, 5), due(12), save_tick, -2),
+        SavedBlockTick::from_due(Block::OakLog, at(11, -12, 9), due(-4), save_tick, 1),
+    ];
+    loaded.chunk.fluid_ticks = vec![
+        SavedFluidTick::from_due(Fluid::Water, at(4, 5, 6), due(5), save_tick, 0),
+        SavedFluidTick::from_due(Fluid::Lava, at(8, 10, 3), due(30), save_tick, -3),
+    ];
+    let written = write_chunk(&loaded.chunk, -4, &loaded.blocks, &loaded.biomes).unwrap();
+    let reloaded = parse_chunk(&written, &loaded.blocks, &loaded.biomes).unwrap();
+    assert_eq!(reloaded.block_ticks, loaded.chunk.block_ticks);
+    assert_eq!(reloaded.fluid_ticks, loaded.chunk.fluid_ticks);
+    assert_eq!(reloaded.block_ticks[0].due_tick(load_tick), load_tick + 12);
+    assert_eq!(reloaded.block_ticks[1].due_tick(load_tick), load_tick - 4);
+    assert_eq!(reloaded.fluid_ticks[0].due_tick(load_tick), load_tick + 5);
+    assert_eq!(reloaded.fluid_ticks[1].due_tick(load_tick), load_tick + 30);
 }

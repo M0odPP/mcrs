@@ -11,6 +11,8 @@ use mcrs_voxel::{BlockPos, BlockStateId, SectionPos};
 
 use Direction::{Down, East, North, South, Up, West};
 
+pub const DEFAULT_UPDATE_LIMIT: u16 = 512;
+
 pub(crate) fn neighbour(pos: BlockPos, direction: Direction) -> Option<BlockPos> {
     let normal = direction.normal();
     Some(BlockPos::new(
@@ -124,6 +126,23 @@ where
         });
     }
 
+    pub fn update_shape(
+        &mut self,
+        target: BlockPos,
+        from: Direction,
+        neighbour_state: BlockStateId,
+        flags: BlockUpdateFlags,
+        limit: u16,
+    ) {
+        self.offer(UpdateRequest::Shape {
+            target,
+            from,
+            neighbour_state,
+            flags,
+            limit,
+        });
+    }
+
     pub(crate) fn emit_shape_updates(
         &mut self,
         pos: BlockPos,
@@ -136,6 +155,16 @@ where
         };
         let flags =
             flags.difference(BlockUpdateFlags::NEIGHBORS | BlockUpdateFlags::SUPPRESS_DROPS);
+        self.update_shapes(pos, state, flags, limit);
+    }
+
+    pub fn update_shapes(
+        &mut self,
+        pos: BlockPos,
+        state: BlockStateId,
+        flags: BlockUpdateFlags,
+        limit: u16,
+    ) {
         for direction in self.chain_order.shapes {
             if let Some(target) = neighbour(pos, direction) {
                 self.offer(UpdateRequest::Shape {
@@ -161,6 +190,16 @@ where
         };
         let flags =
             flags.difference(BlockUpdateFlags::NEIGHBORS | BlockUpdateFlags::SUPPRESS_DROPS);
+        self.update_indirect_shapes(pos, state, flags, limit);
+    }
+
+    pub fn update_indirect_shapes(
+        &mut self,
+        pos: BlockPos,
+        state: BlockStateId,
+        flags: BlockUpdateFlags,
+        limit: u16,
+    ) {
         let facts = self.facts;
         if !facts.is_redstone_wire(state) {
             return;

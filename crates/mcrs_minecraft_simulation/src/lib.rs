@@ -26,7 +26,8 @@ mod tile_task;
 
 pub use access::{PartitionKind, SectionProperties, SimulatedSections, SimulationVolume};
 pub use behaviour::{BlockBehaviour, BlockFacts};
-pub use cx::Cx;
+pub use chain::DEFAULT_UPDATE_LIMIT;
+pub use cx::{Cx, Drops, PistonMove};
 pub use event_queue::{BlockEvent, DrainEnd, Drained, EventQueue, QueuedEvent};
 pub use footprints::Footprints;
 pub use message::{ChainOrigin, Message, MessageBody, UpdateRequest};
@@ -36,8 +37,8 @@ pub use precipitation::{
     PRECIPITATION_GATE, PRECIPITATION_TILE, PrecipitationHit, precipitation_hits,
 };
 pub use random_tick::{
-    RandomHit, RandomPick, RandomPicks, RandomTickTable, RandomTicks, block_tile,
-    draw_random_picks, random_step,
+    DEFAULT_RANDOM_TICK_SPEED, RandomHit, RandomPick, RandomPicks, RandomTickTable, RandomTicks,
+    block_tile, draw_random_picks, random_step,
 };
 pub use scalar::{GameTick, ShardId, TickPriority};
 pub use schedule::{PendingTick, ScheduleTicks};
@@ -93,5 +94,9 @@ mod tests {
         assert!(size_of::<UpdateRequest<Narrow>>() <= 24);
         assert!(size_of::<Message<Narrow>>() <= 56);
         assert!(size_of::<BlockWrite>() <= 24);
+        assert!(
+            size_of::<crate::TickingPositions>() <= 32,
+            "ticking positions stay compact per section"
+        );
     }
 }

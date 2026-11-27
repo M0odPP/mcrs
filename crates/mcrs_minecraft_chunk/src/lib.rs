@@ -8,6 +8,7 @@ pub mod light;
 pub mod light_storage;
 pub mod nibbles;
 pub mod palette;
+mod random_ticks;
 pub mod section;
 pub mod voxel_palette;
 
@@ -16,6 +17,7 @@ pub use container::{AbstractCube, HeterogeneousPaletteData, PalettedContainer};
 pub use light::{BlockLight, LightLayer, SkyLight};
 pub use light_storage::LightStorage;
 pub use nibbles::SectionNibbles;
+pub use random_ticks::{RandomTickPresence, SectionTickCounts};
 pub use voxel_palette::{SharedVoxelPalette, VoxelPalette};
 
 pub type ChunkBlocks =
