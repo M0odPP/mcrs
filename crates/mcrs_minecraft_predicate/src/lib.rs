@@ -72,4 +72,5 @@ pub use location_view::LocationView;
 pub use predicate_issue::PredicateIssue;
 pub use predicate_scratch::PredicateScratch;
 pub use predicate_tables::PredicateTables;
+pub use slot_range::{SlotRange, UnknownSlotRange};
 pub use smoke_table::SmokeTable;

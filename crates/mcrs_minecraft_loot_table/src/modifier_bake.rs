@@ -373,7 +373,7 @@ fn slot_group(group: EquipmentSlotGroup) -> SlotGroup {
     }
 }
 
-fn is_air(item: &ResourceLocationBuf) -> bool {
+pub(crate) fn is_air(item: &ResourceLocationBuf) -> bool {
     item.namespace() == "minecraft" && item.path() == "air"
 }
 

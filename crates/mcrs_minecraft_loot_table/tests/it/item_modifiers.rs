@@ -465,8 +465,8 @@ fn loot_mod_013_enchanted_count_increase_reads_the_attacker_equipment() {
     for (table, attacker, weapon, count) in rows {
         let context = entity_context(attacker);
         let world = Around {
-            blocks: &[],
             main_hand: weapon,
+            ..Around::default()
         };
         let rolled = roll_named(table, &context, &world);
         assert_eq!(

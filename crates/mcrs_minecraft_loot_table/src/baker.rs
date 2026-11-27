@@ -5,6 +5,7 @@ use mcrs_minecraft_item_key::item_keys::Item;
 use mcrs_minecraft_item_stack::Kind;
 use mcrs_minecraft_loot::context_key_set_keys::ContextKeySet;
 use mcrs_minecraft_loot::loot::LootTable;
+use mcrs_minecraft_loot::slot::SlotSource;
 use mcrs_minecraft_loot_condition::{
     Condition, ConditionBaker, ConditionFile, ContextParams, DynamicName, FloatProvider,
     FloatProviderFile, IntProvider, IntProviderFile, NamedEntries,
@@ -20,7 +21,12 @@ use crate::loot_table_file::{
     TableSetFile, TagName,
 };
 use crate::modifier::Modifier;
+use crate::modifier_bake::is_air;
 use crate::modifier_file::ModifierFile;
+use crate::slot_source::SlotSourceNode;
+use crate::slot_source_file::{
+    SlotSourceElement, SlotSourceFile, SlotSourceObject, SlotSourceSetFile,
+};
 use crate::table::{Entry, EntryKind, Pool, Span, Table};
 use crate::table_links::{self, ChainPlace, Edge, TableLinks};
 
@@ -31,17 +37,21 @@ pub(crate) fn bake(
     issues: &mut Vec<LootIssue>,
 ) -> Vec<Table> {
     let files = registries.registry::<LootTableFile>();
+    let modifier_files = registries.registry::<ModifierFile>();
+    let slot_source_files = registries.registry::<SlotSourceFile>();
+    let first_modifier = files.map_or(0, Registry::len);
+    let first_slot_source = first_modifier.saturating_add(modifier_files.map_or(0, Registry::len));
     let load = Load {
         definitions,
         registries,
         entries,
         files,
-        modifier_files: registries.registry::<ModifierFile>(),
-        first_modifier: files.map_or(0, Registry::len),
+        modifier_files,
+        slot_source_files,
+        first_modifier,
+        first_slot_source,
     };
-    let nodes = load
-        .first_modifier
-        .saturating_add(load.modifier_files.map_or(0, Registry::len));
+    let nodes = first_slot_source.saturating_add(slot_source_files.map_or(0, Registry::len));
     let mut graph = Graph {
         names: Vec::with_capacity(nodes),
         tables: Vec::with_capacity(nodes),
@@ -66,6 +76,14 @@ pub(crate) fn bake(
         let baked = mem::take(&mut baker.parts).baked(Box::new([]), modifiers);
         graph.push(baker, baked, name, issues);
     }
+    for (id, name, file) in load.slot_source_files.into_iter().flat_map(Registry::iter) {
+        let owner = load.first_slot_source.saturating_add(id.index());
+        let kind = IssueOwner::SlotSource;
+        let mut baker = load.baker(ContextKeySet::Generic, owner, kind, &mut inline);
+        let _ = baker.slot_source(file, "");
+        let baked = mem::take(&mut baker.parts).baked(Box::new([]), Box::new([]));
+        graph.push(baker, baked, name, issues);
+    }
     let Graph {
         names,
         mut tables,
@@ -83,7 +101,9 @@ struct Load<'a> {
     entries: &'a NamedEntries,
     files: Option<&'a Registry<LootTableFile>>,
     modifier_files: Option<&'a Registry<ModifierFile>>,
+    slot_source_files: Option<&'a Registry<SlotSourceFile>>,
     first_modifier: usize,
+    first_slot_source: usize,
 }
 
 impl<'a> Load<'a> {
@@ -98,7 +118,9 @@ impl<'a> Load<'a> {
             registries: self.registries,
             files: self.files,
             modifier_files: self.modifier_files,
+            slot_source_files: self.slot_source_files,
             first_modifier: self.first_modifier,
+            first_slot_source: self.first_slot_source,
             conditions: ConditionBaker::new(self.definitions, self.registries, self.entries),
             key_set,
             owner,
@@ -155,6 +177,7 @@ struct Parts {
     entries: Vec<Entry>,
     items: Vec<Kind>,
     nested: Vec<Option<u32>>,
+    slot_sources: Vec<SlotSourceNode>,
     reads: ContextParams,
     edges: Vec<Edge>,
     chains: Vec<ChainPlace>,
@@ -169,6 +192,7 @@ impl Parts {
                 entries: self.entries.into_boxed_slice(),
                 items: self.items.into_boxed_slice(),
                 nested: self.nested.into_boxed_slice(),
+                slot_sources: self.slot_sources.into_boxed_slice(),
                 modifiers,
             },
             reads: self.reads,
@@ -189,7 +213,9 @@ pub(crate) struct Baker<'a, 'i> {
     pub(crate) registries: &'a Registries,
     files: Option<&'a Registry<LootTableFile>>,
     pub(crate) modifier_files: Option<&'a Registry<ModifierFile>>,
+    slot_source_files: Option<&'a Registry<SlotSourceFile>>,
     pub(crate) first_modifier: usize,
+    first_slot_source: usize,
     pub(crate) conditions: ConditionBaker<'a>,
     key_set: ContextKeySet,
     owner: usize,
@@ -261,14 +287,24 @@ impl Baker<'_, '_> {
             .as_ref()
             .map(|condition| self.condition(condition, &format!("{path}.condition")));
         let kind = match &file.kind {
-            EntryKindFile::Item { name } => match self.lookup::<Item>(name.as_location()) {
-                Some(item) => EntryKind::Item(Kind(item.number())),
-                None => {
+            EntryKindFile::Item { name } => {
+                if is_air(name) {
                     self.problems
-                        .push((path.to_owned(), LootProblem::UnknownItem(name.to_string())));
+                        .push((format!("{path}.name"), LootProblem::ItemAir));
                     EntryKind::Empty
+                } else {
+                    match self.lookup::<Item>(name.as_location()) {
+                        Some(item) => EntryKind::Item(Kind(item.number())),
+                        None => {
+                            self.problems.push((
+                                path.to_owned(),
+                                LootProblem::UnknownItem(name.to_string()),
+                            ));
+                            EntryKind::Empty
+                        }
+                    }
                 }
-            },
+            }
             EntryKindFile::Tag { items, expand } => {
                 let members = self.items(items, path);
                 if *expand {
@@ -287,7 +323,10 @@ impl Baker<'_, '_> {
             }
             EntryKindFile::Dynamic { name } => DynamicName::from_location(name.as_location())
                 .map_or(EntryKind::Empty, EntryKind::Dynamic),
-            EntryKindFile::Empty | EntryKindFile::Slots { .. } => EntryKind::Empty,
+            EntryKindFile::Empty => EntryKind::Empty,
+            EntryKindFile::Slots { slot_source } => {
+                EntryKind::Slots(self.slot_source(slot_source, &format!("{path}.slot_source")))
+            }
             EntryKindFile::Alternatives { children } => {
                 let last = children.len().saturating_sub(1);
                 for (number, child) in children.iter().enumerate().take(last) {
@@ -492,6 +531,137 @@ impl Baker<'_, '_> {
 
     pub(crate) fn lookup<R: Registered>(&self, name: ResourceLocation<'_>) -> Option<Id<R>> {
         self.registries.entries::<R>()?.by_name(name)
+    }
+
+    pub(crate) fn slot_source(&mut self, file: &SlotSourceFile, path: &str) -> u32 {
+        let root = index_of(self.parts.slot_sources.len());
+        self.parts.slot_sources.push(SlotSourceNode::Empty);
+        let node = match file {
+            SlotSourceFile::Tag(TagName(name)) => self.slot_source_tag(name, path),
+            SlotSourceFile::Key(name) => SlotSourceNode::Named(self.slot_source_key(name, path)),
+            SlotSourceFile::Many(elements) => self.slot_source_many(elements, path),
+            SlotSourceFile::One(object) => self.slot_source_object(object, path),
+        };
+        set_slot_source(&mut self.parts.slot_sources, root, node);
+        root
+    }
+
+    fn slot_source_many(&mut self, elements: &[SlotSourceElement], path: &str) -> SlotSourceNode {
+        let start = index_of(self.parts.slot_sources.len());
+        self.parts.slot_sources.resize(
+            self.parts.slot_sources.len().saturating_add(elements.len()),
+            SlotSourceNode::Empty,
+        );
+        let end = index_of(self.parts.slot_sources.len());
+        for ((number, element), index) in elements.iter().enumerate().zip(start..end) {
+            let child_path = if elements.len() > 1 {
+                format!("{path}[{number}]")
+            } else {
+                path.to_owned()
+            };
+            let child = match element {
+                SlotSourceElement::Key(name) => {
+                    SlotSourceNode::Named(self.slot_source_key(name, &child_path))
+                }
+                SlotSourceElement::Inline(object) => self.slot_source_object(object, &child_path),
+            };
+            set_slot_source(&mut self.parts.slot_sources, index, child);
+        }
+        SlotSourceNode::Group(Span { start, end })
+    }
+
+    fn slot_source_object(&mut self, object: &SlotSourceObject, path: &str) -> SlotSourceNode {
+        match object {
+            SlotSourceObject::Group { terms } => match terms {
+                SlotSourceSetFile::Tag(TagName(name)) => {
+                    self.slot_source_tag(name, &format!("{path}.terms"))
+                }
+                SlotSourceSetFile::Many(elements) => {
+                    self.slot_source_many(elements, &format!("{path}.terms"))
+                }
+                SlotSourceSetFile::One(element) => {
+                    self.slot_source_many(core::slice::from_ref(element), &format!("{path}.terms"))
+                }
+            },
+            SlotSourceObject::Filtered {
+                slot_source,
+                item_filter,
+            } => {
+                let child = self.slot_source(slot_source, &format!("{path}.slot_source"));
+                let filter = self.conditions.item_predicate(item_filter);
+                self.take_problems(&format!("{path}.item_filter"));
+                filter.map_or(SlotSourceNode::Empty, |filter| SlotSourceNode::Filtered {
+                    child,
+                    filter: Box::new(filter),
+                })
+            }
+            SlotSourceObject::LimitSlots { slot_source, limit } => SlotSourceNode::LimitSlots {
+                child: self.slot_source(slot_source, &format!("{path}.slot_source")),
+                limit: limit.0,
+            },
+            SlotSourceObject::SlotRange { slots, source } => {
+                let param = source.context_param();
+                self.check(ContextParams::EMPTY.with(param), &format!("{path}.source"));
+                SlotSourceNode::SlotRange {
+                    slots: *slots,
+                    source: param,
+                }
+            }
+            SlotSourceObject::Contents {
+                slot_source,
+                component,
+            } => SlotSourceNode::Contents {
+                child: self.slot_source(slot_source, &format!("{path}.slot_source")),
+                component: *component,
+            },
+            SlotSourceObject::Empty => SlotSourceNode::Empty,
+        }
+    }
+
+    fn slot_source_tag(&mut self, name: &ResourceLocationBuf, path: &str) -> SlotSourceNode {
+        let members = self.registries.tags::<SlotSource>().and_then(|tags| {
+            let tag = tags.id(TagKey::new(name.as_location()))?;
+            Some(tags.members(tag).map(Id::index).collect::<Vec<_>>())
+        });
+        let Some(members) = members else {
+            self.problems
+                .push((path.to_owned(), LootProblem::UnknownTag(name.to_string())));
+            return SlotSourceNode::Empty;
+        };
+        let start = index_of(self.parts.slot_sources.len());
+        for member in members {
+            let slot = self.nest(Some(self.first_slot_source.saturating_add(member)), path);
+            self.parts.slot_sources.push(SlotSourceNode::Named(slot));
+        }
+        SlotSourceNode::Group(Span {
+            start,
+            end: index_of(self.parts.slot_sources.len()),
+        })
+    }
+
+    fn slot_source_key(&mut self, name: &ResourceLocationBuf, path: &str) -> u32 {
+        let id = self
+            .slot_source_files
+            .and_then(|files| files.by_name(name.as_location()));
+        if id.is_none() {
+            self.problems.push((
+                path.to_owned(),
+                LootProblem::UnknownSlotSource(name.to_string()),
+            ));
+        }
+        self.nest(
+            id.map(|id| self.first_slot_source.saturating_add(id.index())),
+            path,
+        )
+    }
+}
+
+fn set_slot_source(slots: &mut [SlotSourceNode], index: u32, node: SlotSourceNode) {
+    if let Some(place) = usize::try_from(index)
+        .ok()
+        .and_then(|index| slots.get_mut(index))
+    {
+        *place = node;
     }
 }
 

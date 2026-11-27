@@ -1,7 +1,8 @@
 use core::str::FromStr;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum SlotRange {
+#[non_exhaustive]
+pub enum SlotRange {
     Run { first: u16, len: u16 },
     Armor,
 }
@@ -109,6 +110,14 @@ const SINGLE: [SingleName; 12] = [
 const ARMOR: [u16; 5] = [100, 101, 102, 103, 105];
 
 impl SlotRange {
+    #[must_use = "iterators are lazy and do nothing unless consumed"]
+    pub fn slots(self) -> impl Iterator<Item = u16> {
+        match self {
+            Self::Run { first, len } => SlotIterator::Run(first..first.saturating_add(len)),
+            Self::Armor => SlotIterator::Armor(ARMOR.into_iter()),
+        }
+    }
+
     pub(crate) fn any_slot(self, test: impl FnMut(u16) -> bool) -> bool {
         match self {
             SlotRange::Run { first, len } => (first..first.saturating_add(len)).any(test),
@@ -117,8 +126,52 @@ impl SlotRange {
     }
 }
 
+enum SlotIterator {
+    Run(core::ops::Range<u16>),
+    Armor(core::array::IntoIter<u16, 5>),
+}
+
+impl Iterator for SlotIterator {
+    type Item = u16;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            Self::Run(range) => range.next(),
+            Self::Armor(armor) => armor.next(),
+        }
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for SlotRange {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct Visitor;
+
+        impl serde::de::Visitor<'_> for Visitor {
+            type Value = SlotRange;
+
+            fn expecting(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                formatter.write_str("a slot range string")
+            }
+
+            fn visit_str<E: serde::de::Error>(self, value: &str) -> Result<Self::Value, E> {
+                value.parse().map_err(serde::de::Error::custom)
+            }
+        }
+
+        deserializer.deserialize_str(Visitor)
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct UnknownSlotRange;
+pub struct UnknownSlotRange;
+
+impl core::fmt::Display for UnknownSlotRange {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        formatter.write_str("unknown slot range")
+    }
+}
+
+impl core::error::Error for UnknownSlotRange {}
 
 impl FromStr for SlotRange {
     type Err = UnknownSlotRange;

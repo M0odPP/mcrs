@@ -5,5 +5,6 @@ use mcrs_minecraft_loot_condition::MemberKind;
 pub enum IssueOwner {
     Table,
     ItemModifier,
+    SlotSource,
     Named(MemberKind),
 }

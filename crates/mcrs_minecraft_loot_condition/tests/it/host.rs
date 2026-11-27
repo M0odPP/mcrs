@@ -6,7 +6,8 @@ use mcrs_minecraft_game_registries::registry_load::test_registries;
 use mcrs_minecraft_item::component::equippable::EquipmentSlot;
 use mcrs_minecraft_item_stack::ItemStack;
 use mcrs_minecraft_loot_condition::{
-    ClockView, EnvironmentView, NbtNumber, ScoreHolder, ScoreView, StorageView, WeatherView,
+    BlockEntityView, ClockView, EnvironmentView, NbtNumber, ScoreHolder, ScoreView, StorageView,
+    WeatherView,
 };
 use mcrs_minecraft_nbt_path::NbtPath;
 use mcrs_minecraft_predicate::{EntityView, ItemSubject, LocationView};
@@ -114,3 +115,5 @@ impl ClockView for Mobs<'_> {
         self.clock
     }
 }
+
+impl BlockEntityView for Mobs<'_> {}

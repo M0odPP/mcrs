@@ -12,7 +12,7 @@ use mcrs_minecraft_item_stack::{
 };
 use mcrs_minecraft_loot::context_key_set_keys::ContextKeySet;
 use mcrs_minecraft_loot_condition::{
-    Condition, ConditionBaker, ConditionFile, ContextParam, LootContext, LootInputs,
+    Condition, ConditionBaker, ConditionFile, ContextParam, LootContainer, LootContext, LootInputs,
     ParamNotAllowed, Tool,
 };
 use mcrs_minecraft_nbt::compound::NbtCompound;
@@ -712,4 +712,44 @@ fn loot_cnd_019_environment_attribute_check_reads_by_position() {
             "{json} {environment:?} {origin:?}"
         );
     }
+}
+
+#[test]
+fn loot_ctx_010_container_and_additional_cost_params_report_in_held() {
+    let slot_stack = ItemStack::new(item("minecraft:stick"), Count::new(1).expect("1"));
+    let slots = [Some(slot_stack), None];
+    let mut slot_context = LootContext::try_new(ContextKeySet::CommandSlotSource).expect("key set");
+    slot_context.origin = Some(DVec3::ZERO);
+    slot_context.container = Some(LootContainer::Slots(&slots));
+    assert!(
+        slot_context.held().contains(ContextParam::Container),
+        "container should appear in held params"
+    );
+    assert!(
+        slot_context
+            .slot(ContextParam::Container, &BlockHost::none(), 0)
+            .is_some(),
+        "slot 0 should exist"
+    );
+    assert!(
+        slot_context
+            .slot(ContextParam::Container, &BlockHost::none(), 2)
+            .is_none(),
+        "out-of-bounds slot should be absent"
+    );
+
+    let mut trade = LootContext::<()>::try_new(ContextKeySet::VillagerTrade).expect("trade");
+    assert!(
+        !trade
+            .held()
+            .contains(ContextParam::AdditionalCostComponentAllowed),
+        "flag defaults to false"
+    );
+    trade.additional_cost_component_allowed = true;
+    assert!(
+        trade
+            .held()
+            .contains(ContextParam::AdditionalCostComponentAllowed),
+        "flag appears when enabled"
+    );
 }

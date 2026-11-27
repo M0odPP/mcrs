@@ -44,7 +44,7 @@ impl Break<'_> {
                 &cx,
                 &Around {
                     blocks: self.around,
-                    main_hand: None,
+                    ..Around::default()
                 },
                 &mut stream(&LOOT.0, table, tick),
                 &mut LootScratch::new(),
