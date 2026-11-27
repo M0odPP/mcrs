@@ -4,6 +4,7 @@ use std::num::NonZeroU8;
 use mcrs_minecraft_entity_attribute::ModifierOperation;
 use mcrs_minecraft_fixtures::fixture;
 use mcrs_minecraft_item_stack::AttackAnimation;
+use mcrs_minecraft_item_stack::AttackRange;
 use mcrs_minecraft_item_stack::AttributeId;
 use mcrs_minecraft_item_stack::AttributeModifier;
 use mcrs_minecraft_item_stack::AttributeModifiers;
@@ -129,7 +130,15 @@ impl Names {
             NameTable::EntityTypeTag => indexed(&["skeletons"]),
             NameTable::DamageType => vec![(21, "in_fire"), (24, "lava")],
             NameTable::DamageTypeTag => indexed(&["bypasses_shield"]),
-            NameTable::MobEffect => indexed(&["speed", "slowness", "haste"]),
+            NameTable::MobEffect => [
+                indexed(&["speed", "slowness", "haste"]),
+                vec![
+                    (9, "regeneration"),
+                    (11, "fire_resistance"),
+                    (21, "absorption"),
+                ],
+            ]
+            .concat(),
             NameTable::MobEffectTag => indexed(&["harmful_effects"]),
             NameTable::Potion => indexed(&["water"]),
             NameTable::TrimMaterial => indexed(&["amethyst"]),
@@ -992,11 +1001,12 @@ struct PlainValue {
     wire: Option<String>,
 }
 
-const DECODED_PLAIN: [&str; 33] = [
+const DECODED_PLAIN: [&str; 34] = [
     "max_stack_size",
     "max_damage",
     "damage",
     "unbreakable",
+    "minimum_attack_charge",
     "repair_cost",
     "rarity",
     "attack_animation",
@@ -1115,7 +1125,7 @@ fn the_wire_components_that_the_game_wrote_read_to_the_saved_value_and_write_bac
         assert_same_component(&value.kind, &wire(read.as_ref()), &bare, header.len());
         decoded += 1;
     }
-    assert_eq!((decoded, kept), (114, 72));
+    assert_eq!((decoded, kept), (119, 67), "decoded plain wire counts");
 }
 
 #[derive(Deserialize)]
@@ -1843,10 +1853,18 @@ fn hidden_effect_depth_enforces_512_in_wire_form_and_round_trips_mob_effect_tag(
     let decoded_tag = read_all(&wire_bytes, read_wire)
         .expect("wire read remove_effects tag")
         .expect("non-empty item stack");
-    assert_eq!(
-        decoded_tag, tagged,
-        "MobEffectSet::Tag should round-trip through wire"
-    );
+    assert_eq!(decoded_tag, tagged, "MobEffectSet::Tag wire round-trip");
+
+    let charge_error = Err(WireError::OutOfRange(BuiltinKey::MinimumAttackCharge));
+    for hex in ["80000000", "3fc00000", "7fc00000"] {
+        let decoded = read_all(&with_one_component("minimum_attack_charge", hex), read_wire);
+        assert_eq!(decoded, charge_error, "rejects invalid charge {hex}");
+    }
+    let mut range = AttackRange::DEFAULT;
+    range.mob_factor = 2.5;
+    let written = write_wire(Some(&stack(STONE, 1).set(range)), &Names, &mut Vec::new());
+    let expected = Err(WireError::OutOfRange(BuiltinKey::AttackRange));
+    assert_eq!(written, expected, "rejects bad mob factor");
 }
 
 #[test]

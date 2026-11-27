@@ -4788,6 +4788,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "mcrs_minecraft_combat_rules"
+version = "0.5.8"
+dependencies = [
+ "glam",
+ "libm",
+ "mcrs_minecraft_combat_rules",
+ "mcrs_minecraft_damage",
+ "mcrs_minecraft_item_stack",
+ "mcrs_test_alloc",
+]
+
+[[package]]
 name = "mcrs_minecraft_command"
 version = "0.5.8"
 dependencies = [

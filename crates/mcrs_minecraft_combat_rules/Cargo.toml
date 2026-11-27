@@ -1,0 +1,26 @@
+[package]
+name = "mcrs_minecraft_combat_rules"
+description = "Shield blocking arcs, weapon reach and charge checks, durability wear, and totem survival"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+doctest = false
+
+[lints]
+workspace = true
+
+[dependencies]
+glam = { workspace = true, features = ["nostd-libm"] }
+libm.workspace = true
+mcrs_minecraft_damage.workspace = true
+mcrs_minecraft_item_stack = { workspace = true, optional = true }
+
+[features]
+default = []
+item-stack = ["dep:mcrs_minecraft_item_stack"]
+
+[dev-dependencies]
+mcrs_minecraft_combat_rules = { path = ".", features = ["item-stack"] }
+mcrs_test_alloc.workspace = true

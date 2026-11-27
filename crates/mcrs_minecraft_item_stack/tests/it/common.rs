@@ -180,9 +180,11 @@ pub(crate) struct GoldenCase {
     pub(crate) hash: i32,
 }
 
-const CHANGED_RECORDS: [(&str, &str); 12] = [
+const CHANGED_RECORDS: [(&str, &str); 14] = [
     ("cmd_empty", "custom_model_data"),
     ("cmd_full", "custom_model_data"),
+    ("attack_range_default", "attack_range"),
+    ("attack_range_full", "attack_range"),
     ("block_state_empty", "block_state"),
     ("block_state_one", "block_state"),
     ("lodestone_default", "lodestone_tracker"),
@@ -203,7 +205,7 @@ const OLDER_RECORDS: [(&str, &str); 5] = [
     ("item_model", "item_model"),
 ];
 
-const HOLDERS: [(&str, &str); 17] = [
+const HOLDERS: [(&str, &str); 20] = [
     ("piercing_weapon_default", "piercing_weapon"),
     ("piercing_weapon_explicit", "piercing_weapon"),
     ("piercing_weapon_full", "piercing_weapon"),
@@ -211,6 +213,9 @@ const HOLDERS: [(&str, &str); 17] = [
     ("consumable_explicit", "consumable"),
     ("consumable_full", "consumable"),
     ("consumable_bare_ids", "consumable"),
+    ("death_protection_default", "death_protection"),
+    ("death_protection_totem", "death_protection"),
+    ("death_protection_single_list", "death_protection"),
     ("blocks_attacks_default", "blocks_attacks"),
     ("blocks_attacks_neg_zero", "blocks_attacks"),
     ("blocks_attacks_explicit", "blocks_attacks"),

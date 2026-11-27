@@ -22,6 +22,7 @@ use mcrs_voxel::BlockPos;
 use crate::AdditionalTradeCost;
 use crate::ArgbColor;
 use crate::AttackAnimation;
+use crate::AttackRange;
 use crate::AttributeId;
 use crate::AttributeModifier;
 use crate::AttributeModifiers;
@@ -53,6 +54,7 @@ use crate::DamageReduction;
 use crate::DamageTypeId;
 use crate::DamageTypeSet;
 use crate::DamageTypeTagId;
+use crate::DeathProtection;
 use crate::DimensionPos;
 use crate::DyeColor;
 use crate::DyedColor;
@@ -87,6 +89,7 @@ use crate::Lore;
 use crate::MapId;
 use crate::MaxDamage;
 use crate::MaxStackSize;
+use crate::MinimumAttackCharge;
 use crate::MobEffectId;
 use crate::MobEffectSet;
 use crate::MobEffectTagId;
@@ -274,6 +277,20 @@ fn read_flat_value<L: NameLookup>(
         BuiltinKey::Weapon => Builtin::Weapon(Weapon {
             item_damage_per_attack: reader.var_int(input)?,
             disable_blocking_for_seconds: f32::from_be_bytes(reader.bytes(input)?),
+        }),
+        BuiltinKey::MinimumAttackCharge => Builtin::MinimumAttackCharge(MinimumAttackCharge(
+            f32::from_be_bytes(reader.bytes(input)?),
+        )),
+        BuiltinKey::AttackRange => Builtin::AttackRange(AttackRange {
+            min_reach: f32::from_be_bytes(reader.bytes(input)?),
+            max_reach: f32::from_be_bytes(reader.bytes(input)?),
+            min_creative_reach: f32::from_be_bytes(reader.bytes(input)?),
+            max_creative_reach: f32::from_be_bytes(reader.bytes(input)?),
+            hitbox_margin: f32::from_be_bytes(reader.bytes(input)?),
+            mob_factor: f32::from_be_bytes(reader.bytes(input)?),
+        }),
+        BuiltinKey::DeathProtection => Builtin::DeathProtection(DeathProtection {
+            death_effects: reader.list(input, Reader::consume_effect)?,
         }),
         BuiltinKey::UseEffects => Builtin::UseEffects(UseEffects {
             can_sprint: reader.boolean(input)?,
@@ -1101,6 +1118,20 @@ pub(crate) fn write_value<L: NameLookup>(
         Builtin::Weapon(weapon) => {
             put_var_int(output, weapon.item_damage_per_attack);
             output.extend_from_slice(&weapon.disable_blocking_for_seconds.to_be_bytes());
+        }
+        Builtin::MinimumAttackCharge(MinimumAttackCharge(charge)) => {
+            output.extend_from_slice(&charge.to_be_bytes());
+        }
+        Builtin::AttackRange(range) => {
+            output.extend_from_slice(&range.min_reach.to_be_bytes());
+            output.extend_from_slice(&range.max_reach.to_be_bytes());
+            output.extend_from_slice(&range.min_creative_reach.to_be_bytes());
+            output.extend_from_slice(&range.max_creative_reach.to_be_bytes());
+            output.extend_from_slice(&range.hitbox_margin.to_be_bytes());
+            output.extend_from_slice(&range.mob_factor.to_be_bytes());
+        }
+        Builtin::DeathProtection(protection) => {
+            writer.list(&protection.death_effects, output, Writer::consume_effect)?;
         }
         Builtin::UseEffects(effects) => {
             put_boolean(output, effects.can_sprint);

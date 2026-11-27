@@ -54,6 +54,9 @@ macro_rules! for_each_builtin {
             Weapon => "weapon",
             Enchantable => "enchantable",
             AdditionalTradeCost => "additional_trade_cost",
+            MinimumAttackCharge => "minimum_attack_charge",
+            AttackRange => "attack_range",
+            DeathProtection => "death_protection",
         }
     };
 }

@@ -77,6 +77,11 @@ impl Names {
             NameTable::Potion => &[(13, "swiftness")],
             NameTable::PaintingVariant => &[(0, "alban"), (1, "aztec"), (24, "kebab")],
             NameTable::DamageType => &[(21, "in_fire"), (24, "lava")],
+            NameTable::MobEffect => &[
+                (9, "regeneration"),
+                (11, "fire_resistance"),
+                (21, "absorption"),
+            ],
             _ => &[],
         };
         let indexed: &'static [&'static str] = match table {
@@ -136,11 +141,12 @@ struct PlainValue {
     hash: Option<i32>,
 }
 
-const PLAIN_KINDS: [&str; 25] = [
+const PLAIN_KINDS: [&str; 26] = [
     "max_stack_size",
     "max_damage",
     "damage",
     "unbreakable",
+    "minimum_attack_charge",
     "rarity",
     "repair_cost",
     "attack_animation",
@@ -314,6 +320,9 @@ fn a_component_has_the_hash_that_the_game_recorded() {
         "piercing_weapon",
         "use_effects",
         "blocks_attacks",
+        "attack_range",
+        "death_protection",
+        "minimum_attack_charge",
         "attack_animation",
         "interact_animation",
         "map_id",

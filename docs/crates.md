@@ -240,6 +240,7 @@ Use the crate that owns the item. Do not write a second copy.
 - `mcrs_minecraft_brain`: The AI stage of mobs without Bevy: the snapshot replica, the issue and the late application of decisions, keyed random values, the wake schedule and the goal selector
 - `mcrs_minecraft_chunk`: Chunk storage: PalettedContainer, voxel palettes, section light storage and nibbles, column heights, and the chunk status keys
 - `mcrs_minecraft_collision_table`: Builds the collision table of the physics kernel from the block definitions and the block tags
+- `mcrs_minecraft_combat_rules`: Shield blocking arcs, weapon reach and charge checks, durability wear, and totem survival
 - `mcrs_minecraft_console`: The server console: command lines from the standard input, run as the server, and their answers in the log in English
 - `mcrs_minecraft_container_click`: The content of a container click as a plain value: the click kind, the button and the clicked menu entry, with its wire codec
 - `mcrs_minecraft_containers`: Pure no_std chest, barrel, shulker box, dispenser, dropper, and hopper layout, double-chest pairing, obstruction, nesting, and lid state rules
