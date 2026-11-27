@@ -1,6 +1,6 @@
 [package]
 name = "mcrs_minecraft_projectiles"
-description = "Pure no_std rules for projectile launch, flight physics, and swept block and entity collision without Bevy"
+description = "Pure no_std rules for projectile launch, flight physics, swept collision, and hit resolution without Bevy"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

@@ -279,7 +279,7 @@ Use the crate that owns the item. Do not write a second copy.
 - `mcrs_minecraft_potion`: The keys of the potion registry and of its tags, and the effects of each potion
 - `mcrs_minecraft_predicate`: The keys of the entity predicate and statistic registries, the views of the world and of the entities that a predicate reads, and the entity, location, block, fluid, light, distance and item predicates
 - `mcrs_minecraft_profile`: Game profiles, their properties and the resolvable profile of a player head
-- `mcrs_minecraft_projectiles`: Pure no_std rules for projectile launch, flight physics, and swept block and entity collision without Bevy
+- `mcrs_minecraft_projectiles`: Pure no_std rules for projectile launch, flight physics, swept collision, and hit resolution without Bevy
 - `mcrs_minecraft_random`: The Random trait, the legacy and Xoroshiro generators, position seeds, shuffle and the worldgen random splitters
 - `mcrs_minecraft_recipe`: The ingredient and the keys of the recipe registries
 - `mcrs_minecraft_region_disk`: The region disk layer: a column of the data layer as the anvil files under one dimension, with quarantine of damaged regions
