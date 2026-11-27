@@ -104,6 +104,7 @@ pub mod to_coordinator;
 pub mod to_muxer;
 pub mod use_item_on_request;
 mod use_item_request;
+mod using_item;
 pub mod view_radius;
 mod wanted_column;
 pub mod whitelist;
@@ -128,7 +129,7 @@ pub use block_break::{BlockBreakAckSet, BlockBreakSet, eye_position, in_reach, r
 pub use consume_inbound_player_spawn::InboundPlayerSpawnSet;
 pub use held_joins::HeldJoins;
 pub use max_health::max_health;
-pub use movement::PlayerMoved;
+pub use movement::{ItemUsePredictionSet, MovementPrediction, PlayerMoved};
 pub use own_equipment::{
     OwnEquipment, PlayerEquipmentDelta, PlayerEquipmentSyncSet, PublishPlayerTilesSet,
 };
@@ -147,6 +148,7 @@ pub use send_own_attributes::OwnAttributesSet;
 pub use server_difficulty::ServerDifficulty;
 pub use shift_key::ShiftKey;
 pub use use_item_request::UseItemRequest;
+pub use using_item::{LivingFlags, UsingItem};
 pub use world_state::{
     SavedSpawn, WorldStatePlugin, WorldStateSources, WorldStateWrite, WorldStateWriter,
 };
