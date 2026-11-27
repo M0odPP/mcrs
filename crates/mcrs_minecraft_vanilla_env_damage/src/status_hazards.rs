@@ -4,16 +4,22 @@ use bevy_ecs::prelude::{Query, Res};
 use bevy_ecs::system::SystemParam;
 use glam::DVec3;
 use mcrs_minecraft_dimension_environment::environment::WeatherLevel;
+use mcrs_minecraft_engine::OwnEquipment;
 use mcrs_minecraft_engine::player_state::PlayerFileState;
+use mcrs_minecraft_engine_world::block_update::{BlockSetRequest, remove_block};
 use mcrs_minecraft_engine_world::palette::BiomePalette;
 use mcrs_minecraft_engine_world::world::storage::section::SectionIndex;
 use mcrs_minecraft_engine_world::world::storage::view::DimensionView;
+use mcrs_minecraft_entity::mob_effect_keys::MobEffect;
 use mcrs_minecraft_env_damage::{
-    self as env_damage, FireImmunity, FireSource, LAVA_DAMAGE, LAVA_IGNITE_TICKS,
-    PLAYER_FIRE_GRACE, WetExposure,
+    self as env_damage, FireImmunity, FireSource, FreezeImmunity, FreezeStepOutcome, LAVA_DAMAGE,
+    LAVA_IGNITE_TICKS, OnFireState, PLAYER_FIRE_GRACE, PowderSnowExposure, WetExposure,
 };
+use mcrs_minecraft_equipment::EquipSlot;
+use mcrs_minecraft_game_mode::GameMode;
 use mcrs_minecraft_physics::{self as physics, Aabb};
 use mcrs_minecraft_pose::Dimensions;
+use mcrs_minecraft_simulation::BlockUpdateFlags;
 use mcrs_voxel::{BlockPos, LocalPos, SectionPos};
 
 use crate::bake::{
@@ -45,11 +51,100 @@ pub(crate) enum ExtinguishStatus {
     Extinguished,
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(crate) enum PowderSnowState {
+    #[default]
+    Outside,
+    Inside,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(crate) enum PowderSnowFallReset {
+    #[default]
+    Keep,
+    Reset,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct PowderSnowBlocks {
+    positions: [BlockPos; 12],
+    length: u8,
+}
+
+impl Default for PowderSnowBlocks {
+    fn default() -> Self {
+        Self {
+            positions: [BlockPos::new(0, 0, 0); 12],
+            length: 0,
+        }
+    }
+}
+
+impl PowderSnowBlocks {
+    fn push(&mut self, block_position: BlockPos) {
+        let index = usize::from(self.length);
+        if let Some(slot) = self.positions.get_mut(index) {
+            *slot = block_position;
+            self.length = self.length.saturating_add(1);
+        }
+    }
+
+    #[must_use]
+    pub(crate) fn as_slice(&self) -> &[BlockPos] {
+        let count = usize::from(self.length);
+        self.positions.get(..count).unwrap_or(&[])
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct CauldronContact {
+    pub(crate) position: BlockPos,
+    pub(crate) level: u8,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct CauldronBlocks {
+    entries: [CauldronContact; 12],
+    length: u8,
+}
+
+impl Default for CauldronBlocks {
+    fn default() -> Self {
+        Self {
+            entries: [CauldronContact {
+                position: BlockPos::new(0, 0, 0),
+                level: 0,
+            }; 12],
+            length: 0,
+        }
+    }
+}
+
+impl CauldronBlocks {
+    fn push(&mut self, contact: CauldronContact) {
+        let index = usize::from(self.length);
+        if let Some(slot) = self.entries.get_mut(index) {
+            *slot = contact;
+            self.length = self.length.saturating_add(1);
+        }
+    }
+
+    #[must_use]
+    pub(crate) fn as_slice(&self) -> &[CauldronContact] {
+        let count = usize::from(self.length);
+        self.entries.get(..count).unwrap_or(&[])
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct SurroundingsScan {
     pub(crate) fire_contact: FireContact,
     pub(crate) lava_contact: LavaContact,
     pub(crate) wet: WetExposure,
+    pub(crate) powder_snow: PowderSnowBlocks,
+    pub(crate) cauldrons: CauldronBlocks,
+    pub(crate) powder_snow_state: PowderSnowState,
+    pub(crate) reset_fall_in_powder_snow: PowderSnowFallReset,
 }
 
 #[derive(SystemParam)]
@@ -68,10 +163,14 @@ pub(crate) struct RainContext<'a> {
     pub(crate) section_index: Option<&'a SectionIndex>,
 }
 
-pub(crate) struct StatusInputs {
+pub(crate) struct StatusInputs<'a> {
     pub(crate) player: Entity,
     pub(crate) position: DVec3,
+    pub(crate) mode: GameMode,
     pub(crate) now: u64,
+    pub(crate) freeze_age: u64,
+    pub(crate) freeze_damage_enabled: bool,
+    pub(crate) equipment: Option<&'a OwnEquipment>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -81,6 +180,12 @@ pub(crate) struct PlayerFireOutcome {
     pub(crate) burning_damage: Option<f32>,
     pub(crate) in_fire_damage: Option<f32>,
     pub(crate) lava_damage: Option<f32>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct FreezeEvaluation {
+    pub(crate) outcome: FreezeStepOutcome,
+    pub(crate) extinguish_status: ExtinguishStatus,
 }
 
 const _: () = {
@@ -109,12 +214,52 @@ const _: () = {
         "ExtinguishStatus alignment must match single-byte enum"
     );
     assert!(
-        size_of::<SurroundingsScan>() == 3,
-        "SurroundingsScan size must match fire, lava, and wetness enums"
+        size_of::<PowderSnowState>() == 1,
+        "PowderSnowState size must match single-byte enum"
     );
     assert!(
-        align_of::<SurroundingsScan>() == 1,
-        "SurroundingsScan alignment must match single-byte enums"
+        align_of::<PowderSnowState>() == 1,
+        "PowderSnowState alignment must match single-byte enum"
+    );
+    assert!(
+        size_of::<PowderSnowFallReset>() == 1,
+        "PowderSnowFallReset size must match single-byte enum"
+    );
+    assert!(
+        align_of::<PowderSnowFallReset>() == 1,
+        "PowderSnowFallReset alignment must match single-byte enum"
+    );
+    assert!(
+        size_of::<CauldronContact>() == 16,
+        "CauldronContact size must fit BlockPos plus level byte"
+    );
+    assert!(
+        align_of::<CauldronContact>() == 4,
+        "CauldronContact alignment must match BlockPos i32 alignment"
+    );
+    assert!(
+        size_of::<CauldronBlocks>() == 196,
+        "CauldronBlocks size must fit 12 inline CauldronContact plus length"
+    );
+    assert!(
+        align_of::<CauldronBlocks>() == 4,
+        "CauldronBlocks alignment must match BlockPos i32 alignment"
+    );
+    assert!(
+        size_of::<PowderSnowBlocks>() == 148,
+        "PowderSnowBlocks size must fit 12 inline BlockPos plus length"
+    );
+    assert!(
+        align_of::<PowderSnowBlocks>() == 4,
+        "PowderSnowBlocks alignment must match BlockPos i32 alignment"
+    );
+    assert!(
+        size_of::<SurroundingsScan>() == 352,
+        "SurroundingsScan size must match inline powder snow and cauldron blocks plus flags"
+    );
+    assert!(
+        align_of::<SurroundingsScan>() == 4,
+        "SurroundingsScan alignment must match BlockPos i32 alignment"
     );
     assert!(
         size_of::<RainContext<'static>>() == 48,
@@ -125,12 +270,12 @@ const _: () = {
         "RainContext alignment must match pointer alignment"
     );
     assert!(
-        size_of::<StatusInputs>() == 40,
+        size_of::<StatusInputs<'static>>() == 64,
         "StatusInputs size must match player status fields"
     );
     assert!(
-        align_of::<StatusInputs>() == 8,
-        "StatusInputs alignment must match f64 alignment"
+        align_of::<StatusInputs<'static>>() == 8,
+        "StatusInputs alignment must match pointer and f64 alignment"
     );
     assert!(
         size_of::<PlayerFireOutcome>() == 28,
@@ -139,6 +284,14 @@ const _: () = {
     assert!(
         align_of::<PlayerFireOutcome>() == 4,
         "PlayerFireOutcome alignment must match f32 alignment"
+    );
+    assert!(
+        size_of::<FreezeEvaluation>() == 32,
+        "FreezeEvaluation size must fit FreezeStepOutcome and ExtinguishStatus"
+    );
+    assert!(
+        align_of::<FreezeEvaluation>() == 8,
+        "FreezeEvaluation alignment must match f64 alignment"
     );
 };
 
@@ -299,9 +452,16 @@ fn accumulate_block_cell(
                 )) =>
         {
             accumulation.wet = WetExposure::ExtinguishedByWetness;
+            accumulation.cauldrons.push(CauldronContact {
+                position: block_position,
+                level,
+            });
         }
         EnvContactBlock::PowderSnow => {
             accumulation.wet = WetExposure::ExtinguishedByWetness;
+            accumulation.powder_snow_state = PowderSnowState::Inside;
+            accumulation.reset_fall_in_powder_snow = PowderSnowFallReset::Reset;
+            accumulation.powder_snow.push(block_position);
         }
         _ => {}
     }
@@ -323,6 +483,10 @@ pub(crate) fn scan_surroundings(
         } else {
             WetExposure::Dry
         },
+        powder_snow: PowderSnowBlocks::default(),
+        cauldrons: CauldronBlocks::default(),
+        powder_snow_state: PowderSnowState::Outside,
+        reset_fall_in_powder_snow: PowderSnowFallReset::Keep,
     };
 
     let (min_x, min_y, min_z) = (
@@ -458,8 +622,114 @@ pub(crate) fn step_player_fire(
     }
 }
 
+#[must_use]
+pub(crate) fn step_player_freezing(
+    inputs: &StatusInputs<'_>,
+    file_state: &PlayerFileState,
+    surroundings: &SurroundingsScan,
+    fire_outcome: PlayerFireOutcome,
+    registry_tables: &EnvRegistryTables,
+) -> FreezeEvaluation {
+    let previous_ticks_frozen = file_state.ticks_frozen;
+    let freeze_immunity = if inputs.mode == GameMode::Spectator {
+        FreezeImmunity::ColdImmune
+    } else {
+        inputs
+            .equipment
+            .map_or(FreezeImmunity::Normal, |equipment| {
+                for slot in EquipSlot::ARMOUR {
+                    if let Some(stack) = equipment.0.get(slot)
+                        && stack.count > 0
+                        && registry_tables.is_freeze_immune_wire(stack.id.number())
+                    {
+                        return FreezeImmunity::ColdImmune;
+                    }
+                }
+                FreezeImmunity::Normal
+            })
+    };
+    let has_fire_or_lava_contact = surroundings.fire_contact != FireContact::None
+        || surroundings.lava_contact != LavaContact::None;
+    let on_fire_state = if has_fire_or_lava_contact {
+        OnFireState::FireOrLavaContact
+    } else if fire_outcome.next_fire_ticks > 0
+        || fire_outcome.extinguish_status == ExtinguishStatus::Extinguished
+    {
+        OnFireState::Burning
+    } else {
+        OnFireState::NotBurning
+    };
+    let has_freezing_effect = env_state::has_active_effect(file_state, MobEffect::Freezing);
+    let exposure = if surroundings.powder_snow_state == PowderSnowState::Inside {
+        PowderSnowExposure::Inside
+    } else if has_freezing_effect {
+        PowderSnowExposure::FreezingEffect
+    } else {
+        PowderSnowExposure::Outside
+    };
+    let outcome = env_damage::step_freeze(
+        previous_ticks_frozen,
+        exposure,
+        on_fire_state,
+        inputs.freeze_age,
+        freeze_immunity,
+    );
+    let extinguish_status = if previous_ticks_frozen > 0
+        && outcome.next_ticks_frozen == 0
+        && has_fire_or_lava_contact
+    {
+        ExtinguishStatus::Extinguished
+    } else {
+        ExtinguishStatus::Unchanged
+    };
+    let damage = if inputs.freeze_damage_enabled {
+        outcome.damage.map(|amount| {
+            if has_freezing_effect {
+                amount.max(env_damage::FREEZE_DAMAGE_EFFECT)
+            } else {
+                amount
+            }
+        })
+    } else {
+        None
+    };
+    FreezeEvaluation {
+        outcome: FreezeStepOutcome { damage, ..outcome },
+        extinguish_status,
+    }
+}
+
+pub(crate) fn emit_powder_snow_melt(
+    dimension_entity: Entity,
+    powder_snow: &PowderSnowBlocks,
+    block_requests: &mut MessageWriter<BlockSetRequest>,
+) {
+    for &block_position in powder_snow.as_slice() {
+        block_requests.write(remove_block(dimension_entity, block_position));
+    }
+}
+
+pub(crate) fn emit_cauldron_extinguish(
+    dimension_entity: Entity,
+    block_table: &EnvBlockTable,
+    cauldrons: &CauldronBlocks,
+    block_requests: &mut MessageWriter<BlockSetRequest>,
+) {
+    for &contact in cauldrons.as_slice() {
+        if let Some(next_state) = block_table.lowered_cauldron_state(contact.level) {
+            block_requests.write(BlockSetRequest {
+                dimension: dimension_entity,
+                pos: contact.position,
+                new_state: next_state,
+                flags: BlockUpdateFlags::ALL,
+                recursion_left: 512,
+            });
+        }
+    }
+}
+
 pub(crate) fn step_extinguish_sound(
-    inputs: &StatusInputs,
+    inputs: &StatusInputs<'_>,
     baked: &BakedEnvDamage,
     file_state: &PlayerFileState,
     current_cooldown: u8,

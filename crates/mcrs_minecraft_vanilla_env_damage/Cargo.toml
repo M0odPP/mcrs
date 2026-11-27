@@ -29,6 +29,7 @@ mcrs_minecraft_entity.workspace = true
 mcrs_minecraft_entity_attribute = { workspace = true, features = ["bevy"] }
 mcrs_minecraft_entity_key = { workspace = true, features = ["bevy"] }
 mcrs_minecraft_env_damage.workspace = true
+mcrs_minecraft_equipment.workspace = true
 mcrs_minecraft_game_mode = { workspace = true, features = ["bevy"] }
 mcrs_minecraft_game_rule.workspace = true
 mcrs_minecraft_item_key.workspace = true
@@ -38,6 +39,7 @@ mcrs_minecraft_protocol_game.workspace = true
 mcrs_minecraft_registries = { workspace = true, features = ["bevy"] }
 mcrs_minecraft_replication.workspace = true
 mcrs_minecraft_resource.workspace = true
+mcrs_minecraft_simulation.workspace = true
 mcrs_minecraft_sound = { workspace = true, features = ["registry"] }
 mcrs_minecraft_vanilla_attributes.workspace = true
 mcrs_minecraft_volume.workspace = true
