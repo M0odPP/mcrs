@@ -306,6 +306,7 @@ pub(crate) fn needs_world_acks(observe: &Observe) -> bool {
         || observe.damage_event
         || observe.entity_event
         || observe.game_event
+        || observe.block_event
         || observe.packet_order
 }
 

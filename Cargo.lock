@@ -5034,6 +5034,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "mcrs_minecraft_containers"
+version = "0.5.8"
+dependencies = [
+ "bevy_ecs",
+ "mcrs_test_alloc",
+ "mcrs_voxel",
+]
+
+[[package]]
 name = "mcrs_minecraft_core"
 version = "0.5.8"
 dependencies = [
@@ -6791,6 +6800,7 @@ name = "mcrs_minecraft_probe"
 version = "0.5.8"
 dependencies = [
  "anyhow",
+ "mcrs_minecraft_block",
  "mcrs_minecraft_command_tree",
  "mcrs_minecraft_container_click",
  "mcrs_minecraft_core",

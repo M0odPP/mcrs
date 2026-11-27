@@ -21,9 +21,9 @@ mod trace;
 pub use click::{Click, ClickMode, PredictedSlot, PredictedStack};
 pub use command_tree::{CommandTree, TreeNode, TreeNodeKind};
 pub use gameplay::{
-    DamageEventObserved, EntityDataEntry, EntityDataObserved, EntityDataValue, EntityEventObserved,
-    EquipmentObserved, EquipmentSlotEntry, EquipmentStack, GameEventObserved, HealthObserved,
-    ProbePlayerCommand,
+    BlockEventObserved, DamageEventObserved, EntityDataEntry, EntityDataObserved, EntityDataValue,
+    EntityEventObserved, EquipmentObserved, EquipmentSlotEntry, EquipmentStack, GameEventObserved,
+    HealthObserved, ProbePlayerCommand,
 };
 pub use host::Host;
 pub use known_difference::KnownDifference;

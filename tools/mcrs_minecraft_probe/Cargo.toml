@@ -17,6 +17,7 @@ workspace = true
 
 [dependencies]
 anyhow.workspace = true
+mcrs_minecraft_block.workspace = true
 mcrs_minecraft_command_tree.workspace = true
 mcrs_minecraft_core.workspace = true
 mcrs_minecraft_container_click.workspace = true

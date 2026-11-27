@@ -1,12 +1,13 @@
 use crate::swing::EntityNames;
 use crate::{Observe, PacketKind};
 use anyhow::Context;
+use mcrs_minecraft_block::block_keys::Block;
 use mcrs_minecraft_item_key::item_keys::Item;
 use mcrs_minecraft_protocol::{Decode, Packet};
 use mcrs_minecraft_protocol_game::Direction;
 use mcrs_minecraft_protocol_game::clientbound::{
-    ClientboundDamageEvent, ClientboundEntityEvent, ClientboundGameEvent, ClientboundSetEntityData,
-    ClientboundSetEquipment, ClientboundSetHealth,
+    ClientboundBlockEvent, ClientboundDamageEvent, ClientboundEntityEvent, ClientboundGameEvent,
+    ClientboundSetEntityData, ClientboundSetEquipment, ClientboundSetHealth,
 };
 use mcrs_minecraft_protocol_game::entity::{EquipmentSlot, MetaDataValue};
 use mcrs_minecraft_protocol_game::game_event::{DemoMessage, EnterCredits, GameEventKind};
@@ -50,6 +51,7 @@ pub(crate) enum GameplaySignal {
     DamageEvent(DamageEventObserved),
     EntityEvent(EntityEventObserved),
     GameEvent(GameEventObserved),
+    BlockEvent(BlockEventObserved),
 }
 
 impl GameplaySignal {
@@ -61,6 +63,7 @@ impl GameplaySignal {
             Self::DamageEvent(_) => PacketKind::DamageEvent,
             Self::EntityEvent(_) => PacketKind::EntityEvent,
             Self::GameEvent(_) => PacketKind::GameEvent,
+            Self::BlockEvent(_) => PacketKind::BlockEvent,
         }
     }
 
@@ -72,6 +75,7 @@ impl GameplaySignal {
             ClientboundDamageEvent::ID => Some(PacketKind::DamageEvent),
             ClientboundEntityEvent::ID => Some(PacketKind::EntityEvent),
             ClientboundGameEvent::ID => Some(PacketKind::GameEvent),
+            ClientboundBlockEvent::ID => Some(PacketKind::BlockEvent),
             _ => None,
         }
     }
@@ -101,6 +105,9 @@ impl GameplaySignal {
             }
             ClientboundGameEvent::ID if observe.game_event => {
                 Self::GameEvent(GameEventObserved::read(client, body)?)
+            }
+            ClientboundBlockEvent::ID if observe.block_event => {
+                Self::BlockEvent(BlockEventObserved::read(client, body)?)
             }
             _ => return Ok(None),
         }))
@@ -365,6 +372,32 @@ impl GameEventObserved {
             client: client.to_owned(),
             event: event.to_owned(),
             param,
+        })
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct BlockEventObserved {
+    pub client: String,
+    pub position: [i32; 3],
+    pub action: u8,
+    pub param: u8,
+    pub block: Block,
+}
+
+impl BlockEventObserved {
+    pub(crate) fn read(client: &str, body: &[u8]) -> anyhow::Result<Self> {
+        let packet: ClientboundBlockEvent = decode_exact(body, "block_event")?;
+        let id = u16::try_from(packet.block.0)
+            .with_context(|| format!("invalid block protocol id {}", packet.block.0))?;
+        let block = Block::from_protocol_id(id)
+            .with_context(|| format!("the block {id} is not in the block registry"))?;
+        Ok(Self {
+            client: client.to_owned(),
+            position: [packet.pos.x, packet.pos.y, packet.pos.z],
+            action: packet.action,
+            param: packet.param,
+            block,
         })
     }
 }
