@@ -96,6 +96,7 @@ tracing-subscriber.workspace = true
 mcrs_minecraft_container_click.workspace = true
 mcrs_minecraft_damage = { workspace = true, features = ["bevy"] }
 mcrs_minecraft_entity_attribute.workspace = true
+mcrs_minecraft_equipment.workspace = true
 mcrs_minecraft_probe.workspace = true
 mcrs_minecraft_item_stack = { workspace = true, features = ["bevy"] }
 mcrs_minecraft_lang.workspace = true
