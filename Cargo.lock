@@ -7447,6 +7447,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "mcrs_minecraft_vanilla_beds"
+version = "0.5.8"
+dependencies = [
+ "bevy_app",
+ "bevy_ecs",
+ "glam",
+ "mcrs_minecraft_beds",
+ "mcrs_minecraft_block",
+ "mcrs_minecraft_core",
+ "mcrs_minecraft_dimension",
+ "mcrs_minecraft_dimension_environment",
+ "mcrs_minecraft_engine",
+ "mcrs_minecraft_engine_item",
+ "mcrs_minecraft_engine_registries",
+ "mcrs_minecraft_engine_world",
+ "mcrs_minecraft_environment",
+ "mcrs_minecraft_game_mode",
+ "mcrs_minecraft_game_registries",
+ "mcrs_minecraft_inventory_player",
+ "mcrs_minecraft_item",
+ "mcrs_minecraft_item_stack",
+ "mcrs_minecraft_physics",
+ "mcrs_minecraft_pose",
+ "mcrs_minecraft_protocol",
+ "mcrs_minecraft_protocol_game",
+ "mcrs_minecraft_registries",
+ "mcrs_minecraft_resource",
+ "mcrs_minecraft_text",
+ "mcrs_minecraft_vanilla_block_place",
+ "mcrs_minecraft_volume",
+ "mcrs_voxel",
+ "rustc-hash 2.1.3",
+]
+
+[[package]]
 name = "mcrs_minecraft_vanilla_block_place"
 version = "0.5.8"
 dependencies = [

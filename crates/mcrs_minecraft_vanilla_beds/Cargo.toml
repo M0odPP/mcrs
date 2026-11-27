@@ -1,0 +1,45 @@
+[package]
+name = "mcrs_minecraft_vanilla_beds"
+description = "Server-side bed placement, partner breaking, dimension bed baking, explosion triggers, and respawn setting"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+doctest = false
+
+[lints]
+workspace = true
+
+[dependencies]
+bevy_app.workspace = true
+bevy_ecs.workspace = true
+glam.workspace = true
+mcrs_minecraft_beds.workspace = true
+mcrs_minecraft_block = { workspace = true, features = ["bevy"] }
+mcrs_minecraft_core = { workspace = true, features = ["bevy"] }
+mcrs_minecraft_dimension.workspace = true
+mcrs_minecraft_dimension_environment = { workspace = true, features = ["bevy"] }
+mcrs_minecraft_engine.workspace = true
+mcrs_minecraft_engine_item.workspace = true
+mcrs_minecraft_engine_world.workspace = true
+mcrs_minecraft_environment = { workspace = true, features = ["bevy"] }
+mcrs_minecraft_game_mode = { workspace = true, features = ["bevy"] }
+mcrs_minecraft_inventory_player.workspace = true
+mcrs_minecraft_item = { workspace = true, features = ["bevy"] }
+mcrs_minecraft_item_stack.workspace = true
+mcrs_minecraft_physics.workspace = true
+mcrs_minecraft_protocol_game.workspace = true
+mcrs_minecraft_registries = { workspace = true, features = ["bevy"] }
+mcrs_minecraft_resource = { workspace = true, features = ["bevy"] }
+mcrs_minecraft_text.workspace = true
+mcrs_minecraft_vanilla_block_place.workspace = true
+mcrs_minecraft_volume.workspace = true
+mcrs_voxel.workspace = true
+rustc-hash.workspace = true
+
+[dev-dependencies]
+mcrs_minecraft_engine_registries = { workspace = true, features = ["test-support"] }
+mcrs_minecraft_game_registries = { workspace = true, features = ["test-support"] }
+mcrs_minecraft_pose = { workspace = true, features = ["bevy"] }
+mcrs_minecraft_protocol.workspace = true
