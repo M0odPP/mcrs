@@ -1,0 +1,30 @@
+[package]
+name = "mcrs_minecraft_status_effects"
+description = "Active effect stacks, merge and hidden-effect promotion rules, periodic action cadences, and attribute modifier mappings"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+doctest = false
+
+[lints]
+workspace = true
+
+[dependencies]
+bevy_ecs = { workspace = true, optional = true }
+mcrs_minecraft_entity = { workspace = true, optional = true }
+mcrs_minecraft_entity_attribute = { workspace = true, optional = true }
+mcrs_minecraft_resource = { workspace = true, optional = true }
+
+[dev-dependencies]
+mcrs_minecraft_entity.workspace = true
+mcrs_minecraft_entity_attribute.workspace = true
+mcrs_minecraft_resource.workspace = true
+mcrs_minecraft_status_effects = { path = ".", features = ["attributes"] }
+mcrs_test_alloc.workspace = true
+
+[features]
+default = []
+bevy = ["dep:bevy_ecs"]
+attributes = ["dep:mcrs_minecraft_entity", "dep:mcrs_minecraft_entity_attribute", "dep:mcrs_minecraft_resource"]

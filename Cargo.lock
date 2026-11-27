@@ -7299,6 +7299,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "mcrs_minecraft_status_effects"
+version = "0.5.8"
+dependencies = [
+ "bevy_ecs",
+ "mcrs_minecraft_entity",
+ "mcrs_minecraft_entity_attribute",
+ "mcrs_minecraft_resource",
+ "mcrs_minecraft_status_effects",
+ "mcrs_test_alloc",
+]
+
+[[package]]
 name = "mcrs_minecraft_status_ping"
 version = "0.5.8"
 dependencies = [

@@ -290,6 +290,7 @@ Use the crate that owns the item. Do not write a second copy.
 - `mcrs_minecraft_snbt`: The read and the write of stringified NBT as the game reads and writes it
 - `mcrs_minecraft_sound`: Sound events
 - `mcrs_minecraft_static_registry`: The StaticEntry trait and the helpers that number the entries of a static registry by protocol id
+- `mcrs_minecraft_status_effects`: Active effect stacks, merge and hidden-effect promotion rules, periodic action cadences, and attribute modifier mappings
 - `mcrs_minecraft_swing`: Pure arm-swing cooldown window and status-effect duration scaling
 - `mcrs_minecraft_trim`: The values of the trim material and trim pattern registries
 - `mcrs_minecraft_value_provider`: Int, float and height providers and their codecs

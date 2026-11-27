@@ -20,6 +20,7 @@ use mcrs_minecraft_command_tree::CommandNode;
 use mcrs_minecraft_core::Look;
 use mcrs_minecraft_core::LookAnchor;
 use mcrs_minecraft_entity::entity_type_keys::EntityType;
+use mcrs_minecraft_entity::mob_effect_keys::MobEffect;
 pub use mcrs_minecraft_entity_attribute::AttributeSnapshot;
 use mcrs_minecraft_menu_key::menu_keys::MenuType;
 use mcrs_minecraft_nbt::compound::NbtCompound;
@@ -612,6 +613,12 @@ pub struct ClientboundRemoveEntities {
     pub entity_ids: Vec<VarInt>,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Encode, Decode)]
+pub struct ClientboundRemoveMobEffect {
+    pub entity_id: VarInt,
+    pub effect: MobEffect,
+}
+
 #[derive(Clone, Debug, PartialEq, Encode, Decode)]
 pub struct ClientboundRespawn {
     pub player_spawn_info: PlayerSpawnInfo,
@@ -772,6 +779,22 @@ pub struct ClientboundUpdateAdvancements {
 pub struct ClientboundUpdateAttributes<'a> {
     pub entity_id: VarInt,
     pub attributes: Vec<AttributeSnapshot<'a>>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Encode, Decode)]
+pub struct ClientboundUpdateMobEffect {
+    pub entity_id: VarInt,
+    pub effect: MobEffect,
+    pub amplifier: VarInt,
+    pub duration: VarInt,
+    pub flags: u8,
+}
+
+impl ClientboundUpdateMobEffect {
+    pub const AMBIENT: u8 = 0x01;
+    pub const VISIBLE: u8 = 0x02;
+    pub const ICON: u8 = 0x04;
+    pub const BLEND: u8 = 0x08;
 }
 
 #[derive(Clone, Debug, PartialEq, Encode, Decode)]

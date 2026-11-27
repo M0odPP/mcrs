@@ -487,3 +487,38 @@ fn set_experience_and_experience_orb_add_entity_match_wire_layout() {
     let orb_bytes = round_trip(&add_orb, &mut orb_buffer);
     assert_eq!(orb_bytes.get(17).copied(), Some(50));
 }
+
+#[test]
+fn mob_effect_packets_match_wire_layout_and_table_ids() {
+    use mcrs_minecraft_entity::mob_effect_keys::MobEffect;
+    use mcrs_minecraft_protocol::Packet;
+    use mcrs_minecraft_protocol_game::clientbound::{
+        ClientboundRemoveMobEffect, ClientboundUpdateMobEffect,
+    };
+
+    assert_eq!(ClientboundRemoveMobEffect::ID, 79);
+    assert_eq!(ClientboundUpdateMobEffect::ID, 135);
+    let mut bytes = Vec::new();
+    let mut update = ClientboundUpdateMobEffect {
+        entity_id: VarInt(7),
+        effect: MobEffect::Speed,
+        amplifier: VarInt(1),
+        duration: VarInt(600),
+        flags: 0x0E,
+    };
+    let finite = &[7, 0, 1, 0xD8, 0x04, 0x0E];
+    assert_eq!(round_trip(&update, &mut bytes), finite);
+    bytes.clear();
+    update.duration = VarInt(-1);
+    update.flags = ClientboundUpdateMobEffect::AMBIENT | ClientboundUpdateMobEffect::VISIBLE;
+    let expected = &[7, 0, 1, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F, 0x03];
+    assert_eq!(round_trip(&update, &mut bytes), expected);
+    bytes.clear();
+    let remove = ClientboundRemoveMobEffect {
+        entity_id: VarInt(7),
+        effect: MobEffect::Poison,
+    };
+    assert_eq!(round_trip(&remove, &mut bytes), &[7, 18]);
+    let bad = ClientboundRemoveMobEffect::decode(&mut &[7_u8, 41][..]);
+    assert!(bad.is_err(), "bad effect id fails decode");
+}
