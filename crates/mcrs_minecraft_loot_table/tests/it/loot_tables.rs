@@ -636,3 +636,54 @@ fn a_roll_of_a_block_table_allocates_nothing_after_warm_up() {
     assert_eq!(allocated, [0; 4]);
     assert_eq!(names(stacks.pop()), [("minecraft:stick".to_owned(), 3)]);
 }
+
+#[test]
+fn loot_evl_008_data_pack_tables_bake_and_non_block_tables_roll() {
+    let registries = mcrs_minecraft_game_registries::registry_load::test_registries();
+    let tables = registries.registry::<LootTableFile>().expect("tables");
+    let catalog = registries
+        .entries::<mcrs_minecraft_loot::loot::LootTable>()
+        .expect("catalog");
+    assert!(!tables.is_empty(), "data pack must provide loot tables");
+    assert_eq!(
+        tables.len(),
+        catalog.len(),
+        "every cataloged loot table decodes"
+    );
+    let mut scratch = LootScratch::new();
+    let mut stacks = Vec::new();
+    let host = BlockHost::none();
+    let mut check = |name: &str, loot_context: &LootContext<'_, ()>| {
+        let table = tables
+            .by_name(ResourceLocation::read(name).expect("name"))
+            .expect(name);
+        stacks.clear();
+        let mut rng = stream(&LOOT.0, table, 3);
+        LOOT.0
+            .roll(
+                table,
+                loot_context,
+                &host,
+                &mut rng,
+                &mut scratch,
+                &mut stacks,
+            )
+            .expect(name);
+        assert!(!stacks.is_empty(), "{name} should drop for context");
+    };
+    let mut barter = LootContext::try_new(ContextKeySet::Barter).expect("barter");
+    barter.this_entity = Some(());
+    check("minecraft:gameplay/piglin_bartering", &barter);
+    let mut chest = LootContext::try_new(ContextKeySet::Chest).expect("chest");
+    chest.origin = Some(glam::DVec3::ZERO);
+    check("minecraft:chests/simple_dungeon", &chest);
+    let mut fishing = LootContext::try_new(ContextKeySet::Fishing).expect("fishing");
+    fishing.origin = Some(glam::DVec3::ZERO);
+    fishing.tool = Some(mcrs_minecraft_loot_condition::Tool::Empty);
+    fishing.luck = 2.0;
+    check("minecraft:gameplay/fishing", &fishing);
+    let mut equipment = LootContext::try_new(ContextKeySet::Equipment).expect("equipment");
+    equipment.origin = Some(glam::DVec3::ZERO);
+    equipment.this_entity = Some(());
+    check("minecraft:equipment/trial_chamber", &equipment);
+}

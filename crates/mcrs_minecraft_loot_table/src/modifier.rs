@@ -506,6 +506,7 @@ mod tests {
         let rules = ItemRules {
             items: ItemTable::leak([Vec::<Builtin>::new()]),
             enchantments: Box::new([]),
+            air: None,
             book: None,
             enchanted_book: None,
         };
@@ -546,6 +547,7 @@ mod tests {
                 entries: Box::new([]),
                 items: Box::new([]),
                 nested: Box::new([]),
+                slot_sources: Box::new([]),
                 modifiers: Box::new([]),
             };
             modifier.apply(

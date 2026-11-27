@@ -94,7 +94,7 @@ impl LootTables {
         scratch: &mut LootScratch,
         stacks: &mut Vec<Option<ItemStack>>,
     ) -> Result<(), RollError> {
-        let baked = self.table(table)?;
+        let _ = self.table(table)?;
         check(context)?;
         let evaluation = Evaluation {
             tables: &self.tables,
@@ -103,7 +103,7 @@ impl LootTables {
             world,
             rules: &self.rules,
         };
-        evaluation.root(baked, random, scratch, stacks);
+        evaluation.root(table.index(), random, scratch, stacks);
         Ok(())
     }
 

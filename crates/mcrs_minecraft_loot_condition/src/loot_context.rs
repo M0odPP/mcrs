@@ -2,12 +2,14 @@ use glam::DVec3;
 use mcrs_minecraft_item_stack::ItemStack;
 use mcrs_minecraft_loot::context_key_set_keys::ContextKeySet;
 use mcrs_minecraft_nbt::compound::NbtCompound;
-use mcrs_minecraft_predicate::DamageSource;
+use mcrs_minecraft_predicate::{DamageSource, EntityView, ItemSubject};
 use mcrs_voxel::BlockStateId;
 
+use crate::block_entity_view::BlockEntityView;
 use crate::context_param::ContextParam;
 use crate::context_params::ContextParams;
 use crate::dynamic_name::DynamicName;
+use crate::loot_container::LootContainer;
 use crate::tool::Tool;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -27,6 +29,8 @@ pub struct LootContext<'a, E> {
     pub enchantment_level: Option<i32>,
     pub damage_source: Option<DamageSource<E>>,
     pub enchantment_active: Option<bool>,
+    pub additional_cost_component_allowed: bool,
+    pub container: Option<LootContainer<'a, E>>,
     pub luck: f32,
     pub sherds: &'a [Option<ItemStack>],
     pub contents: &'a [Option<ItemStack>],
@@ -54,6 +58,8 @@ impl<'a, E> LootContext<'a, E> {
             enchantment_level: None,
             damage_source: None,
             enchantment_active: None,
+            additional_cost_component_allowed: false,
+            container: None,
             luck: 0.0,
             sherds: &[],
             contents: &[],
@@ -83,6 +89,35 @@ impl<'a, E> LootContext<'a, E> {
     }
 
     #[must_use]
+    pub fn slot<'w, W: EntityView<Entity = E> + BlockEntityView + ?Sized>(
+        &self,
+        param: ContextParam,
+        world: &'w W,
+        slot: u16,
+    ) -> Option<ItemSubject<'w>>
+    where
+        E: Copy,
+        'a: 'w,
+    {
+        if let Some(&entity) = self.entity(param) {
+            return world.slot(entity, slot);
+        }
+        match param {
+            ContextParam::BlockEntity => self
+                .block_entity
+                .and_then(|_| world.block_entity_slot(slot)),
+            ContextParam::Container => self
+                .container
+                .and_then(|container| container.slot(world, slot)),
+            ContextParam::Tool => (slot == 0)
+                .then_some(self.tool)
+                .flatten()
+                .map(ItemSubject::from),
+            _ => None,
+        }
+    }
+
+    #[must_use]
     pub fn held(&self) -> ContextParams {
         let Self {
             origin,
@@ -99,6 +134,8 @@ impl<'a, E> LootContext<'a, E> {
             enchantment_level,
             damage_source,
             enchantment_active,
+            additional_cost_component_allowed,
+            container,
             luck: _,
             sherds: _,
             contents: _,
@@ -128,6 +165,11 @@ impl<'a, E> LootContext<'a, E> {
                 enchantment_active.is_some(),
                 ContextParam::EnchantmentActive,
             ),
+            (
+                *additional_cost_component_allowed,
+                ContextParam::AdditionalCostComponentAllowed,
+            ),
+            (container.is_some(), ContextParam::Container),
         ]
         .into_iter()
         .filter(|&(present, _)| present)

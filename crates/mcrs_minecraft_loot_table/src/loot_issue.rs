@@ -19,10 +19,12 @@ pub enum LootProblem {
     MissingTable,
     UnknownItem(String),
     UnknownEnchantment(String),
+    ItemAir,
     SetItemAir,
     UnknownTable(String),
     UnknownTag(String),
     UnknownModifier(String),
+    UnknownSlotSource(String),
     UnknownAttribute(String),
     Condition(ConditionProblem),
     ParamNotAllowed(ParamNotAllowed),
@@ -39,6 +41,7 @@ impl fmt::Display for LootIssue {
         match self.owner {
             IssueOwner::Named(kind) => write!(f, "{kind} ")?,
             IssueOwner::ItemModifier => f.write_str("item modifier ")?,
+            IssueOwner::SlotSource => f.write_str("slot source ")?,
             IssueOwner::Table => {}
         }
         if self.path.is_empty() {
@@ -50,10 +53,12 @@ impl fmt::Display for LootIssue {
             LootProblem::MissingTable => f.write_str("the loot table is not loaded"),
             LootProblem::UnknownItem(name) => write!(f, "no item {name}"),
             LootProblem::UnknownEnchantment(name) => write!(f, "no enchantment {name}"),
+            LootProblem::ItemAir => f.write_str("item entry names minecraft:air"),
             LootProblem::SetItemAir => f.write_str("set_item names minecraft:air"),
             LootProblem::UnknownTable(name) => write!(f, "no loot table {name}"),
             LootProblem::UnknownTag(name) => write!(f, "no tag #{name}"),
             LootProblem::UnknownModifier(name) => write!(f, "no item modifier {name}"),
+            LootProblem::UnknownSlotSource(name) => write!(f, "no slot source {name}"),
             LootProblem::UnknownAttribute(name) => write!(f, "no attribute {name}"),
             LootProblem::Condition(problem) => write!(f, "{problem}"),
             LootProblem::ParamNotAllowed(problem) => write!(f, "{problem}"),

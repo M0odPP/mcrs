@@ -1,13 +1,19 @@
-use mcrs_minecraft_item_stack::{Count, ItemStack, MaxStackSize};
+use mcrs_minecraft_game_registries::registry_load::{load_registries, test_additions, test_packs};
+use mcrs_minecraft_item_stack::{
+    BundleContents, ChargedProjectiles, Container, Count, ItemStack, MaxStackSize,
+};
 use mcrs_minecraft_loot::context_key_set_keys::ContextKeySet;
-use mcrs_minecraft_loot_condition::{ContextParam, LootContext, ParamNotAllowed};
-use mcrs_minecraft_loot_table::{LootProblem, LootScratch, LootTableFile};
+use mcrs_minecraft_loot_condition::{ContextParam, LootContainer, LootContext, ParamNotAllowed};
+use mcrs_minecraft_loot_table::{
+    IssueOwner, LootProblem, LootScratch, LootTableFile, LootTables, SlotSourceFile,
+};
 use mcrs_minecraft_predicate::BlockHost;
 use mcrs_minecraft_random::Random;
 use mcrs_minecraft_random::xoroshiro::XoroshiroRandom;
-use mcrs_minecraft_resource::ResourceLocationBuf;
+use mcrs_minecraft_resource::{ResourceLocation, ResourceLocationBuf};
+use mcrs_test_alloc::allocations;
 
-use crate::fixture::{context, item, names, state, stream, tool};
+use crate::fixture::{Around, context, item, names, state, stream, tool};
 use crate::loot_tables::{ADDED, CHAIN, added_table, roll_with_stream};
 
 fn stick(count: u8) -> (String, u8) {
@@ -240,19 +246,161 @@ fn loot_ctx_017_a_chain_of_nested_tables_past_the_limit_is_an_issue_at_each_plac
 }
 
 #[test]
-fn reg_fld_790_an_unknown_entry_type_fails_the_decode() {
-    let table = |entry: &str| format!(r#"{{"pools": [{{"rolls": 1, "entries": [{entry}]}}]}}"#);
-    for (entry, decodes) in [
-        (r#"{"type": "minecraft:nothing"}"#, false),
-        (
-            r#"{"type": "minecraft:slots", "slot_source": ["t:hotbar", {"type": "minecraft:empty"}]}"#,
-            true,
-        ),
+fn reg_fld_790_and_801_decode_rejections_fail_strictly() {
+    let entry_ok = |entry| {
+        serde_json::from_str::<LootTableFile>(&format!(
+            r#"{{"pools":[{{"rolls":1,"entries":[{entry}]}}]}}"#
+        ))
+        .is_ok()
+    };
+    assert!(!entry_ok(r#"{"type":"minecraft:nothing"}"#), "bad entry");
+    assert!(
+        entry_ok(r#"{"type":"minecraft:slots","slot_source":["t:a",{"type":"minecraft:empty"}]}"#),
+        "valid slots entry"
+    );
+    let slot_ok = |json| serde_json::from_str::<SlotSourceFile>(json).is_ok();
+    assert!(slot_ok(r##""#t:pair""##), "valid tag slot source");
+    for bad in [
+        r#"{"type":"minecraft:limit_slots","limit":0,"slot_source":"t:a"}"#,
+        r#"{"type":"minecraft:limit_slots","limit":-1,"slot_source":"t:a"}"#,
+        r#"{"type":"minecraft:slot_range","slots":"bogus.0"}"#,
+        r#"{"type":"minecraft:contents","component":"minecraft:custom_data","slot_source":"t:a"}"#,
+        r#"{"type":"minecraft:group","terms":[["t:a"]]}"#,
     ] {
-        assert_eq!(
-            serde_json::from_str::<LootTableFile>(&table(entry)).is_ok(),
-            decodes,
-            "{entry}"
+        assert!(!slot_ok(bad), "invalid {bad}");
+    }
+}
+
+struct SlotPack {
+    registries: mcrs_minecraft_registries::Registries,
+    loot: LootTables,
+    issues: Vec<mcrs_minecraft_loot_table::LootIssue>,
+}
+
+fn slot_pack() -> SlotPack {
+    let mut additions = test_additions();
+    let files = &mut additions.files;
+    let mut put = |path, json| files.insert("s", format!("data/s/{path}.json"), json);
+    put(
+        "slot_source/a",
+        r#"{"type":"minecraft:slot_range","source":"container","slots":"container.*"}"#,
+    );
+    put(
+        "slot_source/b",
+        r#"{"type":"minecraft:slot_range","source":"this","slots":"hotbar.0"}"#,
+    );
+    put("tags/slot_source/pair", r#"{"values":["s:a","s:b"]}"#);
+    put("slot_source/loop_a", r#""s:loop_b""#);
+    put("slot_source/loop_b", r#""s:loop_a""#);
+    put(
+        "loot_table/all",
+        r##"{"type":"minecraft:command_slot_source","pools":[{"rolls":1,"entries":[{"type":"minecraft:slots","slot_source":[
+            {"type":"minecraft:limit_slots","limit":2,"slot_source":"#s:pair"},
+            {"type":"minecraft:contents","component":"charged_projectiles","slot_source":{"type":"minecraft:slot_range","source":"container","slots":"container.2"}},
+            {"type":"minecraft:empty"}
+        ]}]}]}"##,
+    );
+    put(
+        "loot_table/block",
+        r#"{"type":"minecraft:block","pools":[{"rolls":1,"entries":[{"type":"minecraft:slots","slot_source":[
+            {"type":"minecraft:filtered","item_filter":{"items":"minecraft:stick"},"slot_source":{"type":"minecraft:contents","component":"container","slot_source":{"type":"minecraft:slot_range","source":"block_entity","slots":"contents"}}},
+            {"type":"minecraft:contents","component":"bundle_contents","slot_source":{"type":"minecraft:slot_range","source":"tool","slots":"contents"}}
+        ]}]}]}"#,
+    );
+    put(
+        "loot_table/bad",
+        r#"{"type":"minecraft:chest","pools":[{"rolls":1,"entries":[{"type":"minecraft:item","name":"minecraft:air"},{"type":"minecraft:slots","slot_source":["s:missing","s:a"]}]}]}"#,
+    );
+    additions.embedded_packs.push("s".to_owned());
+    let (registries, _) = load_registries(&test_packs(), additions).expect("slot pack loads");
+    let items = mcrs_minecraft_engine_registries::test_item_table();
+    let (loot, issues) = LootTables::bake(crate::fixture::blocks(), &registries, &items);
+    SlotPack {
+        registries,
+        loot,
+        issues,
+    }
+}
+
+#[test]
+fn loot_evl_013_slots_entry_validates_faults_and_evaluates_without_allocations() {
+    let SlotPack {
+        registries,
+        loot,
+        issues,
+    } = slot_pack();
+    let deny = ParamNotAllowed {
+        param: ContextParam::Container,
+        key_set: ContextKeySet::Chest,
+    };
+    for expected in [
+        LootProblem::ItemAir,
+        LootProblem::UnknownSlotSource("s:missing".to_owned()),
+        LootProblem::ParamNotAllowed(deny),
+    ] {
+        assert!(
+            issues
+                .iter()
+                .any(|issue| issue.name.as_str() == "s:bad" && issue.problem == expected),
+            "missing {expected:?} in {issues:?}"
         );
     }
+    assert!(
+        issues
+            .iter()
+            .any(|issue| issue.owner == IssueOwner::SlotSource
+                && matches!(issue.problem, LootProblem::Cycle(_))),
+        "expected slot_source cycle"
+    );
+    let tables = registries.registry::<LootTableFile>().expect("loot tables");
+    let lookup = |name| {
+        tables
+            .by_name(ResourceLocation::read(name).expect("name"))
+            .expect(name)
+    };
+    let (all_table, block_table) = (lookup("s:all"), lookup("s:block"));
+    let plain = |name| tool(name, &[]);
+    let chest = plain("minecraft:chest").set(
+        Container::new(vec![
+            None,
+            Some(plain("minecraft:stick")),
+            Some(plain("minecraft:snowball")),
+        ])
+        .expect("container"),
+    );
+    let crossbow =
+        plain("minecraft:crossbow").set(ChargedProjectiles(vec![plain("minecraft:arrow")]));
+    let bundle = plain("minecraft:bundle").set(BundleContents(vec![plain("minecraft:snowball")]));
+    let container_slots = [None, Some(plain("minecraft:stick")), Some(crossbow)];
+    let (entity_slots, block_entity_slots) = ([Some(plain("minecraft:snowball"))], [Some(chest)]);
+    let mut slot_context = LootContext::try_new(ContextKeySet::CommandSlotSource).expect("key set");
+    slot_context.origin = Some(glam::DVec3::ZERO);
+    slot_context.container = Some(LootContainer::Slots(&container_slots));
+    slot_context.this_entity = Some(());
+    let block_entity = mcrs_minecraft_nbt::compound::NbtCompound::default();
+    let mut block_context = context(state("minecraft:stone", &[]), Some(&bundle));
+    block_context.block_entity = Some(&block_entity);
+    let world = Around {
+        entity_slots: &entity_slots,
+        block_entity_slots: &block_entity_slots,
+        ..Around::default()
+    };
+    let mut scratch = LootScratch::new();
+    let mut random = stream(&loot, all_table, 0);
+    let mut stacks = Vec::new();
+    let mut roll_both = |stacks: &mut Vec<Option<ItemStack>>| {
+        for (table, context) in [(all_table, &slot_context), (block_table, &block_context)] {
+            loot.roll(table, context, &world, &mut random, &mut scratch, stacks)
+                .expect("roll");
+        }
+    };
+    roll_both(&mut stacks);
+    let arrow = ("minecraft:arrow".to_owned(), 1);
+    assert_eq!(
+        names(stacks.drain(..)),
+        [stick(1), arrow, stick(1), snowball(1)]
+    );
+    let before = allocations();
+    roll_both(&mut stacks);
+    assert_eq!(allocations() - before, 0, "second pass should not allocate");
 }

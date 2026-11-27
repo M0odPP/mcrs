@@ -9,6 +9,7 @@ use mcrs_minecraft_random::Random;
 use crate::item_rules::ItemRules;
 use crate::loot_scratch::LootScratch;
 use crate::modifier::{Modifier, apply_all};
+use crate::slot_source::{self, SlotSourceNode};
 use crate::work_stack::WorkStack;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -18,6 +19,7 @@ pub(crate) struct Table {
     pub(crate) entries: Box<[Entry]>,
     pub(crate) items: Box<[Kind]>,
     pub(crate) nested: Box<[Option<u32>]>,
+    pub(crate) slot_sources: Box<[SlotSourceNode]>,
     pub(crate) modifiers: Box<[Modifier]>,
 }
 
@@ -49,6 +51,7 @@ pub(crate) enum EntryKind {
     Tables(Span),
     ExpandedTables(Span),
     Dynamic(DynamicName),
+    Slots(u32),
     Alternatives(Span),
     Sequence(Span),
     Group(Span),
@@ -61,7 +64,7 @@ pub(crate) struct Span {
 }
 
 impl Span {
-    fn indices(self) -> core::ops::Range<u32> {
+    pub(crate) fn indices(self) -> core::ops::Range<u32> {
         self.start..self.end
     }
 }
@@ -82,8 +85,9 @@ pub(crate) struct Evaluation<'e, 'c, E, W> {
 }
 
 #[derive(Clone, Copy)]
-struct Place<'p> {
-    table: &'p Table,
+pub(crate) struct Place<'p> {
+    pub(crate) table_index: usize,
+    pub(crate) table: &'p Table,
     pool: &'p Pool,
     leaf: u32,
     outer: Option<&'p Place<'p>>,
@@ -104,6 +108,10 @@ impl Table {
             .copied()
             .flatten()
     }
+
+    pub(crate) fn slot_source(&self, index: u32) -> Option<&SlotSourceNode> {
+        self.slot_sources.get(usize::try_from(index).ok()?)
+    }
 }
 
 impl<'e, 'c, E: Copy, W: LootWorld<E>> Evaluation<'e, 'c, E, W> {
@@ -117,36 +125,42 @@ impl<'e, 'c, E: Copy, W: LootWorld<E>> Evaluation<'e, 'c, E, W> {
 
     pub(crate) fn root<R: Random>(
         &self,
-        table: &Table,
+        table_index: usize,
         random: &mut R,
         scratch: &mut LootScratch,
         stacks: &mut Vec<Option<ItemStack>>,
     ) {
-        self.table(table, None, random, scratch, stacks);
+        self.table(table_index, None, random, scratch, stacks);
     }
 
     fn table<R: Random>(
         &self,
-        table: &Table,
+        table_index: usize,
         outer: Option<&Place<'_>>,
         random: &mut R,
         scratch: &mut LootScratch,
         stacks: &mut Vec<Option<ItemStack>>,
     ) {
+        let Some(table) = self.tables.get(table_index) else {
+            return;
+        };
         for pool in &table.pools {
-            self.pool(table, pool, outer, random, scratch, stacks);
+            self.pool(table_index, pool, outer, random, scratch, stacks);
         }
     }
 
     fn pool<R: Random>(
         &self,
-        table: &Table,
+        table_index: usize,
         pool: &Pool,
         outer: Option<&Place<'_>>,
         random: &mut R,
         scratch: &mut LootScratch,
         stacks: &mut Vec<Option<ItemStack>>,
     ) {
+        let Some(table) = self.tables.get(table_index) else {
+            return;
+        };
         if !self.passes(pool.condition.as_ref(), random, &mut scratch.predicates) {
             return;
         }
@@ -168,6 +182,7 @@ impl<'e, 'c, E: Copy, W: LootWorld<E>> Evaluation<'e, 'c, E, W> {
             }
             if let Some(chosen) = choose(&mut scratch.candidates, random) {
                 let place = Place {
+                    table_index,
                     table,
                     pool,
                     leaf: chosen.entry,
@@ -201,7 +216,8 @@ impl<'e, 'c, E: Copy, W: LootWorld<E>> Evaluation<'e, 'c, E, W> {
             | EntryKind::Empty
             | EntryKind::Tag(_)
             | EntryKind::Tables(_)
-            | EntryKind::Dynamic(_) => {
+            | EntryKind::Dynamic(_)
+            | EntryKind::Slots(_) => {
                 scratch.candidates.push(candidate(None));
                 true
             }
@@ -283,6 +299,9 @@ impl<'e, 'c, E: Copy, W: LootWorld<E>> Evaluation<'e, 'c, E, W> {
                     );
                 }
             }
+            EntryKind::Slots(node) => {
+                slot_source::emit(self, place, *node, random, scratch, stacks)
+            }
             EntryKind::Empty
             | EntryKind::Alternatives(_)
             | EntryKind::Sequence(_)
@@ -298,25 +317,36 @@ impl<'e, 'c, E: Copy, W: LootWorld<E>> Evaluation<'e, 'c, E, W> {
         scratch: &mut LootScratch,
         stacks: &mut Vec<Option<ItemStack>>,
     ) {
-        let table = nested
-            .and_then(|index| usize::try_from(index).ok())
-            .and_then(|index| self.tables.get(index));
-        if let Some(table) = table {
-            self.table(table, Some(place), random, scratch, stacks);
+        let Some(index) = nested.and_then(|index| usize::try_from(index).ok()) else {
+            return;
+        };
+        if index < self.tables.len() {
+            self.table(index, Some(place), random, scratch, stacks);
         }
     }
 
     fn emit<R: Random>(
         &self,
         place: &Place<'_>,
-        mut stack: WorkStack,
+        stack: WorkStack,
         random: &mut R,
         scratch: &mut LootScratch,
         stacks: &mut Vec<Option<ItemStack>>,
     ) {
+        self.emit_stack(place, stack, random, &mut scratch.predicates, stacks);
+    }
+
+    pub(crate) fn emit_stack<R: Random>(
+        &self,
+        place: &Place<'_>,
+        mut stack: WorkStack,
+        random: &mut R,
+        predicates: &mut PredicateScratch,
+        stacks: &mut Vec<Option<ItemStack>>,
+    ) {
         let mut at = Some(place);
         while let Some(place) = at {
-            self.modify(place, &mut stack, random, &mut scratch.predicates);
+            self.modify(place, &mut stack, random, predicates);
             at = place.outer;
         }
         stack.divide(&self.rules.items, stacks);

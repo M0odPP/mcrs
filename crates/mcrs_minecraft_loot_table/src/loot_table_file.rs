@@ -1,10 +1,10 @@
 use mcrs_minecraft_loot::context_key_set_keys::ContextKeySet;
-use mcrs_minecraft_loot::slot_source_type_keys::SlotSourceType;
 use mcrs_minecraft_loot_condition::{ConditionFile, FloatProviderFile, IntProviderFile};
 use mcrs_minecraft_resource::ResourceLocationBuf;
 use serde::Deserialize;
 
 use crate::modifier_file::ModifierFile;
+use crate::slot_source_file::SlotSourceFile;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct LootTableFile {
@@ -106,17 +106,6 @@ pub enum TableSetFile {
     Tag(TagName),
     Many(Vec<TableFile>),
     One(TableFile),
-}
-
-#[derive(Debug, Clone, Deserialize)]
-#[serde(untagged)]
-pub enum SlotSourceFile {
-    Key(ResourceLocationBuf),
-    Group(Vec<SlotSourceFile>),
-    Typed {
-        #[serde(rename = "type")]
-        kind: SlotSourceType,
-    },
 }
 
 #[derive(Debug, Clone, Deserialize)]

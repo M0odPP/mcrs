@@ -16,8 +16,8 @@ use mcrs_minecraft_item_stack::{
 use mcrs_minecraft_loot::context_key_set_keys::ContextKeySet;
 use mcrs_minecraft_loot::loot::LootTable;
 use mcrs_minecraft_loot_condition::{
-    ClockView, EnvironmentView, LootContext, NbtNumber, ScoreHolder, ScoreView, StorageView, Tool,
-    WeatherView,
+    BlockEntityView, ClockView, EnvironmentView, LootContext, NbtNumber, ScoreHolder, ScoreView,
+    StorageView, Tool, WeatherView,
 };
 use mcrs_minecraft_loot_table::{KeyedSeed, LootIssue, LootTables};
 use mcrs_minecraft_nbt_path::NbtPath;
@@ -118,9 +118,12 @@ pub fn names(stacks: impl IntoIterator<Item = Option<ItemStack>>) -> Vec<(String
         .collect()
 }
 
+#[derive(Default)]
 pub struct Around<'a> {
     pub blocks: &'a [(BlockPos, BlockStateId)],
     pub main_hand: Option<&'a ItemStack>,
+    pub entity_slots: &'a [Option<ItemStack>],
+    pub block_entity_slots: &'a [Option<ItemStack>],
 }
 
 impl LocationView for Around<'_> {
@@ -145,6 +148,12 @@ impl EntityView for Around<'_> {
             EquipmentSlot::MainHand => ItemSubject::Stack(stack),
             _ => ItemSubject::Empty,
         })
+    }
+
+    fn slot(&self, (): (), slot: u16) -> Option<ItemSubject<'_>> {
+        self.entity_slots
+            .get(usize::from(slot))
+            .map(|item| item.as_ref().map_or(ItemSubject::Empty, ItemSubject::Stack))
     }
 }
 
@@ -179,5 +188,13 @@ impl WeatherView for Around<'_> {
 impl ClockView for Around<'_> {
     fn total_ticks(&self, _: Id<WorldClock>) -> Option<i64> {
         None
+    }
+}
+
+impl BlockEntityView for Around<'_> {
+    fn block_entity_slot(&self, slot: u16) -> Option<ItemSubject<'_>> {
+        self.block_entity_slots
+            .get(usize::from(slot))
+            .map(|item| item.as_ref().map_or(ItemSubject::Empty, ItemSubject::Stack))
     }
 }

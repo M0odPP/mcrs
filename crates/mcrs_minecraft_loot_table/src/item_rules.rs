@@ -9,6 +9,7 @@ use mcrs_minecraft_resource::ResourceLocation;
 pub(crate) struct ItemRules {
     pub(crate) items: ItemTable,
     pub(crate) enchantments: Box<[EnchantmentRule]>,
+    pub(crate) air: Option<Kind>,
     pub(crate) book: Option<Kind>,
     pub(crate) enchanted_book: Option<Kind>,
 }
@@ -59,6 +60,7 @@ impl ItemRules {
         Self {
             items: *items,
             enchantments,
+            air: kind("minecraft:air"),
             book: kind("minecraft:book"),
             enchanted_book: kind("minecraft:enchanted_book"),
         }

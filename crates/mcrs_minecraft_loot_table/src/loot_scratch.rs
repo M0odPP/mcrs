@@ -1,11 +1,13 @@
 use mcrs_minecraft_predicate::PredicateScratch;
 
+use crate::slot_source::SlotWrapper;
 use crate::table::Candidate;
 
 #[derive(Debug, Clone, Default)]
 pub struct LootScratch {
     pub(crate) candidates: Vec<Candidate>,
     pub(crate) predicates: PredicateScratch,
+    pub(crate) slot_wrappers: Vec<SlotWrapper>,
 }
 
 impl LootScratch {
