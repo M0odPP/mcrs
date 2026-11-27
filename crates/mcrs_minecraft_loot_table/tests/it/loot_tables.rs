@@ -2,25 +2,30 @@ use std::sync::LazyLock;
 
 use mcrs_minecraft_engine_registries::test_item_table;
 use mcrs_minecraft_game_registries::registry_load::{load_registries, test_additions, test_packs};
+use mcrs_minecraft_item_stack::{Count, ItemStack};
 use mcrs_minecraft_loot::context_key_set_keys::ContextKeySet;
 use mcrs_minecraft_loot_condition::{ContextParam, LootContext, ParamNotAllowed};
 use mcrs_minecraft_loot_table::{
     LootIssue, LootProblem, LootScratch, LootTableFile, LootTables, RollError,
 };
 use mcrs_minecraft_predicate::BlockHost;
-use mcrs_minecraft_random::Random;
 use mcrs_minecraft_random::xoroshiro::XoroshiroRandom;
+use mcrs_minecraft_random::{Random, shuffle};
 use mcrs_minecraft_registries::Registries;
 use mcrs_minecraft_resource::{Id, ResourceLocation};
 use mcrs_test_alloc::allocations;
 
-use crate::fixture::{LOOT, block_table, blocks, context, names, state, stream, tool};
+use crate::fixture::{LOOT, block_table, blocks, context, item, names, state, stream, tool};
 
 const TABLES: &[(&str, &str)] = &[
     ("t:blocks/a_first", r#"{"pools": []}"#),
     (
         "t:untyped",
         r#"{"pools": [{"rolls": 1, "entries": [{"type": "minecraft:item", "name": "minecraft:stick"}]}]}"#,
+    ),
+    (
+        "t:fill_many",
+        r#"{"pools":[{"rolls":1,"entries":[{"type":"minecraft:item","name":"minecraft:stick","modifier":{"type":"minecraft:set_count","count":5}}]},{"rolls":1,"entries":[{"type":"minecraft:item","name":"minecraft:snowball"}]}]}"#,
     ),
     (
         "t:counts",
@@ -686,4 +691,55 @@ fn loot_evl_008_data_pack_tables_bake_and_non_block_tables_roll() {
     equipment.origin = Some(glam::DVec3::ZERO);
     equipment.this_entity = Some(());
     check("minecraft:equipment/trial_chamber", &equipment);
+}
+
+fn fill_added(
+    table: Id<mcrs_minecraft_loot::loot::LootTable>,
+    input: &LootContext<'_, ()>,
+    rng: &mut XoroshiroRandom,
+    scratch: &mut LootScratch,
+    slots: &mut [Option<ItemStack>],
+) {
+    ADDED
+        .1
+        .fill(table, input, &BlockHost::none(), rng, scratch, slots)
+        .expect("fill");
+}
+
+#[test]
+fn loot_ctr_001_to_005_fill_spreads_splits_truncates_and_allocates_zero() {
+    let table = added_table("t:fill_many");
+    let one = Count::new(1).expect("count");
+    let marker = Some(ItemStack::new(item("minecraft:stone"), one));
+    let input = context(state("minecraft:stone", &[]), None);
+    let mut scratch = LootScratch::new();
+    let (mut rng_a, mut rng_b) = (XoroshiroRandom::new(7), XoroshiroRandom::new(9));
+    let mut slots = [None, marker.clone(), None, None, None];
+    fill_added(table, &input, &mut rng_a, &mut scratch, &mut slots);
+    assert_eq!(slots[1], marker, "non-free intact");
+    let count_of = |name| -> u8 {
+        slots
+            .iter()
+            .flatten()
+            .filter(|s| s.kind == item(name))
+            .map(|s| s.count.get())
+            .sum()
+    };
+    let split_ok = count_of("minecraft:stick") == 5
+        && count_of("minecraft:snowball") == 1
+        && slots.iter().flatten().count() == 5;
+    assert!(split_ok, "splits stick across free slots");
+    let mut small = [None, None];
+    let mut small_rng = stream(&ADDED.1, table, 0);
+    let mut expected_rng = small_rng.clone();
+    let before = allocations();
+    fill_added(table, &input, &mut small_rng, &mut scratch, &mut small);
+    assert_eq!(allocations() - before, 0, "zero alloc");
+    shuffle(&mut [0usize, 1], &mut expected_rng);
+    shuffle(&mut [0usize, 1], &mut expected_rng);
+    let draws_ok = small.iter().flatten().count() == 2 && small_rng == expected_rng;
+    assert!(draws_ok, "LOOT-CTR-005 exact draws");
+    let mut overflow = [None];
+    fill_added(table, &input, &mut rng_b, &mut scratch, &mut overflow);
+    assert_eq!(overflow.iter().flatten().count(), 1, "drops excess");
 }

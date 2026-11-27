@@ -19,6 +19,7 @@ use mcrs_minecraft_wire::Encode;
 use mcrs_minecraft_wire::VarInt;
 use mcrs_voxel::BlockPos;
 
+use crate::AdditionalTradeCost;
 use crate::ArgbColor;
 use crate::AttackAnimation;
 use crate::AttributeId;
@@ -57,6 +58,7 @@ use crate::DyeColor;
 use crate::DyedColor;
 use crate::EffectDetails;
 use crate::EffectInstance;
+use crate::Enchantable;
 use crate::EnchantmentGlintOverride;
 use crate::EnchantmentId;
 use crate::EnchantmentLevel;
@@ -338,6 +340,10 @@ fn read_flat_value<L: NameLookup>(
         }
         BuiltinKey::Bees => Builtin::Bees(Bees(reader.list(input, Reader::bee)?)),
         BuiltinKey::ContainerLoot => reader.saved_form_as_nbt(input)?,
+        BuiltinKey::Enchantable => Builtin::Enchantable(Enchantable(reader.var_int(input)?)),
+        BuiltinKey::AdditionalTradeCost => {
+            Builtin::AdditionalTradeCost(AdditionalTradeCost(reader.var_int(input)?))
+        }
     })
 }
 
@@ -1061,7 +1067,9 @@ pub(crate) fn write_value<L: NameLookup>(
         | Builtin::MaxDamage(MaxDamage(number))
         | Builtin::Damage(Damage(number))
         | Builtin::RepairCost(RepairCost(number))
-        | Builtin::MapId(MapId(number)) => put_var_int(output, *number),
+        | Builtin::MapId(MapId(number))
+        | Builtin::Enchantable(Enchantable(number))
+        | Builtin::AdditionalTradeCost(AdditionalTradeCost(number)) => put_var_int(output, *number),
         Builtin::Unbreakable(Unbreakable) => {}
         Builtin::ItemModel(model) => writer.identifier(model.get(), output)?,
         Builtin::Rarity(rarity) => writer.list_id(&Rarity::ALL, *rarity, output)?,

@@ -1,5 +1,6 @@
 use alloc::borrow::Cow;
 
+use crate::AdditionalTradeCost;
 use crate::AttackAnimation;
 use crate::AttributeModifiers;
 use crate::BannerPatterns;
@@ -15,6 +16,7 @@ use crate::CustomModelData;
 use crate::CustomName;
 use crate::Damage;
 use crate::DyedColor;
+use crate::Enchantable;
 use crate::EnchantmentGlintOverride;
 use crate::FireworkExplosion;
 use crate::Fireworks;
@@ -167,3 +169,7 @@ impl EntityForm for AttackAnimation {}
 impl EntityForm for InteractAnimation {}
 
 impl EntityForm for Weapon {}
+
+impl EntityForm for Enchantable {}
+
+impl EntityForm for AdditionalTradeCost {}

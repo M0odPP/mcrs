@@ -60,6 +60,7 @@ use crate::DyeColor;
 use crate::DyedColor;
 use crate::EffectDetails;
 use crate::EffectInstance;
+use crate::Enchantable;
 use crate::EnchantmentGlintOverride;
 use crate::EnchantmentId;
 use crate::EnchantmentLevel;
@@ -135,6 +136,7 @@ use crate::check_saved_form::NOT_NEGATIVE;
 use crate::check_saved_form::OMINOUS_AMPLIFIER;
 use crate::check_saved_form::POSITIVE;
 use crate::check_saved_form::STACK_SIZE;
+use crate::data_component_type_keys::DataComponentType;
 use crate::entity_data::ENTITY_TYPE_KEY;
 use crate::nbt_depth::DIRECT_TEMPLATE_LEVELS;
 use crate::nbt_depth::LIST_TEMPLATE_LEVELS;
@@ -503,18 +505,34 @@ fn read_flat_value<L: NameLookup>(
             reader.each(reader.list(tag)?, Reader::banner_layer)?,
         )),
         BuiltinKey::Bees => Builtin::Bees(Bees(reader.each(reader.list(tag)?, Reader::bee)?)),
-        BuiltinKey::ContainerLoot => {
-            let map = reader.map(tag)?;
-            Builtin::ContainerLoot(ContainerLoot {
-                loot_table: reader
-                    .identifier(reader.necessary(map, "loot_table")?)?
-                    .to_buf(),
-                seed: (reader
-                    .optional(map, "seed", |reader, tag| Ok(reader.number(tag)?.to_long()))?)
-                .unwrap_or_default(),
-            })
+        BuiltinKey::ContainerLoot => Builtin::ContainerLoot(reader.container_loot(tag)?),
+        BuiltinKey::Enchantable => Builtin::Enchantable(reader.enchantable(tag)?),
+        BuiltinKey::AdditionalTradeCost => {
+            return Err(SavedError::WireValueOnly(ComponentType(
+                DataComponentType::AdditionalTradeCost.id().number(),
+            )));
         }
     })
+}
+
+impl<L: NameLookup> Reader<'_, L> {
+    fn container_loot(&self, tag: &NbtTag) -> Result<ContainerLoot, SavedError> {
+        let map = self.map(tag)?;
+        Ok(ContainerLoot {
+            loot_table: self
+                .identifier(self.necessary(map, "loot_table")?)?
+                .to_buf(),
+            seed: (self.optional(map, "seed", |reader, tag| Ok(reader.number(tag)?.to_long()))?)
+                .unwrap_or_default(),
+        })
+    }
+
+    fn enchantable(&self, tag: &NbtTag) -> Result<Enchantable, SavedError> {
+        let map = self.map(tag)?;
+        Ok(Enchantable(
+            self.int(self.necessary(map, "value")?, POSITIVE)?,
+        ))
+    }
 }
 
 struct HolderSetSpecification<E: Clone + 'static, S> {

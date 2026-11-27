@@ -77,6 +77,7 @@ pub use member_kind::MemberKind;
 pub use named_entries::NamedEntries;
 pub use named_issue::NamedIssue;
 pub use nbt_number::NbtNumber;
+pub use nbt_path::nbt_path;
 pub use param_not_allowed::ParamNotAllowed;
 pub use score_view::{ScoreHolder, ScoreView};
 pub use storage_view::StorageView;

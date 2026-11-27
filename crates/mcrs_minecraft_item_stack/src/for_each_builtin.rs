@@ -52,6 +52,8 @@ macro_rules! for_each_builtin {
             AttackAnimation => "attack_animation",
             InteractAnimation => "interact_animation",
             Weapon => "weapon",
+            Enchantable => "enchantable",
+            AdditionalTradeCost => "additional_trade_cost",
         }
     };
 }

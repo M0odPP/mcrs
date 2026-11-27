@@ -10,6 +10,7 @@ mod loot_table_file;
 mod loot_tables;
 mod modifier;
 mod modifier_bake;
+mod modifier_eval;
 mod modifier_file;
 mod roll_error;
 mod set_attribute;

@@ -51,9 +51,7 @@ pub(crate) fn skip_value(
         | CatVariant
         | CatSoundVariant
         | ProvidesPotteryPattern
-        | Enchantable
         | VillagerFood
-        | AdditionalTradeCost
         | MapPostProcessing
         | Dye
         | BaseColor
@@ -102,6 +100,8 @@ pub(crate) fn skip_value(
         DamageResistant | Repairable | ProvidesBannerPatterns => skip.holder_set(input),
         Tool => value(BuiltinKey::Tool, input),
         Weapon => value(BuiltinKey::Weapon, input),
+        Enchantable => value(BuiltinKey::Enchantable, input),
+        AdditionalTradeCost => value(BuiltinKey::AdditionalTradeCost, input),
         AttackRange => skip.bytes(input, 6 * F32),
         Equippable => value(BuiltinKey::Equippable, input),
         DeathProtection => skip.list(input, consume_effect),

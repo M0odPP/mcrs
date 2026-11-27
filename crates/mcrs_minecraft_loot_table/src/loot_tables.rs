@@ -1,12 +1,12 @@
 use mcrs_minecraft_block::definition::{BlockDefinitions, LootId};
-use mcrs_minecraft_item_stack::ItemStack;
+use mcrs_minecraft_item_stack::{Count, ItemStack};
 use mcrs_minecraft_item_table::ItemTable;
 use mcrs_minecraft_loot::loot::LootTable;
 use mcrs_minecraft_loot_condition::{
-    ContextParam, ContextParams, LootContext, LootWorld, NamedEntries,
+    ContextParam, ContextParams, LootContext, LootWorld, NamedEntries, between,
 };
-use mcrs_minecraft_random::Random;
 use mcrs_minecraft_random::xoroshiro::XoroshiroRandom;
+use mcrs_minecraft_random::{Random, shuffle};
 use mcrs_minecraft_registries::Registries;
 use mcrs_minecraft_resource::Id;
 
@@ -104,6 +104,82 @@ impl LootTables {
             rules: &self.rules,
         };
         evaluation.root(table.index(), random, scratch, stacks);
+        Ok(())
+    }
+
+    pub fn fill<E: Copy, W: LootWorld<E>, R: Random>(
+        &self,
+        table: Id<LootTable>,
+        context: &LootContext<'_, E>,
+        world: &W,
+        random: &mut R,
+        scratch: &mut LootScratch,
+        slots: &mut [Option<ItemStack>],
+    ) -> Result<(), RollError> {
+        let _ = self.table(table)?;
+        check(context)?;
+        let mut rolled = core::mem::take(&mut scratch.rolled);
+        rolled.clear();
+        scratch.kept.clear();
+        scratch.split.clear();
+        scratch.free.clear();
+        Evaluation {
+            tables: &self.tables,
+            named: &self.entries,
+            context,
+            world,
+            rules: &self.rules,
+        }
+        .root(table.index(), random, scratch, &mut rolled);
+        let (kept, split, free) = (&mut scratch.kept, &mut scratch.split, &mut scratch.free);
+        free.extend(
+            (0..slots.len()).filter(|&index| slots.get(index).is_some_and(Option::is_none)),
+        );
+        shuffle(free, random);
+        for stack in rolled.drain(..).flatten() {
+            (if stack.count.get() > 1 {
+                &mut *split
+            } else {
+                &mut *kept
+            })
+            .push(stack);
+        }
+        let to_count = |value: i32| u8::try_from(value).ok().and_then(Count::new);
+        while free.len() > kept.len().saturating_add(split.len()) && !split.is_empty() {
+            let last = i32::try_from(split.len() - 1).unwrap_or(i32::MAX);
+            let Some(index) = between(random, 0, last)
+                .and_then(|v| usize::try_from(v).ok())
+                .filter(|&i| i < split.len())
+            else {
+                break;
+            };
+            let mut stack = split.remove(index);
+            let take = between(random, 1, i32::from(stack.count.get()) / 2).unwrap_or(1);
+            let rest = i32::from(stack.count.get()) - take;
+            if let (Some(rest), Some(taken)) = (to_count(rest), to_count(take)) {
+                let mut part = stack.clone();
+                (stack.count, part.count) = (rest, taken);
+                for piece in [stack, part] {
+                    (if piece.count.get() > 1 && random.next_bool() {
+                        &mut *split
+                    } else {
+                        &mut *kept
+                    })
+                    .push(piece);
+                }
+            } else {
+                kept.push(stack);
+            }
+        }
+        kept.append(split);
+        shuffle(kept, random);
+        for stack in kept.drain(..) {
+            if let Some(target) = free.pop().and_then(|slot| slots.get_mut(slot)) {
+                *target = Some(stack);
+            }
+        }
+        free.clear();
+        scratch.rolled = rolled;
         Ok(())
     }
 

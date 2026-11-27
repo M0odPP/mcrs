@@ -10,7 +10,8 @@ use mcrs_minecraft_item::component::fireworks::FireworkExplosion;
 use mcrs_minecraft_item::component::nbt_wire::CustomData;
 use mcrs_minecraft_item::component::predicate::ItemPredicate;
 use mcrs_minecraft_item::patch::ComponentPatch;
-use mcrs_minecraft_loot_condition::{ConditionFile, FloatProviderFile, IntProviderFile};
+use mcrs_minecraft_loot_condition::{ConditionFile, FloatProviderFile, IntProviderFile, nbt_path};
+use mcrs_minecraft_nbt_path::NbtPath;
 use mcrs_minecraft_registries::Named;
 use mcrs_minecraft_resource::ResourceLocationBuf;
 use serde::Deserialize;
@@ -449,10 +450,12 @@ pub enum NbtSourceKind {
     Context { target: ContextTarget },
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct CopyOperationFile {
-    pub source: String,
-    pub target: String,
+    #[serde(deserialize_with = "nbt_path")]
+    pub source: NbtPath,
+    #[serde(deserialize_with = "nbt_path")]
+    pub target: NbtPath,
     pub op: CopyOp,
 }
 

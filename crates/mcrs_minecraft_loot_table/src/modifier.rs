@@ -3,7 +3,8 @@ use core::num::NonZeroU8;
 use mcrs_minecraft_item::component::equippable::EquipmentSlot;
 use mcrs_minecraft_item::enchantment::Enchantment;
 use mcrs_minecraft_item_stack::{
-    Damage, EnchantmentId, EnchantmentLevel, Enchantments, Kind, MaxDamage, Unbreakable,
+    AdditionalTradeCost, Damage, EnchantmentId, EnchantmentLevel, Enchantments, InstrumentId, Kind,
+    MaxDamage, MobEffectId, PotionId, StoredEnchantments, Unbreakable,
 };
 use mcrs_minecraft_loot_condition::{
     Condition, ContextParam, ContextParams, FloatProvider, IntProvider, LootWorld, Tool, between,
@@ -12,7 +13,10 @@ use mcrs_minecraft_loot_condition::{
 use mcrs_minecraft_predicate::{BakedItemPredicate, PredicateScratch};
 use mcrs_minecraft_random::Random;
 use mcrs_minecraft_resource::Id;
+use mcrs_minecraft_text::Text;
 
+use crate::modifier_eval;
+use crate::modifier_file::NameTarget;
 use crate::set_attribute::{SetAttribute, set_attributes};
 use crate::table::{Evaluation, Table};
 use crate::work_stack::WorkStack;
@@ -62,6 +66,12 @@ pub(crate) enum ModifierOp {
     EnchantRandomly {
         options: Option<Box<[EnchantmentId]>>,
         only_compatible: bool,
+        include_additional_cost_component: bool,
+    },
+    EnchantWithLevels {
+        levels: IntProvider,
+        options: Option<Box<[EnchantmentId]>>,
+        include_additional_cost_component: bool,
     },
     SetEnchantments {
         levels: Box<[SetLevel]>,
@@ -72,6 +82,22 @@ pub(crate) enum ModifierOp {
         elements: Box<[SetAttribute]>,
         replace: bool,
     },
+    SetName {
+        name: Option<Text>,
+        entity: Option<ContextParam>,
+        target: NameTarget,
+    },
+    SetPotion(PotionId),
+    SetStewEffect(Box<[StewEntry]>),
+    SetOminousBottleAmplifier(IntProvider),
+    SetInstrument(Box<[InstrumentId]>),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct StewEntry {
+    pub(crate) effect: MobEffectId,
+    pub(crate) instant: bool,
+    pub(crate) duration: IntProvider,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -102,8 +128,12 @@ impl ModifierOp {
             | ModifierOp::Named(_)
             | ModifierOp::Filtered { .. }
             | ModifierOp::Discard
-            | ModifierOp::SetItem(_) => ContextParams::EMPTY,
-            ModifierOp::SetCount { count, .. } => count.reads(),
+            | ModifierOp::SetItem(_)
+            | ModifierOp::SetPotion(_)
+            | ModifierOp::SetInstrument(_) => ContextParams::EMPTY,
+            ModifierOp::SetCount { count, .. } | ModifierOp::SetOminousBottleAmplifier(count) => {
+                count.reads()
+            }
             ModifierOp::SetDamage { damage, .. } => damage.reads(),
             ModifierOp::ExplosionDecay => ContextParams::of(&[ContextParam::ExplosionRadius]),
             ModifierOp::Limit { min, max } => providers([min, max].into_iter().flatten()),
@@ -113,7 +143,23 @@ impl ModifierOp {
             ModifierOp::EnchantedCountIncrease(increase) => {
                 ContextParams::of(&[ContextParam::AttackingEntity]).union(increase.count.reads())
             }
-            ModifierOp::EnchantRandomly { .. } => ContextParams::EMPTY,
+            ModifierOp::EnchantRandomly {
+                include_additional_cost_component,
+                ..
+            } => match include_additional_cost_component {
+                true => ContextParams::of(&[ContextParam::AdditionalCostComponentAllowed]),
+                false => ContextParams::EMPTY,
+            },
+            ModifierOp::EnchantWithLevels {
+                levels,
+                include_additional_cost_component,
+                ..
+            } => match include_additional_cost_component {
+                true => levels
+                    .reads()
+                    .with(ContextParam::AdditionalCostComponentAllowed),
+                false => levels.reads(),
+            },
             ModifierOp::SetAttributes { elements, .. } => elements
                 .iter()
                 .fold(ContextParams::EMPTY, |reads, element| {
@@ -121,6 +167,12 @@ impl ModifierOp {
                 }),
             ModifierOp::SetEnchantments { levels, .. } => {
                 providers(levels.iter().map(|level| &level.level))
+            }
+            ModifierOp::SetName { entity, .. } => entity.map_or(ContextParams::EMPTY, |param| {
+                ContextParams::EMPTY.with(param)
+            }),
+            ModifierOp::SetStewEffect(entries) => {
+                providers(entries.iter().map(|entry| &entry.duration))
             }
         }
     }
@@ -192,10 +244,12 @@ impl Modifier {
             ModifierOp::EnchantRandomly {
                 options,
                 only_compatible,
+                include_additional_cost_component,
             } => enchant_randomly(
                 stack,
                 options.as_deref(),
                 *only_compatible,
+                *include_additional_cost_component,
                 evaluation,
                 random,
             ),
@@ -231,6 +285,7 @@ impl Modifier {
                 };
                 apply_all(branch, holder, stack, evaluation, random, scratch);
             }
+            _ => modifier_eval::apply_extra(&self.op, stack, evaluation, random, scratch),
         }
     }
 }
@@ -353,19 +408,20 @@ fn set_damage<E: Copy, W: LootWorld<E>, R: Random>(
     stack.set(Damage(written.clamp(0, max)), items);
 }
 
-fn raised_enchantments<E, W>(
-    stack: &WorkStack,
+fn update_enchants<E, W>(
+    stack: &mut WorkStack,
     evaluation: &Evaluation<'_, '_, E, W>,
-) -> Option<Enchantments> {
-    let read = stack.read()?;
+    edit: impl FnOnce(&Enchantments) -> Enchantments,
+) {
+    let Some(read) = stack.read() else { return };
+    let items = &evaluation.rules.items;
     if Some(read.kind) == evaluation.rules.enchanted_book {
-        return None;
+        if let Some(stored) = items.effective::<StoredEnchantments>(read) {
+            stack.set(StoredEnchantments(edit(&stored.0)), items);
+        }
+    } else if let Some(active) = items.effective::<Enchantments>(read) {
+        stack.set(edit(active), items);
     }
-    evaluation
-        .rules
-        .items
-        .effective::<Enchantments>(read)
-        .cloned()
 }
 
 fn with_level(enchantments: &Enchantments, enchantment: EnchantmentId, level: u8) -> Enchantments {
@@ -390,6 +446,7 @@ fn enchant_randomly<E, W: LootWorld<E>, R: Random>(
     stack: &mut WorkStack,
     options: Option<&[EnchantmentId]>,
     only_compatible: bool,
+    include_additional_cost_component: bool,
     evaluation: &Evaluation<'_, '_, E, W>,
     random: &mut R,
 ) {
@@ -401,16 +458,12 @@ fn enchant_randomly<E, W: LootWorld<E>, R: Random>(
         let every = rules
             .enchantments
             .iter()
-            .map(|rule| rule.id)
+            .map(|r| r.id)
             .filter(|_| options.is_none());
         listed.chain(every).filter(move |&id| {
             !only_compatible
                 || is_book
-                || kind.is_some_and(|kind| {
-                    rules
-                        .enchantment(id)
-                        .is_some_and(|rule| rule.supports(kind))
-                })
+                || kind.is_some_and(|k| rules.enchantment(id).is_some_and(|r| r.supports(k)))
         })
     };
     let length = candidates().count();
@@ -434,26 +487,37 @@ fn enchant_randomly<E, W: LootWorld<E>, R: Random>(
         stack.replace(enchanted_book, 1);
     }
     raise(stack, enchantment, level, evaluation);
+    if include_additional_cost_component && evaluation.context.additional_cost_component_allowed {
+        let extra = bounded(
+            random,
+            i64::from(level).saturating_mul(10).saturating_add(5),
+        )
+        .unwrap_or(0);
+        let cost = level
+            .saturating_mul(3)
+            .saturating_add(2)
+            .saturating_add(extra);
+        stack.set(AdditionalTradeCost(cost), &rules.items);
+    }
 }
 
-fn raise<E, W: LootWorld<E>>(
+pub(crate) fn raise<E, W: LootWorld<E>>(
     stack: &mut WorkStack,
     enchantment: EnchantmentId,
     level: i32,
     evaluation: &Evaluation<'_, '_, E, W>,
 ) {
-    let Some(enchantments) = raised_enchantments(stack, evaluation) else {
-        return;
-    };
     if level <= 0 {
         return;
     }
-    let level = u8::try_from(level.min(255)).unwrap_or(u8::MAX);
-    let level = level.max(level_of(&enchantments, enchantment));
-    stack.set(
-        with_level(&enchantments, enchantment, level),
-        &evaluation.rules.items,
-    );
+    let capped = u8::try_from(level.min(255)).unwrap_or(u8::MAX);
+    update_enchants(stack, evaluation, |current| {
+        with_level(
+            current,
+            enchantment,
+            capped.max(level_of(current, enchantment)),
+        )
+    });
 }
 
 fn set_enchantments<E: Copy, W: LootWorld<E>, R: Random>(
@@ -467,25 +531,24 @@ fn set_enchantments<E: Copy, W: LootWorld<E>, R: Random>(
     let rules = evaluation.rules;
     if stack.kind().is_some()
         && stack.kind() == rules.book
-        && let Some(enchanted_book) = rules.enchanted_book
+        && let Some(book) = rules.enchanted_book
     {
-        stack.set_kind(enchanted_book, &rules.items);
+        stack.set_kind(book, &rules.items);
     }
-    let Some(mut enchantments) = raised_enchantments(stack, evaluation) else {
-        return;
-    };
-    for entry in levels {
-        let value = entry.level.read(evaluation.inputs(), random, scratch);
-        let current = i32::from(level_of(&enchantments, entry.enchantment));
-        let new = if add {
-            current.saturating_add(value)
-        } else {
-            value
-        };
-        let new = u8::try_from(new.clamp(0, 255)).unwrap_or(0);
-        enchantments = with_level(&enchantments, entry.enchantment, new);
-    }
-    stack.set(enchantments, &rules.items);
+    update_enchants(stack, evaluation, |current| {
+        let mut enchantments = current.clone();
+        for entry in levels {
+            let value = entry.level.read(evaluation.inputs(), random, scratch);
+            let base = if add {
+                i32::from(level_of(&enchantments, entry.enchantment))
+            } else {
+                0
+            };
+            let next = u8::try_from(base.saturating_add(value).clamp(0, 255)).unwrap_or(0);
+            enchantments = with_level(&enchantments, entry.enchantment, next);
+        }
+        enchantments
+    });
 }
 
 #[cfg(test)]
@@ -503,13 +566,7 @@ mod tests {
 
     #[test]
     fn loot_mod_004_apply_bonus_without_a_tool_keeps_the_count_and_the_generator() {
-        let rules = ItemRules {
-            items: ItemTable::leak([Vec::<Builtin>::new()]),
-            enchantments: Box::new([]),
-            air: None,
-            book: None,
-            enchanted_book: None,
-        };
+        let rules = ItemRules::empty(ItemTable::leak([Vec::<Builtin>::new()]));
         let context = LootContext::<()>::try_new(ContextKeySet::Empty).expect("a source key set");
         let (named, _) =
             NamedEntries::bake(&test_corpus().0.0, test_registries(), test_item_table());

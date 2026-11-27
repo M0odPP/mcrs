@@ -30,6 +30,7 @@ use crate::DamageTypeId;
 use crate::DamageTypeSet;
 use crate::DyedColor;
 use crate::EffectInstance;
+use crate::Enchantable;
 use crate::EnchantmentGlintOverride;
 use crate::Enchantments;
 use crate::EntityData;
@@ -87,6 +88,7 @@ use crate::check_saved_form::NOT_NEGATIVE;
 use crate::check_saved_form::OMINOUS_AMPLIFIER;
 use crate::check_saved_form::POSITIVE;
 use crate::check_saved_form::STACK_SIZE;
+use crate::data_component_type_keys::DataComponentType;
 use crate::effect_details::EffectFields;
 use crate::lore::MAX_LINES;
 use crate::nbt_depth::DIRECT_TEMPLATE_LEVELS;
@@ -294,6 +296,13 @@ fn flat_saved_form<S: SavedSink, L: NameLookup>(
             ]))
         }),
         Builtin::ContainerLoot(loot) => Ok(walk.container_loot(sink, loot)),
+        Builtin::Enchantable(Enchantable(value)) => {
+            Ok(sink.fields([Field::new("value", walk.int(sink, *value, POSITIVE)?)]))
+        }
+        Builtin::AdditionalTradeCost(_) => Err(Fault::WireValueOnly {
+            component: walk.component,
+            component_type: ComponentType(DataComponentType::AdditionalTradeCost.id().number()),
+        }),
     }
 }
 
@@ -1341,7 +1350,9 @@ fn template_fields<S: SavedSink>(
 fn is_saved(entry: &PatchEntry, wire_only: WireOnly) -> bool {
     match entry {
         PatchEntry::Custom(_) => false,
-        PatchEntry::UndecodedWire(_) => wire_only == WireOnly::Refuse,
+        PatchEntry::UndecodedWire(_) | PatchEntry::Value(Builtin::AdditionalTradeCost(_)) => {
+            wire_only == WireOnly::Refuse
+        }
         PatchEntry::Value(_)
         | PatchEntry::Removal(_)
         | PatchEntry::Undecoded(_)

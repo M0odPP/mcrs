@@ -1,23 +1,32 @@
 use mcrs_minecraft_enchantment::file::EnchantmentFile;
+use mcrs_minecraft_entity::mob_effect_keys::MobEffect;
 use mcrs_minecraft_entity_attribute::ModifierOperation;
 use mcrs_minecraft_entity_attribute::attribute_keys::Attribute;
+use mcrs_minecraft_item::InstrumentValue;
 use mcrs_minecraft_item::component::common::EquipmentSlotGroup;
 use mcrs_minecraft_item::component::predicate::ItemPredicate;
 use mcrs_minecraft_item::enchantment::Enchantment;
 use mcrs_minecraft_item_key::item_keys::Item;
-use mcrs_minecraft_item_stack::{AttributeId, EnchantmentId, Kind, SlotGroup};
+use mcrs_minecraft_item_stack::{
+    AttributeId, EnchantmentId, InstrumentId, Kind, MobEffectId, PotionId, SlotGroup,
+};
 use mcrs_minecraft_loot::function::LootItemFunction;
-use mcrs_minecraft_loot_condition::{FloatProviderFile, IntProvider, equipment_slots};
+use mcrs_minecraft_loot_condition::{
+    ContextParam, FloatProviderFile, IntProvider, equipment_slots,
+};
+use mcrs_minecraft_nbt::{from_tag, to_nbt_tag};
+use mcrs_minecraft_potion::potion_keys::Potion;
 use mcrs_minecraft_registries::Named;
-use mcrs_minecraft_resource::{Id, ResourceLocation, ResourceLocationBuf, TagKey};
+use mcrs_minecraft_resource::{Id, Registered, ResourceLocation, ResourceLocationBuf, TagKey};
+use mcrs_minecraft_text::Text;
 
 use crate::baker::Baker;
 use crate::loot_issue::LootProblem;
 use crate::loot_table_file::TagName;
-use crate::modifier::{CountIncrease, Modifier, ModifierOp, SetLevel};
+use crate::modifier::{CountIncrease, Modifier, ModifierOp, SetLevel, StewEntry};
 use crate::modifier_file::{
-    AttributeFile, AttributeOperation, BonusFormula, KeySetFile, LimitFile, ModifierElement,
-    ModifierFile, ModifierKind, ModifierObject, ModifierSetFile, SlotsFile,
+    AttributeFile, AttributeOperation, BonusFormula, EntityTarget, KeySetFile, LimitFile,
+    ModifierElement, ModifierFile, ModifierKind, ModifierObject, ModifierSetFile, SlotsFile,
 };
 use crate::set_attribute::SetAttribute;
 
@@ -139,15 +148,36 @@ impl Baker<'_, '_> {
                 damage: self.conditions.float_provider(damage),
                 add: *add,
             },
+            kind => self.modifier_extra(kind, path),
+        };
+        self.take_problems(path);
+        self.check(op.reads(), path);
+        Modifier { condition, op }
+    }
+
+    fn modifier_extra(&mut self, kind: &ModifierKind, path: &str) -> ModifierOp {
+        match kind {
             ModifierKind::EnchantRandomly {
                 options,
                 only_compatible,
-                ..
+                include_additional_cost_component,
             } => ModifierOp::EnchantRandomly {
-                options: options
-                    .as_ref()
-                    .map(|options| self.enchantment_set(options, path)),
+                options: options.as_ref().map(|o| {
+                    self.key_set(o, "enchantment", &format!("{path}.options"), enchantment_id)
+                }),
                 only_compatible: *only_compatible,
+                include_additional_cost_component: *include_additional_cost_component,
+            },
+            ModifierKind::EnchantWithLevels {
+                levels,
+                options,
+                include_additional_cost_component,
+            } => ModifierOp::EnchantWithLevels {
+                levels: self.conditions.int_provider(levels),
+                options: options.as_ref().map(|o| {
+                    self.key_set(o, "enchantment", &format!("{path}.options"), enchantment_id)
+                }),
+                include_additional_cost_component: *include_additional_cost_component,
             },
             ModifierKind::SetEnchantments { enchantments, add } => {
                 let levels = enchantments
@@ -172,11 +202,67 @@ impl Baker<'_, '_> {
                     ModifierSetFile::Tag(name) => self.tagged(name, &path),
                 })
             }
+            ModifierKind::SetName {
+                name,
+                entity,
+                target,
+            } => ModifierOp::SetName {
+                name: name
+                    .as_ref()
+                    .and_then(|t| self.bake_text(t, &format!("{path}.name"))),
+                entity: entity.map(entity_param),
+                target: *target,
+            },
+            ModifierKind::SetStewEffect { effects } => self.set_stew_effect(effects, path),
+            ModifierKind::SetOminousBottleAmplifier { amplifier } => {
+                ModifierOp::SetOminousBottleAmplifier(self.conditions.int_provider(amplifier))
+            }
+            ModifierKind::SetPotion { id } => {
+                match self
+                    .checked_lookup::<Potion>(id.as_location(), "potion", &format!("{path}.id"))
+                    .and_then(|id| u16::try_from(id.index()).ok())
+                {
+                    Some(number) => ModifierOp::SetPotion(PotionId(number)),
+                    None => ModifierOp::Unresolved,
+                }
+            }
+            ModifierKind::SetInstrument { options } => {
+                ModifierOp::SetInstrument(self.key_set::<InstrumentValue, InstrumentId>(
+                    options,
+                    "instrument",
+                    &format!("{path}.options"),
+                    |id| u16::try_from(id.index()).ok().map(InstrumentId),
+                ))
+            }
             kind => self.pending(kind, path),
-        };
-        self.take_problems(path);
-        self.check(op.reads(), path);
-        Modifier { condition, op }
+        }
+    }
+
+    fn set_stew_effect(
+        &mut self,
+        effects: &[crate::modifier_file::StewEffectFile],
+        path: &str,
+    ) -> ModifierOp {
+        let entries = effects
+            .iter()
+            .enumerate()
+            .filter_map(|(i, effect)| {
+                let id = self.checked_lookup::<MobEffect>(
+                    effect.effect.as_location(),
+                    "mob_effect",
+                    &format!("{path}.effects[{i}].type"),
+                )?;
+                let instant = id == MobEffect::InstantHealth.id()
+                    || id == MobEffect::InstantDamage.id()
+                    || id == MobEffect::Saturation.id();
+                Some(StewEntry {
+                    effect: MobEffectId(u16::try_from(id.index()).ok()?),
+                    instant,
+                    duration: self.conditions.int_provider(&effect.duration),
+                })
+            })
+            .collect();
+        ModifierOp::SetStewEffect(entries)
     }
 
     fn pending(&mut self, kind: &ModifierKind, path: &str) -> ModifierOp {
@@ -291,32 +377,65 @@ impl Baker<'_, '_> {
         }
     }
 
-    fn enchantment_set(&mut self, options: &KeySetFile, path: &str) -> Box<[EnchantmentId]> {
-        let path = format!("{path}.options");
+    fn key_set<R: Registered, T>(
+        &mut self,
+        options: &KeySetFile,
+        kind: &'static str,
+        path: &str,
+        map: fn(Id<R>) -> Option<T>,
+    ) -> Box<[T]> {
         match options {
             KeySetFile::Tag(TagName(name)) => {
-                let tags = self.registries.tags::<Enchantment>();
-                let members: Option<Box<[EnchantmentId]>> = tags.as_ref().and_then(|tags| {
+                let members: Option<Box<[T]>> = self.registries.tags::<R>().and_then(|tags| {
                     let tag = tags.id(TagKey::new(name.as_location()))?;
-                    Some(tags.members(tag).filter_map(enchantment_id).collect())
+                    Some(tags.members(tag).filter_map(map).collect())
                 });
                 members.unwrap_or_else(|| {
                     self.problems
-                        .push((path, LootProblem::UnknownTag(name.to_string())));
+                        .push((path.to_owned(), LootProblem::UnknownTag(name.to_string())));
                     Box::new([])
                 })
             }
             KeySetFile::Many(names) => names
                 .iter()
-                .filter_map(|name| self.enchantment(name.as_location(), &path))
-                .filter_map(enchantment_id)
+                .filter_map(|name| self.checked_lookup::<R>(name.as_location(), kind, path))
+                .filter_map(map)
                 .collect(),
             KeySetFile::One(name) => self
-                .enchantment(name.as_location(), &path)
-                .and_then(enchantment_id)
+                .checked_lookup::<R>(name.as_location(), kind, path)
+                .and_then(map)
                 .into_iter()
                 .collect(),
         }
+    }
+
+    fn checked_lookup<R: Registered>(
+        &mut self,
+        name: ResourceLocation<'_>,
+        kind: &'static str,
+        path: &str,
+    ) -> Option<Id<R>> {
+        let id = self.lookup::<R>(name);
+        if id.is_none() {
+            let problem = if kind == "enchantment" {
+                LootProblem::UnknownEnchantment(name.to_string())
+            } else {
+                LootProblem::UnknownEntry(kind, name.to_string())
+            };
+            self.problems.push((path.to_owned(), problem));
+        }
+        id
+    }
+
+    fn bake_text(&mut self, text: &mcrs_minecraft_item::Text<Named>, path: &str) -> Option<Text> {
+        let tag = to_nbt_tag(text).ok();
+        tag.and_then(|tag| from_tag::<Text>(tag).ok()).or_else(|| {
+            self.problems.push((
+                path.to_owned(),
+                LootProblem::InvalidComponent("text".to_owned()),
+            ));
+            None
+        })
     }
 
     pub(crate) fn enchantment(
@@ -324,14 +443,18 @@ impl Baker<'_, '_> {
         name: ResourceLocation<'_>,
         path: &str,
     ) -> Option<Id<Enchantment>> {
-        let id = self.lookup::<Enchantment>(name);
-        if id.is_none() {
-            self.problems.push((
-                path.to_owned(),
-                LootProblem::UnknownEnchantment(name.to_string()),
-            ));
-        }
-        id
+        self.checked_lookup::<Enchantment>(name, "enchantment", path)
+    }
+}
+
+fn entity_param(target: EntityTarget) -> ContextParam {
+    match target {
+        EntityTarget::This => ContextParam::ThisEntity,
+        EntityTarget::Attacker => ContextParam::AttackingEntity,
+        EntityTarget::DirectAttacker => ContextParam::DirectAttackingEntity,
+        EntityTarget::AttackingPlayer => ContextParam::LastDamagePlayer,
+        EntityTarget::TargetEntity => ContextParam::TargetEntity,
+        EntityTarget::InteractingEntity => ContextParam::InteractingEntity,
     }
 }
 

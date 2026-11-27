@@ -10,7 +10,9 @@ use mcrs_minecraft_game_registries::registry_load::{
     load_registries, test_additions, test_packs, test_registries,
 };
 use mcrs_minecraft_item_stack::{
-    AttributeId, AttributeModifier, AttributeModifiers, Count, Damage, ItemStack, SlotGroup,
+    AdditionalTradeCost, AttributeId, AttributeModifier, AttributeModifiers, Count, Damage,
+    Enchantments, Instrument, ItemComponent, ItemName, ItemStack, OminousBottleAmplifier,
+    PotionContents, SlotGroup, StoredEnchantments, SuspiciousStewEffects,
 };
 use mcrs_minecraft_loot::context_key_set_keys::ContextKeySet;
 use mcrs_minecraft_loot::loot::LootTable;
@@ -18,12 +20,13 @@ use mcrs_minecraft_loot_condition::{
     ContextParam, LootContext, LootWorld, ParamNotAllowed, between, bounded,
 };
 use mcrs_minecraft_loot_table::{
-    IssueOwner, LootIssue, LootProblem, LootScratch, LootTableFile, LootTables,
+    IssueOwner, LootIssue, LootProblem, LootScratch, LootTableFile, LootTables, ModifierFile,
 };
 use mcrs_minecraft_predicate::{BlockHost, DamageSource};
 use mcrs_minecraft_random::xoroshiro::XoroshiroRandom;
 use mcrs_minecraft_registries::Registries;
 use mcrs_minecraft_resource::{Id, ResourceLocation, ResourceLocationBuf};
+use mcrs_minecraft_text::Text;
 
 use crate::fixture::{Around, blocks, context, item, state, stream, tool};
 use crate::loot_tables::{ADDED, added_table};
@@ -289,6 +292,10 @@ static NAMED: LazyLock<(Registries, LootTables, Vec<LootIssue>)> = LazyLock::new
         ("looting_limit", looting(CONSTANT_HALF, 2)),
         ("looting_uniform", looting(UNIFORM, 0)),
         ("attributes", ATTRIBUTES.to_owned()),
+        ("book_ench", r#"{"pools":[{"rolls":1,"entries":[{"type":"minecraft:item","name":"minecraft:book","modifier":{"type":"minecraft:set_enchantments","enchantments":{"minecraft:sharpness":2}}}]}]}"#.to_owned()),
+        ("rand_cost", r#"{"pools":[{"rolls":1,"entries":[{"type":"minecraft:item","name":"minecraft:book","modifier":{"type":"minecraft:enchant_randomly","options":"minecraft:sharpness","include_additional_cost_component":true}}]}]}"#.to_owned()),
+        ("levels_book", r##"{"pools":[{"rolls":1,"entries":[{"type":"minecraft:item","name":"minecraft:book","modifier":{"type":"minecraft:enchant_with_levels","levels":30,"options":"#minecraft:on_random_loot","include_additional_cost_component":true}}]}]}"##.to_owned()),
+        ("extras", r#"{"pools":[{"rolls":1,"entries":[{"type":"minecraft:item","name":"minecraft:potion","modifier":{"type":"minecraft:set_potion","id":"minecraft:healing"}}]},{"rolls":1,"entries":[{"type":"minecraft:item","name":"minecraft:suspicious_stew","modifier":[{"type":"minecraft:set_stew_effect","effects":[{"type":"minecraft:speed","duration":2}]},{"type":"minecraft:set_stew_effect","effects":[{"type":"minecraft:saturation","duration":{"type":"minecraft:uniform","min":7,"max":10}}]}]}]},{"rolls":1,"entries":[{"type":"minecraft:item","name":"minecraft:stick","modifier":{"type":"minecraft:set_stew_effect","effects":[{"type":"minecraft:speed","duration":2}]}}]},{"rolls":1,"entries":[{"type":"minecraft:item","name":"minecraft:ominous_bottle","modifier":{"type":"minecraft:set_ominous_bottle_amplifier","amplifier":9}}]},{"rolls":1,"entries":[{"type":"minecraft:item","name":"minecraft:goat_horn","modifier":{"type":"minecraft:set_instrument","options":"minecraft:ponder_goat_horn"}}]},{"rolls":1,"entries":[{"type":"minecraft:item","name":"minecraft:stick","modifier":{"type":"minecraft:set_name","name":"Stick","target":"item_name"}}]}]}"#.to_owned()),
     ];
     let files = named_files()
         .into_iter()
@@ -542,5 +549,75 @@ fn loot_mod_026_set_attributes_draws_the_slot_of_each_element() {
             vec![Some(stack("minecraft:iron_sword", 1).set(modifiers))],
             expected
         )
+    );
+}
+
+#[test]
+fn copy_operation_nbt_path_validates_on_load() {
+    let parses = |source: &str, target: &str| {
+        let json = format!(
+            r#"{{"type":"minecraft:copy_custom_data","source":"this","ops":[{{"source":"{source}","target":"{target}","op":"replace"}}]}}"#
+        );
+        serde_json::from_str::<ModifierFile>(&json).is_ok()
+    };
+    assert!(
+        parses("a.b[0]", "c") && !parses("", "c") && !parses("a", "a.") && !parses("a b", "c"),
+        "nbt path"
+    );
+}
+
+fn effective<T: ItemComponent + 'static>(stack: &ItemStack) -> Option<&T> {
+    test_item_table().effective::<T>(stack)
+}
+
+fn first_named(name: &str, input: &LootContext<'_, ()>) -> ItemStack {
+    roll_named(name, input, &BlockHost::none())
+        .0
+        .into_iter()
+        .next()
+        .flatten()
+        .expect(name)
+}
+
+#[test]
+fn loot_mod_evaluates_enchanting_and_extra_item_modifiers() {
+    let block_input = context(state("minecraft:stone", &[]), None);
+    let mut chest = LootContext::try_new(ContextKeySet::Chest).expect("chest");
+    chest.origin = Some(DVec3::ZERO);
+    let mut trade = LootContext::try_new(ContextKeySet::VillagerTrade).expect("trade");
+    trade.origin = Some(DVec3::ZERO);
+    trade.this_entity = Some(());
+    trade.additional_cost_component_allowed = true;
+    let stored = |stack: &ItemStack| {
+        effective::<StoredEnchantments>(stack).is_some_and(|s| !s.0.entries().is_empty())
+    };
+    let book = first_named("n:book_ench", &block_input);
+    let active_empty = effective::<Enchantments>(&book).is_none_or(|e| e.entries().is_empty());
+    let book_ok = book.kind == item("minecraft:enchanted_book") && stored(&book) && active_empty;
+    assert!(book_ok, "book");
+    for name in ["n:rand_cost", "n:levels_book"] {
+        let no_cost = effective::<AdditionalTradeCost>(&first_named(name, &chest)).is_none();
+        let on_trade = first_named(name, &trade);
+        let has_cost = effective::<AdditionalTradeCost>(&on_trade).is_some_and(|c| c.0 > 0);
+        assert!(no_cost && has_cost && stored(&on_trade), "{name}");
+    }
+    let mut got = roll_named("n:extras", &block_input, &BlockHost::none())
+        .0
+        .into_iter()
+        .flatten();
+    let mut take = || got.next().expect("item");
+    let [potion, stew, plain, bottle, horn, named_stick] =
+        [take(), take(), take(), take(), take(), take()];
+    let potion_ok = effective::<PotionContents>(&potion).is_some_and(|p| p.potion.is_some());
+    let stew_ok = effective::<SuspiciousStewEffects>(&stew).is_some_and(|effects| {
+        matches!(effects.0.as_slice(), [speed, saturation] if speed.duration == 40 && (7..=10).contains(&saturation.duration))
+    });
+    let no_stew = effective::<SuspiciousStewEffects>(&plain).is_none();
+    let amplifier = effective::<OminousBottleAmplifier>(&bottle).map(|value| value.0);
+    let has_horn = effective::<Instrument>(&horn).is_some();
+    let got_name = effective::<ItemName>(&named_stick) == Some(&ItemName(Text::text("Stick")));
+    assert!(
+        potion_ok && stew_ok && no_stew && amplifier == Some(4) && has_horn && got_name,
+        "extras"
     );
 }
