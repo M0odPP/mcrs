@@ -6,7 +6,6 @@ use bevy_ecs::prelude::{
 };
 use bytes::Bytes;
 use mcrs_engine_muxer::{EntityEvent, EntityId, TileKey, ViewerId};
-use mcrs_minecraft_damage::Vitals;
 use mcrs_minecraft_engine_world::entity::physics::Transform;
 use mcrs_minecraft_engine_world::entity::player::Player;
 use mcrs_minecraft_engine_world::session::{Owner, PlayerSession};
@@ -23,12 +22,9 @@ use crate::game_profile::GameProfile;
 use crate::hot_ticket::CellCrossing;
 use crate::network_id::player_network_id;
 use crate::own_equipment::OwnEquipment;
-use crate::player_sprinting::PlayerSprinting;
-use crate::publish_pose::pose_entries;
+use crate::publish_pose::PoseInputs;
 use crate::replicated::{Replicated, Visibility};
-use crate::shift_key::ShiftKey;
 use crate::tile_events::TileEvents;
-use crate::using_item::LivingFlags;
 
 #[derive(Component, Clone, Copy, Debug, Default)]
 pub struct AnnounceJoin;
@@ -76,14 +72,8 @@ pub fn publish_player_tiles(
             Has<AnnounceJoin>,
             Option<&CrossedAt>,
             Option<&AttributeInstances>,
-            (
-                &mcrs_minecraft_pose::Pose,
-                &ShiftKey,
-                &PlayerSprinting,
-                Option<&Vitals>,
-                Option<&OwnEquipment>,
-                Option<&LivingFlags>,
-            ),
+            PoseInputs,
+            Option<&OwnEquipment>,
             Has<HiddenPlayer>,
         ),
         With<Player>,
@@ -101,7 +91,8 @@ pub fn publish_player_tiles(
         announce,
         crossed,
         attributes,
-        (&body_pose, &shift, &sprinting, vitals, own_equipment, living_flags),
+        pose_inputs,
+        own_equipment,
         hidden,
     ) in &mut players
     {
@@ -132,7 +123,7 @@ pub fn publish_player_tiles(
                         pose: pose(&transform),
                         game_mode,
                         attributes: attributes.map(stored_attributes).unwrap_or_default(),
-                        entries: pose_entries(body_pose, shift, sprinting, vitals, living_flags),
+                        entries: pose_inputs.entries(),
                         equipment: own_equipment.map_or_else(Vec::new, OwnEquipment::to_wire_vec),
                     })
                     .into(),
@@ -262,6 +253,8 @@ fn presence(profile: &GameProfile, key: &'static str) -> Option<Bytes> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::player_sprinting::PlayerSprinting;
+    use crate::shift_key::ShiftKey;
     use bevy_ecs::message::MessageRegistry;
     use bevy_ecs::system::{IntoSystem, System};
     use mcrs_minecraft_equipment::EquipSlot;

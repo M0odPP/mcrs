@@ -39,6 +39,14 @@ fn the_bake_sets_the_bits_of_the_damage_type_tags() {
         DamageTags::NO_KNOCKBACK,
         "cactus has only no_knockback of the baked tags"
     );
+    assert!(
+        tags(damage_type_keys::DROWN).contains(DamageTags::IS_DROWNING),
+        "drown is in is_drowning"
+    );
+    assert!(
+        tags(damage_type_keys::FREEZE).contains(DamageTags::IS_FREEZING),
+        "freeze is in is_freezing"
+    );
 
     let exhaustion = |key: ResourceKey<'static, DamageType>| {
         let id = registries

@@ -10,6 +10,8 @@ impl DamageTags {
     pub const IS_FALL: Self = Self(1 << 5);
     pub const NO_KNOCKBACK: Self = Self(1 << 6);
     pub const BYPASSES_INVULNERABILITY: Self = Self(1 << 7);
+    pub const IS_DROWNING: Self = Self(1 << 8);
+    pub const IS_FREEZING: Self = Self(1 << 9);
 
     #[must_use]
     pub const fn empty() -> Self {
