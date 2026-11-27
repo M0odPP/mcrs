@@ -6,6 +6,7 @@ use bevy_ecs::schedule::{IntoScheduleConfigs, SystemCondition};
 use mcrs_minecraft_block::definition::Blocks;
 use mcrs_minecraft_engine::block_simulation::BlockSimulationSet;
 use mcrs_minecraft_engine::bus::OutboundPlayerPacket;
+use mcrs_minecraft_engine::player_signal::PlayerSignal;
 use mcrs_minecraft_engine::player_state::PlayerFileState;
 use mcrs_minecraft_engine::{OwnAttributesSet, PlayerMoved, PoseSystems};
 use mcrs_minecraft_engine_damage::{DamageSet, Damaged, PendingHits};
@@ -39,6 +40,7 @@ impl Plugin for VanillaEnvDamagePlugin {
             .add_message::<PlayerMoved>()
             .add_message::<OutboundPlayerPacket>()
             .add_message::<PendingEnvEffect>()
+            .add_message::<PlayerSignal>()
             .add_message::<Damaged>()
             .configure_sets(
                 FixedUpdate,
