@@ -36,3 +36,12 @@ mcrs_minecraft_resource.workspace = true
 mcrs_minecraft_sound = { workspace = true, features = ["registry"] }
 mcrs_minecraft_vanilla_inventory.workspace = true
 smallvec.workspace = true
+
+[dev-dependencies]
+bevy_time.workspace = true
+mcrs_minecraft_core.workspace = true
+mcrs_minecraft_engine_registries = { workspace = true, features = ["test-support"] }
+mcrs_minecraft_game_registries = { workspace = true, features = ["test-support"] }
+mcrs_minecraft_item_key.workspace = true
+mcrs_test_alloc.workspace = true
+mcrs_voxel.workspace = true

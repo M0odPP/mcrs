@@ -7659,7 +7659,9 @@ version = "0.5.8"
 dependencies = [
  "bevy_app",
  "bevy_ecs",
+ "bevy_time",
  "mcrs_engine_muxer",
+ "mcrs_minecraft_core",
  "mcrs_minecraft_damage",
  "mcrs_minecraft_engine",
  "mcrs_minecraft_engine_damage",
@@ -7668,7 +7670,9 @@ dependencies = [
  "mcrs_minecraft_engine_world",
  "mcrs_minecraft_entity",
  "mcrs_minecraft_game_mode",
+ "mcrs_minecraft_game_registries",
  "mcrs_minecraft_inventory_player",
+ "mcrs_minecraft_item_key",
  "mcrs_minecraft_item_stack",
  "mcrs_minecraft_item_table",
  "mcrs_minecraft_item_use",
@@ -7680,6 +7684,8 @@ dependencies = [
  "mcrs_minecraft_resource",
  "mcrs_minecraft_sound",
  "mcrs_minecraft_vanilla_inventory",
+ "mcrs_test_alloc",
+ "mcrs_voxel",
  "smallvec",
 ]
 
