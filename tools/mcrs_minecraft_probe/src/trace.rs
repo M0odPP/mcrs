@@ -1,7 +1,7 @@
 use crate::{
     AnimateObserved, BlockEventObserved, CommandTree, DamageEventObserved, EntityDataObserved,
     EntityEventObserved, EquipmentObserved, ExpectedPacket, GameEventObserved, HealthObserved,
-    MenuEvent, PlayerBan, SoundPlayed, SwingObserved,
+    MenuEvent, PlayerBan, RecipeBookEvent, SoundPlayed, SwingObserved,
 };
 use mcrs_minecraft_text::Text;
 use serde::{Deserialize, Serialize};
@@ -27,6 +27,8 @@ pub struct StepTrace {
     pub player_bans: Option<Vec<PlayerBan>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub inventory: Option<Vec<MenuEvent>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub recipe_book: Option<Vec<RecipeBookEvent>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sounds: Option<Vec<SoundPlayed>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -83,6 +85,7 @@ fn sort_by_client<T>(items: &mut Option<Vec<T>>, client: fn(&T) -> &str) {
 
 impl StepTrace {
     pub fn normalize_per_client(&mut self) {
+        sort_by_client(&mut self.recipe_book, |item| &item.client);
         sort_by_client(&mut self.swings, |item| &item.client);
         sort_by_client(&mut self.animates, |item| &item.client);
         sort_by_client(&mut self.equipment, |item| &item.client);

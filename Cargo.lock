@@ -5059,6 +5059,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "mcrs_minecraft_crafting"
+version = "0.5.8"
+dependencies = [
+ "bevy_ecs",
+ "mcrs_test_alloc",
+]
+
+[[package]]
 name = "mcrs_minecraft_creative_content"
 version = "0.5.8"
 dependencies = [

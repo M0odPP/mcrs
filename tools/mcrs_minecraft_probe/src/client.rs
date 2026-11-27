@@ -4,7 +4,7 @@ use crate::pose::Pose;
 use crate::swing::{CapturedSwing, EntityNames};
 use crate::{
     AnimateObserved, Click, CommandTree, ConnectionState, MenuPacket, Observe, PacketKind,
-    PredictedStack, SoundPlayed, SwingObserved,
+    PredictedStack, ProbeRecipeBookType, RecipeBookPacket, SoundPlayed, SwingObserved,
 };
 use anyhow::Context;
 use mcrs_minecraft_container_click::Clicked;
@@ -50,8 +50,9 @@ use mcrs_minecraft_protocol_game::serverbound::{
     ServerboundClientTickEnd, ServerboundCommandSuggestion, ServerboundContainerClick,
     ServerboundContainerClose, ServerboundInteract, ServerboundMovePlayerPos,
     ServerboundMovePlayerPosRot, ServerboundPlayerAction, ServerboundPlayerCommand,
-    ServerboundPlayerInput, ServerboundPlayerLoaded, ServerboundPunch, ServerboundSetCarriedItem,
-    ServerboundSetCreativeModeSlot, ServerboundUseItem, ServerboundUseItemOn,
+    ServerboundPlayerInput, ServerboundPlayerLoaded, ServerboundPunch,
+    ServerboundRecipeBookChangeSettings, ServerboundSetCarriedItem, ServerboundSetCreativeModeSlot,
+    ServerboundUseItem, ServerboundUseItemOn,
 };
 use mcrs_minecraft_protocol_game::{Direction, Hand, LpVec3, MoveFlags, Position};
 use mcrs_minecraft_text::Text;
@@ -108,6 +109,11 @@ pub(crate) enum Order {
     SyncPosition,
     Click(Click),
     Close(Option<i32>),
+    RecipeBookChangeSettings {
+        book_type: ProbeRecipeBookType,
+        is_open: bool,
+        is_filtering: bool,
+    },
     SelectSlot(i16),
     PlayerAction {
         action: PlayerAction,
@@ -161,6 +167,7 @@ impl Event {
 pub(crate) enum Signal {
     Chat(Text),
     Menu(MenuPacket),
+    RecipeBook(RecipeBookPacket),
     Sound(SoundPlayed),
     Commands(CommandTree),
     Suggestions {
@@ -675,6 +682,18 @@ async fn send_gameplay_order(
             .await
         }
         Order::PlayerInput(input) => io.send_packet(&ServerboundPlayerInput { input }).await,
+        Order::RecipeBookChangeSettings {
+            book_type,
+            is_open,
+            is_filtering,
+        } => {
+            io.send_packet(&ServerboundRecipeBookChangeSettings {
+                book_type: book_type.into(),
+                is_open,
+                is_filtering,
+            })
+            .await
+        }
         _ => Ok(()),
     }
 }
@@ -888,6 +907,10 @@ async fn read_game_packet(
             },
         )
         .await?;
+    } else if state.observe.recipe_book
+        && let Some(packet) = RecipeBookPacket::read(id, body)?
+    {
+        return Ok(Some(Signal::RecipeBook(packet)));
     } else if !state.observe.inventory {
         return Ok(None);
     } else if let Some(packet) = MenuPacket::read(id, body)? {

@@ -12,6 +12,7 @@ mod player_action_status;
 mod player_ban;
 mod player_ticks;
 mod pose;
+mod recipe_packet;
 mod run;
 mod scenario;
 mod sound_played;
@@ -32,6 +33,7 @@ pub use menu_packet::{MenuEvent, MenuPacket, PatchNames, SlotStack};
 pub use offline_player_uuid::offline_player_uuid;
 pub use player_action_status::PlayerActionStatus;
 pub use player_ban::PlayerBan;
+pub use recipe_packet::{ProbeRecipeBookType, RecipeBookEvent, RecipeBookPacket, RecipeSetSummary};
 pub use run::run;
 pub use scenario::{
     Action, ExpectedPacket, Observe, PlayerFileRead, ProbeMainArm, Scenario, Step, Target,

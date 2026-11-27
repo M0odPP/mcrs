@@ -5,8 +5,8 @@ use crate::{
     Action, AnimateObserved, BlockEventObserved, ChatMessage, Checkpoint, CommandTree,
     ConnectionState, DamageEventObserved, Direction, Disconnect, EntityDataObserved,
     EntityEventObserved, EquipmentObserved, ExpectedPacket, GameEventObserved, HealthObserved,
-    Host, MenuEvent, Observe, Observed, PacketKind, PacketObserved, Scenario, StepTrace,
-    SwingWireCheck, Trace, TraceVersion,
+    Host, MenuEvent, Observe, Observed, PacketKind, PacketObserved, RecipeBookEvent, Scenario,
+    StepTrace, SwingWireCheck, Trace, TraceVersion,
 };
 use anyhow::Context;
 use mcrs_minecraft_core::VERSION;
@@ -61,6 +61,7 @@ struct SettleSink {
     quiet: Duration,
     observe: Observe,
     menu: Vec<MenuEvent>,
+    recipe_book: Vec<RecipeBookEvent>,
     sounds: Vec<crate::SoundPlayed>,
     trees: Vec<CommandTree>,
     swings: Vec<CapturedSwing>,
@@ -84,6 +85,7 @@ impl SettleSink {
             quiet,
             observe,
             menu: Vec::new(),
+            recipe_book: Vec::new(),
             sounds: Vec::new(),
             trees: Vec::new(),
             swings: Vec::new(),
@@ -205,6 +207,7 @@ pub async fn run<H: Host>(
             None => None,
         };
         let menu = mem::take(&mut clients.sink.menu);
+        let recipe_book = mem::take(&mut clients.sink.recipe_book);
         let sounds = mem::take(&mut clients.sink.sounds);
         let trees = mem::take(&mut clients.sink.trees);
         let captured_swings = mem::take(&mut clients.sink.swings);
@@ -226,6 +229,7 @@ pub async fn run<H: Host>(
             observed,
             player_bans,
             inventory: obs.inventory.then_some(menu),
+            recipe_book: obs.recipe_book.then_some(recipe_book),
             sounds: obs.sound.then_some(sounds),
             command_trees: (!obs.commands.is_empty()).then_some(trees),
             swings: obs.swing.then_some(swings),
@@ -369,6 +373,7 @@ impl Clients {
             let reason = match event.signal {
                 Signal::Chat(_)
                 | Signal::Menu(_)
+                | Signal::RecipeBook(_)
                 | Signal::Sound(_)
                 | Signal::Commands(_)
                 | Signal::Suggestions { .. }
@@ -423,6 +428,7 @@ impl Clients {
                 }),
                 Signal::Chat(_)
                 | Signal::Menu(_)
+                | Signal::RecipeBook(_)
                 | Signal::Sound(_)
                 | Signal::Commands(_)
                 | Signal::Suggestions { .. }
@@ -797,6 +803,7 @@ impl SettleSink {
     fn record_non_terminal(&mut self, client: String, signal: Signal, at: time::Instant) {
         match signal {
             Signal::Menu(packet) => self.menu.push(MenuEvent { client, packet }),
+            Signal::RecipeBook(packet) => self.recipe_book.push(RecipeBookEvent { client, packet }),
             Signal::Sound(packet) => {
                 self.record_packet(&client, PacketKind::Sound, at);
                 self.sounds.push(packet);
@@ -1030,6 +1037,19 @@ fn gameplay_order_of(action: &Action) -> Option<(&str, Order)> {
                     .with_sprint(*sprint),
             ),
         ),
+        Action::RecipeBookChangeSettings {
+            client,
+            book_type,
+            is_open,
+            is_filtering,
+        } => (
+            client.as_str(),
+            Order::RecipeBookChangeSettings {
+                book_type: *book_type,
+                is_open: *is_open,
+                is_filtering: *is_filtering,
+            },
+        ),
         _ => return None,
     })
 }
@@ -1060,6 +1080,7 @@ fn collect_sent(
             }
             Signal::Chat(_)
             | Signal::Menu(_)
+            | Signal::RecipeBook(_)
             | Signal::Sound(_)
             | Signal::Commands(_)
             | Signal::Suggestions { .. }
