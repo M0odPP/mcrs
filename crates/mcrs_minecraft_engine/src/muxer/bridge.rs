@@ -647,6 +647,7 @@ fn write_payload<W: WritePacket>(sink: &mut W, data: PacketPayload) -> anyhow::R
         PacketPayload::SetTime(p) => sink.write_packet_fallible(&p),
         PacketPayload::TickingState(p) => sink.write_packet_fallible(&p),
         PacketPayload::TickingStep(p) => sink.write_packet_fallible(&p),
+        PacketPayload::SetExperience(packet) => sink.write_packet_fallible(&packet),
         PacketPayload::SetHealth(p) => sink.write_packet_fallible(&p),
         PacketPayload::HurtAnimation(p) => sink.write_packet_fallible(&p),
         PacketPayload::PlayerCombatKill(p) => sink.write_packet_fallible(&p),
@@ -1192,5 +1193,28 @@ mod tests {
             ),
             (ClientboundExplode::ID, shared, true)
         );
+    }
+
+    #[test]
+    fn write_payload_encodes_set_experience_with_protocol_id() {
+        use mcrs_minecraft_protocol::{Decode, Packet, VarInt};
+        use mcrs_minecraft_protocol_game::clientbound::ClientboundSetExperience;
+
+        let packet = ClientboundSetExperience {
+            progress: 0.25,
+            level: VarInt(5),
+            total: VarInt(55),
+        };
+        let mut buffer = PacketBuffer::default();
+        write_payload(&mut buffer, PacketPayload::SetExperience(packet)).expect("encode");
+        let bytes = buffer.0.freeze();
+        let mut reader = bytes.as_ref();
+        assert_eq!(
+            VarInt::decode(&mut reader).expect("packet id").0,
+            ClientboundSetExperience::ID
+        );
+        let decoded = ClientboundSetExperience::decode(&mut reader).expect("decode");
+        assert!(reader.is_empty(), "trailing bytes");
+        assert_eq!(decoded, packet);
     }
 }

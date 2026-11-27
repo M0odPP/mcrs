@@ -1,0 +1,25 @@
+[package]
+name = "mcrs_minecraft_experience"
+description = "Pure no_std player experience progression, level math, death drops, value splits, and experience orb rules without Bevy"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+doctest = false
+
+[lints]
+workspace = true
+
+[dependencies]
+bevy_ecs = { workspace = true, optional = true }
+glam = { workspace = true, features = ["nostd-libm"] }
+libm.workspace = true
+mcrs_minecraft_entity_key.workspace = true
+
+[dev-dependencies]
+mcrs_test_alloc.workspace = true
+
+[features]
+default = []
+bevy = ["dep:bevy_ecs"]

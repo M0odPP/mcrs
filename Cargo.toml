@@ -135,6 +135,7 @@ mcrs_minecraft_damage = { path = "crates/mcrs_minecraft_damage" }
 mcrs_minecraft_durability = { path = "crates/mcrs_minecraft_durability" }
 mcrs_minecraft_env_damage = { path = "crates/mcrs_minecraft_env_damage" }
 mcrs_minecraft_explosions = { path = "crates/mcrs_minecraft_explosions" }
+mcrs_minecraft_experience = { path = "crates/mcrs_minecraft_experience" }
 mcrs_minecraft_hunger = { path = "crates/mcrs_minecraft_hunger" }
 mcrs_minecraft_numeric = { path = "crates/mcrs_minecraft_numeric" }
 mcrs_minecraft_datapack = { path = "crates/mcrs_minecraft_datapack" }
