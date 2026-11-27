@@ -68,6 +68,21 @@ impl<V: Hash + Eq + Copy + Send + Sync + 'static, const DIM: usize> VoxelPalette
             }
         }
     }
+
+    pub fn for_each_count<F: FnMut(V, u16)>(&self, mut visit: F) {
+        match &self.0 {
+            Homogeneous(value) => {
+                if let Ok(volume) = u16::try_from(Self::VOLUME) {
+                    visit(*value, volume);
+                }
+            }
+            Heterogeneous(data) => {
+                for (value, count) in data.palette.iter().zip(data.counts.iter()) {
+                    visit(*value, *count);
+                }
+            }
+        }
+    }
 }
 
 impl<V: Hash + Eq + Copy + Send + Sync + 'static> VoxelPalette<V, { SectionPos::SIZE }> {

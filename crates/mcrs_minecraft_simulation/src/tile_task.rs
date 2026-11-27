@@ -50,9 +50,13 @@ impl<K: Kinds> TileTask<K> {
         }
     }
 
-    pub(crate) fn plan(tasks: &mut Vec<Self>, hits: &[RandomHit]) {
+    pub(crate) fn plan(
+        tasks: &mut Vec<Self>,
+        groups: &mut Vec<(ColumnPos, Range<usize>)>,
+        hits: &[RandomHit],
+    ) -> usize {
         let tile_of = |hit: &RandomHit| block_tile(ColumnPos::from(SectionPos::from(hit.at)));
-        let mut groups = Vec::new();
+        groups.clear();
         let mut start: usize = 0;
         for group in hits.chunk_by(|a, b| tile_of(a) == tile_of(b)) {
             let Some(first) = group.first() else {
@@ -63,8 +67,8 @@ impl<K: Kinds> TileTask<K> {
             groups.push((tile_of(first), range));
         }
         groups.sort_unstable_by_key(|(tile, _)| (colour(*tile), *tile));
-        tasks.truncate(groups.len());
-        for (used, (tile, range)) in groups.into_iter().enumerate() {
+        let count = groups.len();
+        for (used, (tile, range)) in groups.drain(..).enumerate() {
             match tasks.get_mut(used) {
                 Some(task) => {
                     task.tile = tile;
@@ -73,6 +77,7 @@ impl<K: Kinds> TileTask<K> {
                 None => tasks.push(Self::new(tile, range)),
             }
         }
+        count
     }
 
     pub(crate) fn run<V, F, B, P>(

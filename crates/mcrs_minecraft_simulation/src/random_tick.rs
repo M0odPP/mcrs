@@ -16,9 +16,11 @@ use mcrs_voxel::{BlockPos, BlockStateId, ColumnPos, LocalPos, SectionPos};
 
 use crate::footprints::Footprints;
 use crate::output::OutputMark;
-use crate::precipitation::{PRECIPITATION_TILE, precipitation_hits};
+use crate::precipitation::{PRECIPITATION_TILE, precipitation_hits_with_scratch};
 use crate::region::colour;
 use crate::tile_task::{Spread, TileTask};
+
+pub const DEFAULT_RANDOM_TICK_SPEED: u32 = 3;
 
 bitflags::bitflags! {
     #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -108,6 +110,9 @@ pub fn draw_random_picks(
     streams: SectionStreams,
     picks: &mut Vec<RandomPick>,
 ) {
+    if ticking == 0 || speed == 0 {
+        return;
+    }
     let mut random = streams.stream(section);
     let first = picks.len();
     for _ in 0..speed {
@@ -145,18 +150,22 @@ pub fn random_step<K, V, F, B, P, S>(
     cx.precipitation_step(picks);
 
     let mut tasks = mem::take(&mut shard.tiles);
+    let mut groups = mem::take(&mut shard.tile_groups);
     let mut reruns = mem::take(&mut shard.reruns);
-    TileTask::plan(&mut tasks, picks.hits);
-    for phase in tasks.chunk_by_mut(|a, b| colour(a.tile) == colour(b.tile)) {
-        let (world, base) = (&*volume, &*shard);
-        spread.spread(phase, &|task: &mut TileTask<K>| {
-            task.run(world, base, env, picks, now);
-        });
-        for task in phase {
-            task.commit(shard, volume, env, out, now, &mut reruns);
+    let used = TileTask::plan(&mut tasks, &mut groups, picks.hits);
+    if let Some(active) = tasks.get_mut(..used) {
+        for phase in active.chunk_by_mut(|a, b| colour(a.tile) == colour(b.tile)) {
+            let (world, base) = (&*volume, &*shard);
+            spread.spread(phase, &|task: &mut TileTask<K>| {
+                task.run(world, base, env, picks, now);
+            });
+            for task in phase {
+                task.commit(shard, volume, env, out, now, &mut reruns);
+            }
         }
     }
     shard.tiles = tasks;
+    shard.tile_groups = groups;
 
     reruns.sort_unstable();
     out.report.random_reruns = out
@@ -180,6 +189,7 @@ where
 {
     fn precipitation_step(&mut self, picks: RandomPicks<'_>) {
         let mut hits = mem::take(&mut self.shard.rain_hits);
+        let mut slots = mem::take(&mut self.shard.rain_slots);
         for group in picks
             .columns
             .chunk_by(|a, b| block_tile(*a) == block_tile(*b))
@@ -192,13 +202,14 @@ where
                 .seed
                 .stream(self.now, StreamKey::Precipitation { tile });
             hits.clear();
-            precipitation_hits(group, picks.speed, &mut random, &mut hits);
+            precipitation_hits_with_scratch(group, picks.speed, &mut random, &mut slots, &mut hits);
             let behaviour = self.behaviour;
             for hit in &hits {
                 behaviour.precipitation(self, hit.x, hit.z, &mut random);
             }
         }
         self.shard.rain_hits = hits;
+        self.shard.rain_slots = slots;
     }
 
     pub(crate) fn random_hit(

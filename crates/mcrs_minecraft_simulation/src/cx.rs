@@ -49,6 +49,18 @@ fn due_after(now: GameTick, delay: i32) -> GameTick {
     GameTick(now.0.saturating_add(i64::from(delay)))
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Drops {
+    Keep,
+    Suppress,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PistonMove {
+    No,
+    Yes,
+}
+
 pub struct Cx<'a, K: Kinds, V, F, B> {
     pub(crate) shard: &'a mut BlockShard<K>,
     pub(crate) volume: &'a mut V,
@@ -120,8 +132,14 @@ where
         }
     }
 
+    #[must_use]
     pub fn now(&self) -> GameTick {
         self.now
+    }
+
+    #[must_use]
+    pub fn facts(&self) -> &F {
+        self.facts
     }
 
     pub fn state(&mut self, pos: BlockPos) -> Result<BlockStateId, Unavailable> {
@@ -261,14 +279,20 @@ where
         self.shard.events.queue(QueuedEvent { sequence, event });
     }
 
-    pub fn has_scheduled_block_tick(&mut self, pos: BlockPos, block: K::Block) -> bool {
+    fn owns_tick_query(&mut self, pos: BlockPos) -> bool {
         match self.lane_for_tick(pos) {
-            Lane::Own => {}
+            Lane::Own => true,
             Lane::Away => {
                 self.task_leaves();
-                return false;
+                false
             }
-            Lane::Dropped => return false,
+            Lane::Dropped => false,
+        }
+    }
+
+    pub fn has_scheduled_block_tick(&mut self, pos: BlockPos, block: K::Block) -> bool {
+        if !self.owns_tick_query(pos) {
+            return false;
         }
         let Some(task) = &self.task else {
             return self.shard.block_ticks.contains(pos, block);
@@ -280,9 +304,30 @@ where
             })
     }
 
+    pub fn has_scheduled_fluid_tick(&mut self, pos: BlockPos, fluid: K::Fluid) -> bool {
+        if !self.owns_tick_query(pos) {
+            return false;
+        }
+        let Some(task) = &self.task else {
+            return self.shard.fluid_ticks.contains(pos, fluid);
+        };
+        task.base.fluid_ticks.contains(pos, fluid)
+            || self.out.outbound.iter().any(|message| {
+                matches!(message.body, MessageBody::FluidTick { pos: at, fluid: kind, .. }
+                    if at == pos && kind == fluid)
+            })
+    }
+
+    #[must_use]
     pub fn will_tick_this_tick(&self, pos: BlockPos, block: K::Block) -> bool {
         let shard = self.task.as_ref().map_or(&*self.shard, |task| task.base);
         shard.ticking.contains(&(pos, block))
+    }
+
+    #[must_use]
+    pub fn will_fluid_tick_this_tick(&self, pos: BlockPos, fluid: K::Fluid) -> bool {
+        let shard = self.task.as_ref().map_or(&*self.shard, |task| task.base);
+        shard.ticking_fluids.contains(&(pos, fluid))
     }
 
     pub fn set(
@@ -386,6 +431,22 @@ where
         true
     }
 
+    pub fn destroy_block(&mut self, pos: BlockPos, drops: Drops, limit: u16) -> bool {
+        self.destroy(pos, matches!(drops, Drops::Keep), limit)
+    }
+
+    pub fn remove_block(&mut self, pos: BlockPos, piston_move: PistonMove) -> bool {
+        let Ok(old) = self.state(pos) else {
+            return false;
+        };
+        let replacement = self.facts.legacy_block_of_fluid(old);
+        let flags = match piston_move {
+            PistonMove::No => BlockUpdateFlags::ALL,
+            PistonMove::Yes => BlockUpdateFlags::ALL | BlockUpdateFlags::MOVE_BY_PISTON,
+        };
+        self.set(pos, replacement, flags, crate::DEFAULT_UPDATE_LIMIT)
+    }
+
     pub(crate) fn destroy(&mut self, pos: BlockPos, drops: bool, limit: u16) -> bool {
         let Ok(old) = self.state(pos) else {
             return false;
@@ -481,6 +542,7 @@ where
     }
 
     pub(crate) fn run_fluid_tick(&mut self, tick: Collected<K::Fluid>) {
+        self.shard.ticking_fluids.remove(&(tick.pos, tick.kind));
         let behaviour = self.behaviour;
         if let Ok(state) = self.state(tick.pos)
             && self.facts.fluid_of(state) == Some(tick.kind)

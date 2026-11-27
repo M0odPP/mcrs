@@ -20,4 +20,5 @@ rustc-hash.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]
+mcrs_test_alloc.workspace = true
 proptest = "1.11.0"

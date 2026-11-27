@@ -165,9 +165,14 @@ where
         &mut cx.shard.scratch,
         &mut collected,
     );
+    cx.shard.ticking_fluids.clear();
+    cx.shard
+        .ticking_fluids
+        .extend(collected.iter().map(|tick| (tick.pos, tick.kind)));
     for tick in &collected {
         cx.run_fluid_tick(*tick);
     }
+    cx.shard.ticking_fluids.clear();
     collected.clear();
     cx.shard.collected_fluids = collected;
 }

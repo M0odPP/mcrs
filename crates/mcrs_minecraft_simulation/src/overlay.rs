@@ -14,11 +14,15 @@ use rustc_hash::FxHashMap;
 #[derive(Debug, Default)]
 pub(crate) struct Overlay {
     sections: FxHashMap<SectionPos, FxHashMap<u16, BlockStateId>>,
+    pool: Vec<FxHashMap<u16, BlockStateId>>,
 }
 
 impl Overlay {
     pub(crate) fn clear(&mut self) {
-        self.sections.clear();
+        for (_, mut blocks) in self.sections.drain() {
+            blocks.clear();
+            self.pool.push(blocks);
+        }
     }
 }
 
@@ -94,10 +98,10 @@ impl<W: BlockVolume> BlockVolumeMut for OverlaidVolume<'_, W> {
         let section = SectionPos::from(at);
         self.access(section).check_write()?;
         let old = self.block(at)?;
-        self.overlay
-            .sections
+        let Overlay { sections, pool } = self.overlay;
+        sections
             .entry(section)
-            .or_default()
+            .or_insert_with(|| pool.pop().unwrap_or_default())
             .insert(local_index(LocalPos::from(at)), state);
         Ok(old)
     }

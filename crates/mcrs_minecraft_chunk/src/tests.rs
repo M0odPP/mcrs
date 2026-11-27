@@ -1,4 +1,5 @@
 use super::*;
+use mcrs_voxel::LocalPos;
 
 struct Section16;
 
@@ -202,4 +203,29 @@ fn mapping_two_values_onto_one_merges_their_palette_entries() {
         mapped.set(x, y, z, 0);
     }
     assert_eq!(mapped, PalettedContainer::Homogeneous(0));
+}
+
+#[test]
+fn section_tick_counts_track_block_and_fluid_states_without_scanning_cells() {
+    let (air, wheat, lava, waterlogged) = (0u16, 1u16, 2u16, 3u16);
+    let classify = |state: u16| RandomTickPresence {
+        block: state == wheat || state == waterlogged,
+        fluid: state == lava || state == waterlogged,
+    };
+    let mut section: VoxelPalette<u16, 16> = VoxelPalette::homogeneous(air);
+    let mut counts = SectionTickCounts::from_palette(&section, classify);
+    assert!(counts.is_empty(), "homogeneous air has no ticking states");
+    section.fill(wheat);
+    counts.fill(classify(wheat), 4096);
+    assert_eq!((counts.block_count, counts.fluid_count), (4096, 0));
+    section.fill_box(0, 2, 0, 2, 0, 2, waterlogged);
+    counts.recount(&section, classify);
+    assert_eq!((counts.block_count, counts.fluid_count), (4096, 8));
+    let old = section.set(LocalPos::new(0, 0, 0), lava);
+    counts.record_change(classify(old), classify(lava));
+    assert_eq!((counts.block_count, counts.fluid_count), (4095, 8));
+    let old = section.set(LocalPos::new(5, 5, 5), air);
+    counts.record_change(classify(old), classify(air));
+    assert_eq!((counts.block_count, counts.fluid_count), (4094, 8));
+    assert_eq!(counts, SectionTickCounts::from_palette(&section, classify));
 }

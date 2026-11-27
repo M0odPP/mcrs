@@ -9,8 +9,9 @@ use crate::scalar::{GameTick, ShardId};
 use crate::sequence::SequenceClock;
 use crate::tick_queue::{Collected, Kinds, TickQueue};
 use crate::tile_task::TileTask;
+use core::ops::Range;
 use mcrs_minecraft_volume::PaletteBuffer;
-use mcrs_voxel::BlockPos;
+use mcrs_voxel::{BlockPos, ColumnPos};
 use rustc_hash::FxHashSet;
 
 pub struct BlockShard<K: Kinds> {
@@ -22,10 +23,13 @@ pub struct BlockShard<K: Kinds> {
     pub(crate) collected_blocks: Vec<Collected<K::Block>>,
     pub(crate) collected_fluids: Vec<Collected<K::Fluid>>,
     pub(crate) ticking: FxHashSet<(BlockPos, K::Block)>,
+    pub(crate) ticking_fluids: FxHashSet<(BlockPos, K::Fluid)>,
     pub(crate) palette: PaletteBuffer,
     pub(crate) chain: Chain<K>,
     pub(crate) rain_hits: Vec<PrecipitationHit>,
+    pub(crate) rain_slots: Vec<u32>,
     pub(crate) tiles: Vec<TileTask<K>>,
+    pub(crate) tile_groups: Vec<(ColumnPos, Range<usize>)>,
     pub(crate) reruns: Vec<usize>,
 }
 
@@ -62,10 +66,13 @@ impl<K: Kinds> Default for BlockShard<K> {
             collected_blocks: Vec::new(),
             collected_fluids: Vec::new(),
             ticking: FxHashSet::default(),
+            ticking_fluids: FxHashSet::default(),
             palette: PaletteBuffer::default(),
             chain: Chain::default(),
             rain_hits: Vec::new(),
+            rain_slots: Vec::new(),
             tiles: Vec::new(),
+            tile_groups: Vec::new(),
             reruns: Vec::new(),
         }
     }

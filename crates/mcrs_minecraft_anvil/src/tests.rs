@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use mcrs_minecraft_nbt::compound::NbtCompound;
 use mcrs_minecraft_nbt::tag::NbtTag;
 
-use mcrs_voxel::ColumnPos;
+use mcrs_voxel::{BlockPos, ColumnPos};
 
 use crate::chunk::LIGHT_BYTES;
 use crate::region::SECTOR_BYTES;
@@ -1337,23 +1337,21 @@ fn a_scheduled_tick_that_does_not_load_fails_the_column() {
     let no_priority = edited_tick(3, |tick| tick.child_tags.retain(|(key, _)| key != "p"));
     let bad = [
         (
-            "an unknown fluid",
+            "unknown fluid",
             fluid_tick("minecraft:flowing_water", 1, NbtTag::Int(3)),
         ),
         (
-            "a key of the wrong type",
+            "wrong key type",
             fluid_tick("minecraft:water", 1, NbtTag::String("4".into())),
         ),
-        ("an entry that is no compound", NbtTag::Int(7)),
-        ("an unlisted key", extra_key),
-        ("a missing key", no_priority),
+        ("non-compound entry", NbtTag::Int(7)),
+        ("unlisted key", extra_key),
+        ("missing key", no_priority),
     ];
     for (what, entry) in bad {
         let kept = fluid_tick("minecraft:lava", 17, NbtTag::Int(4));
-        assert!(
-            read_ticks("fluid_ticks", vec![kept, entry]).is_err(),
-            "{what} loaded"
-        );
+        let result = read_ticks("fluid_ticks", vec![kept, entry]);
+        assert!(result.is_err(), "{what} loaded");
     }
     let unknown_block = fluid_tick("minecraft:no_such_block", 1, NbtTag::Int(3));
     assert!(read_ticks("block_ticks", vec![unknown_block]).is_err());
@@ -1366,6 +1364,63 @@ fn a_tick_priority_outside_the_range_reads_as_the_nearest_end() {
     let chunk = read_ticks("fluid_ticks", vec![tick(9), tick(-9), tick(2)]).unwrap();
     let priorities: Vec<i32> = chunk.fluid_ticks.iter().map(|tick| tick.priority).collect();
     assert_eq!(priorities, [3, -3, 2]);
+}
+
+#[test]
+fn ticks_filter_outside_column_and_preserve_empty_lists_and_relative_delay() {
+    use crate::{SavedBlockTick, SavedFluidTick};
+    use mcrs_minecraft_block::block_keys::Block;
+    use mcrs_minecraft_block::fluid_keys::Fluid;
+
+    let (blocks, biomes) = (crate::PaletteNames::new(), crate::PaletteNames::new());
+    let empty_bytes = nbt_bytes(&chunk_nbt(1, -1, Vec::new()));
+    let empty = crate::parse_chunk(&empty_bytes, &blocks, &biomes).unwrap();
+    assert!(
+        empty.block_ticks.is_empty() && empty.fluid_ticks.is_empty(),
+        "missing tick lists default empty"
+    );
+    let written_empty = crate::write_chunk(&empty, -4, &blocks, &biomes).unwrap();
+    let saved = write::root(&written_empty);
+    assert_eq!(saved.get_list("block_ticks").map(<[_]>::len), Some(0));
+    assert_eq!(saved.get_list("fluid_ticks").map(<[_]>::len), Some(0));
+
+    let mut root = chunk_nbt(0, 0, Vec::new());
+    let stone = |value| tick_compound("minecraft:stone", value);
+    let fluid_tick = |value| edited_tick(value, |tag| tag.put_int("x", 3));
+    root.put_list("block_ticks", [-1, 0, 16, 15].map(stone).into());
+    root.put_list("fluid_ticks", [-1, 0, 16, 15].map(fluid_tick).into());
+    let filtered = crate::parse_chunk(&nbt_bytes(&root), &blocks, &biomes).unwrap();
+    let block_xs: Vec<i32> = filtered.block_ticks.iter().map(|tick| tick.pos.x).collect();
+    let fluid_zs: Vec<i32> = filtered.fluid_ticks.iter().map(|tick| tick.pos.z).collect();
+    assert_eq!((block_xs, fluid_zs), (vec![0, 15], vec![0, 15]));
+
+    let (save_tick, load_tick) = (5_000_i64, 12_345_i64);
+    let bytes = nbt_bytes(&chunk_nbt(-2, 3, Vec::new()));
+    let mut chunk = crate::parse_chunk(&bytes, &blocks, &biomes).unwrap();
+    chunk.last_update = save_tick;
+    let due = |delta| save_tick + delta;
+    let at = BlockPos::new;
+    chunk.block_ticks = vec![
+        SavedBlockTick::from_due(Block::Stone, at(-32, 64, 48), due(-3), save_tick, -9),
+        SavedBlockTick::from_due(Block::OakLog, at(-17, -10, 63), due(40), save_tick, 2),
+    ];
+    chunk.fluid_ticks = vec![
+        SavedFluidTick::from_due(Fluid::Water, at(-25, 12, 55), due(0), save_tick, 9),
+        SavedFluidTick::from_due(Fluid::Lava, at(-20, 4, 60), due(15), save_tick, -1),
+    ];
+    let saved_bytes = crate::write_chunk(&chunk, -4, &blocks, &biomes).unwrap();
+    let reloaded = crate::parse_chunk(&saved_bytes, &blocks, &biomes).unwrap();
+    assert_eq!(reloaded.block_ticks[0].due_tick(load_tick) - load_tick, -3);
+    assert_eq!(reloaded.block_ticks[1].due_tick(load_tick) - load_tick, 40);
+    assert_eq!(reloaded.fluid_ticks[0].due_tick(load_tick) - load_tick, 0);
+    assert_eq!(reloaded.fluid_ticks[1].due_tick(load_tick) - load_tick, 15);
+    let priorities = [
+        reloaded.block_ticks[0].priority,
+        reloaded.block_ticks[1].priority,
+        reloaded.fluid_ticks[0].priority,
+        reloaded.fluid_ticks[1].priority,
+    ];
+    assert_eq!(priorities, [-3, 2, 3, -1]);
 }
 
 #[test]
