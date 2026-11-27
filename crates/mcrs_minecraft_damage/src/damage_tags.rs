@@ -32,4 +32,9 @@ impl DamageTags {
     pub const fn union(self, other: Self) -> Self {
         Self(self.0 | other.0)
     }
+
+    #[must_use]
+    pub const fn difference(self, other: Self) -> Self {
+        Self(self.0 & !other.0)
+    }
 }
