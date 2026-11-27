@@ -5,19 +5,22 @@ use bevy_ecs::component::Component;
 use bevy_ecs::entity::Entity;
 use bevy_ecs::message::{Message, MessageReader, MessageWriter};
 use bevy_ecs::query::{Has, With};
-use bevy_ecs::system::{Commands, Populated, Query, SystemParam};
+use bevy_ecs::system::{Commands, Populated, Query, Res, SystemParam};
 use mcrs_minecraft_damage::Vitals;
-use mcrs_minecraft_engine::bus::{OutboundPlayerPacket, PacketPayload, to};
+use mcrs_minecraft_engine::bus::{PacketPayload, to};
 use mcrs_minecraft_engine::loaded_client::UnloadedClient;
 use mcrs_minecraft_engine::network_id::player_network_id;
 use mcrs_minecraft_engine::player_sprinting::PlayerSprinting;
 use mcrs_minecraft_engine::player_state::PlayerFileState;
 use mcrs_minecraft_engine::{LivingFlags, UsingItem};
 use mcrs_minecraft_engine_item::{Selected, Slots, StackCommandsExt, Stacks};
+use mcrs_minecraft_engine_registries::RegistryNames;
+use mcrs_minecraft_engine_world::entity::physics::Transform;
 use mcrs_minecraft_engine_world::session::Owner;
 use mcrs_minecraft_game_mode::{GameMode, PlayerGameMode};
 use mcrs_minecraft_inventory_player::{HOTBAR, OFF_HAND};
-use mcrs_minecraft_item_stack::{BlocksAttacks, Consumable, Food, Kind, UseEffects};
+use mcrs_minecraft_item_stack::{BlocksAttacks, Consumable, ConsumeEffect, Food, Kind, UseEffects};
+use mcrs_minecraft_item_table::ItemTable;
 use mcrs_minecraft_item_use::{
     SprintPolicy, UseHand, UseKind, UseOutcome, UseSpec, cancel_on_slot_change, release_use,
     start_use, tick_use,
@@ -25,17 +28,31 @@ use mcrs_minecraft_item_use::{
 use mcrs_minecraft_player_holders::PlayerHolders;
 use mcrs_minecraft_protocol_game::Hand;
 use mcrs_minecraft_protocol_game::clientbound::ClientboundEntityEvent;
+use mcrs_minecraft_registries::CurrentRegistries;
+use mcrs_minecraft_sound::sound_event_keys::SoundEvent;
 use smallvec::SmallVec;
 
+use crate::effects::{apply_consume_effects, apply_food};
+use crate::sounds::{SoundSink, consume_tick_pitch, default_consume_sound, resolve_sound};
 use crate::{CarriedSlotChanged, ReleaseUseItem, StartUseItem};
 
 const MAX_FOOD_LEVEL: i32 = 20;
+const TICK_EFFECT_VOLUME: f32 = 0.5;
+const FINISH_SOUND_VOLUME: f32 = 1.0;
+const BURP_SOUND_VOLUME: f32 = 0.5;
 
 #[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
 #[component(storage = "SparseSet")]
 pub(crate) struct UsingTarget {
     stack: Entity,
     kind: Kind,
+}
+
+#[derive(Message, Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct TickConsumeSound {
+    actor: Entity,
+    stack: Entity,
+    pitch_step: u8,
 }
 
 #[derive(Message, Clone, Copy, Debug, PartialEq, Eq)]
@@ -51,6 +68,10 @@ const _: () = {
     assert!(
         size_of::<UsingTarget>() == 16 && align_of::<UsingTarget>() == 8,
         "UsingTarget stores Entity and Kind within 16 bytes"
+    );
+    assert!(
+        size_of::<TickConsumeSound>() == 24 && align_of::<TickConsumeSound>() == 8,
+        "TickConsumeSound stores actor, stack, and pitch step within 24 bytes"
     );
     assert!(
         size_of::<FinishUseItem>() == 24 && align_of::<FinishUseItem>() == 8,
@@ -85,9 +106,11 @@ type TickPlayerRow<'a> = (
 
 type FinishPlayerRow<'a> = (
     &'a Owner,
+    &'a Transform,
     &'a Slots,
     &'a Selected,
-    Option<&'a Vitals>,
+    &'a mut PlayerFileState,
+    Option<&'a mut Vitals>,
     Option<&'a PlayerGameMode>,
     Has<UnloadedClient>,
 );
@@ -103,7 +126,9 @@ pub(crate) struct UseInputMessages<'w, 's> {
 pub(crate) struct FinishContext<'w, 's> {
     players: Query<'w, 's, FinishPlayerRow<'static>, With<PlayerHolders>>,
     stacks: Stacks<'w, 's>,
-    packets: MessageWriter<'w, OutboundPlayerPacket>,
+    table: Res<'w, ItemTable>,
+    registries: Option<Res<'w, CurrentRegistries>>,
+    sounds: SoundSink<'w, 's>,
     commands: Commands<'w, 's>,
 }
 
@@ -217,6 +242,7 @@ pub(crate) fn handle_use_item_inputs(
 pub(crate) fn tick_using_items(
     mut players: Populated<TickPlayerRow<'_>, With<PlayerHolders>>,
     stacks: Stacks<'_, '_>,
+    mut tick_sounds: MessageWriter<TickConsumeSound>,
     mut finishes: MessageWriter<FinishUseItem>,
     mut commands: Commands,
 ) {
@@ -242,10 +268,23 @@ pub(crate) fn tick_using_items(
             clear_active_use(player, flags, commands.reborrow());
             continue;
         }
-        let next_state = match tick_use(using.0) {
-            UseOutcome::Continuing { state, .. } => Some(state),
-            UseOutcome::Completed { .. } => None,
+        let (next_state, tick_effects, elapsed_ticks) = match tick_use(using.0) {
+            UseOutcome::Continuing {
+                state,
+                tick_effects,
+            } => (Some(state), tick_effects, state.elapsed_ticks),
+            UseOutcome::Completed {
+                state,
+                tick_effects,
+            } => (None, tick_effects, state.elapsed_ticks),
         };
+        if tick_effects {
+            tick_sounds.write(TickConsumeSound {
+                actor: player,
+                stack: target.stack,
+                pitch_step: (elapsed_ticks % 5) as u8,
+            });
+        }
         if let Some(state) = next_state {
             clear_sprint_if_disallowed(state.sprint_policy, sprinting);
             using.set_if_neq(UsingItem(state));
@@ -263,11 +302,36 @@ pub(crate) fn tick_using_items(
 }
 
 pub(crate) fn finish_use_items(
+    mut tick_sounds: MessageReader<TickConsumeSound>,
     mut finishes: MessageReader<FinishUseItem>,
     mut context: FinishContext<'_, '_>,
 ) {
+    for &tick_sound in tick_sounds.read() {
+        emit_tick_sound(tick_sound, &mut context);
+    }
     for &finish in finishes.read() {
         complete_use(finish, &mut context);
+    }
+}
+
+fn emit_tick_sound(tick_sound: TickConsumeSound, context: &mut FinishContext<'_, '_>) {
+    let (Some(consumable), Some(registries), Ok((_, actor_transform, ..))) = (
+        context.stacks.get::<Consumable>(tick_sound.stack),
+        context.registries.as_deref(),
+        context.players.get(tick_sound.actor),
+    ) else {
+        return;
+    };
+    let names = RegistryNames::new(registries, &context.table);
+    let fallback = default_consume_sound(consumable.animation);
+    if let Some(resolved) = resolve_sound(consumable.sound.as_ref(), fallback, &names, registries) {
+        context.sounds.emit(
+            tick_sound.actor,
+            actor_transform,
+            resolved,
+            TICK_EFFECT_VOLUME,
+            consume_tick_pitch(tick_sound.pitch_step),
+        );
     }
 }
 
@@ -275,13 +339,23 @@ fn complete_use(finish: FinishUseItem, context: &mut FinishContext<'_, '_>) {
     if context.stacks.kind(finish.stack) != Some(finish.kind) {
         return;
     }
-    let Ok((owner, slots, selected, vitals, game_mode, unloaded)) =
-        context.players.get_mut(finish.player)
+    let consumable = context.stacks.get::<Consumable>(finish.stack);
+    let food = context.stacks.get::<Food>(finish.stack).copied();
+    let Ok((
+        owner,
+        actor_transform,
+        slots,
+        selected,
+        mut file_state,
+        mut vitals,
+        game_mode,
+        unloaded,
+    )) = context.players.get_mut(finish.player)
     else {
         return;
     };
     let slot_index = active_slot_index(finish.hand, finish.hotbar_slot);
-    let still_held = can_act(unloaded, vitals, game_mode)
+    let still_held = can_act(unloaded, vitals.as_deref(), game_mode)
         && match finish.hand {
             UseHand::Main => selected.0 == finish.hotbar_slot,
             UseHand::Off => true,
@@ -290,16 +364,70 @@ fn complete_use(finish: FinishUseItem, context: &mut FinishContext<'_, '_>) {
     if !still_held {
         return;
     }
+    let actor_transform = *actor_transform;
+    let creative = is_creative(game_mode);
 
-    context.packets.write(to(
+    context.sounds.packets.write(to(
         owner.0,
         PacketPayload::EntityEvent(ClientboundEntityEvent {
             entity_id: player_network_id(owner.0),
             entity_status: ClientboundEntityEvent::USE_ITEM_FINISH,
         }),
     ));
-    if !is_creative(game_mode) {
+
+    if let (Some(consumable), Some(registries)) = (consumable, context.registries.as_deref()) {
+        let names = RegistryNames::new(registries, &context.table);
+        emit_completion_sounds(
+            finish.player,
+            &actor_transform,
+            consumable,
+            food.as_ref(),
+            &names,
+            registries,
+            &mut context.sounds,
+        );
+        let seed = context.sounds.next_seed(finish.player) as u64;
+        apply_consume_effects(
+            &consumable.on_consume_effects,
+            seed,
+            &names,
+            registries,
+            file_state.reborrow(),
+            vitals.as_mut().map(Mut::reborrow),
+        );
+    }
+    if let Some(food) = food.as_ref() {
+        apply_food(food, file_state);
+    }
+    if !creative {
         context.commands.entity(finish.stack).consume(1);
+    }
+}
+
+fn emit_completion_sounds(
+    player: Entity,
+    actor_transform: &Transform,
+    consumable: &Consumable,
+    food: Option<&Food>,
+    names: &RegistryNames<'_>,
+    registries: &CurrentRegistries,
+    sounds: &mut SoundSink<'_, '_>,
+) {
+    let fallback = default_consume_sound(consumable.animation);
+    if let Some(resolved) = resolve_sound(consumable.sound.as_ref(), fallback, names, registries) {
+        sounds.emit_neutral(player, actor_transform, resolved, FINISH_SOUND_VOLUME);
+    }
+    if food.is_some()
+        && let Some(burp) = resolve_sound(None, SoundEvent::EntityPlayerBurp, names, registries)
+    {
+        sounds.emit_neutral(player, actor_transform, burp, BURP_SOUND_VOLUME);
+    }
+    for effect in &consumable.on_consume_effects {
+        if let ConsumeEffect::PlaySound(sound_ref) = effect
+            && let Some(resolved) = resolve_sound(Some(sound_ref), fallback, names, registries)
+        {
+            sounds.emit_neutral(player, actor_transform, resolved, FINISH_SOUND_VOLUME);
+        }
     }
 }
 
