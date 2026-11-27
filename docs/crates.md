@@ -236,6 +236,7 @@ Use the crate that owns the item. Do not write a second copy.
 - `mcrs_minecraft_anvil`: Anvil region files and chunk records: RegionFile, parse_chunk, write_chunk, and the saved ticks, structure starts and retrogen data
 - `mcrs_minecraft_assets`: Data pack loading: JSON loaders, the registry access and the load state
 - `mcrs_minecraft_banner_pattern`: The banner pattern registry value, its keys and its tag keys
+- `mcrs_minecraft_beds`: Pure no_std two-part bed geometry, sleep eligibility, dimension bed rules, and multiplayer night-skip logic
 - `mcrs_minecraft_brain`: The AI stage of mobs without Bevy: the snapshot replica, the issue and the late application of decisions, keyed random values, the wake schedule and the goal selector
 - `mcrs_minecraft_chunk`: Chunk storage: PalettedContainer, voxel palettes, section light storage and nibbles, column heights, and the chunk status keys
 - `mcrs_minecraft_collision_table`: Builds the collision table of the physics kernel from the block definitions and the block tags

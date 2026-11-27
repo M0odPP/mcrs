@@ -1,0 +1,6090 @@
+{
+  "version": {
+    "name": "26.4 Snapshot 7",
+    "protocol": 1073742169
+  },
+  "steps": [
+    {
+      "id": "prepare",
+      "observed": {
+        "console": {
+          "output": [
+            "The difficulty has been set to Peaceful",
+            "Game rule spawn_mobs is now set to false",
+            "Game rule natural_health_regeneration is now set to false",
+            "Game rule advance_time is already set to true",
+            "Game rule advance_weather is already set to true",
+            "Game rule players_sleeping_percentage is now set to 101",
+            "Set the weather to clear",
+            "Set minecraft:overworld to 6000 tick(s)",
+            "No entity was found",
+            "That position is not loaded",
+            "That position is not loaded"
+          ]
+        }
+      },
+      "sounds": [],
+      "entity_data": [],
+      "health": [],
+      "damage_events": [],
+      "game_events": []
+    },
+    {
+      "id": "join_alice",
+      "observed": "joined",
+      "sounds": [],
+      "entity_data": [
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 20.0
+            },
+            {
+              "index": 16,
+              "kind": "byte",
+              "value": 127
+            }
+          ]
+        }
+      ],
+      "health": [
+        {
+          "client": "bedprobealice",
+          "health": 20.0,
+          "food": 20,
+          "saturation": 5.0
+        }
+      ],
+      "damage_events": [],
+      "game_events": [
+        {
+          "client": "bedprobealice",
+          "event": "level_chunks_load_start",
+          "param": 0.0
+        }
+      ]
+    },
+    {
+      "id": "bed_place_and_break",
+      "observed": {
+        "sent": {
+          "disconnects": [],
+          "console_output": [
+            "Set bedprobealice's game mode to Creative Mode",
+            "Replaced 1 slot(s) on bedprobealice with [Red Bed]",
+            "Teleported bedprobealice to 2.500000, -60.000000, 0.500000",
+            "Test passed",
+            "Test passed",
+            "Changed the block at 2, -60, 5",
+            "Teleported bedprobealice to 2.500000, -60.000000, 2.500000",
+            "Test passed",
+            "Changed the block at 2, -60, 5",
+            "Teleported bedprobealice to 2.500000, -60.000000, 0.500000",
+            "Test passed",
+            "Test passed",
+            "Removed 1 item(s) from player bedprobealice",
+            "Set bedprobealice's game mode to Survival Mode"
+          ]
+        }
+      },
+      "sounds": [],
+      "entity_data": [],
+      "health": [],
+      "damage_events": [],
+      "game_events": [
+        {
+          "client": "bedprobealice",
+          "event": "change_game_mode",
+          "param": 1.0
+        },
+        {
+          "client": "bedprobealice",
+          "event": "change_game_mode",
+          "param": 0.0
+        }
+      ]
+    },
+    {
+      "id": "daytime_spawn_and_reject",
+      "observed": {
+        "sent": {
+          "disconnects": [],
+          "console_output": [
+            "Changed the block at 0, -60, 2",
+            "Changed the block at 0, -60, 3",
+            "Changed the block at -3, -60, 2",
+            "Changed the block at -3, -60, 3",
+            "Teleported bedprobealice to 0.500000, -60.000000, 1.000000",
+            "The game is frozen",
+            "Found no elements matching sleeping_pos",
+            "bedprobealice has the following entity data: {pos: [I; 0, -60, 3], pitch: 0.0f, dimension: \"minecraft:overworld\", yaw: 0.0f}",
+            "Teleported bedprobealice to -2.500000, -60.000000, 1.000000",
+            "Found no elements matching sleeping_pos",
+            "bedprobealice has the following entity data: {pos: [I; 0, -60, 3], pitch: 0.0f, dimension: \"minecraft:overworld\", yaw: 0.0f}",
+            "Teleported bedprobealice to 0.500000, -60.000000, 1.000000"
+          ]
+        }
+      },
+      "sounds": [],
+      "entity_data": [],
+      "health": [],
+      "damage_events": [],
+      "game_events": []
+    },
+    {
+      "id": "clear_rain_thunder_when_dark",
+      "observed": {
+        "sent": {
+          "disconnects": [],
+          "console_output": [
+            "Set minecraft:overworld to 12522 tick(s)",
+            "Found no elements matching sleeping_pos",
+            "Set minecraft:overworld to 12523 tick(s)",
+            "bedprobealice has the following entity data: [I; 0, -60, 3]",
+            "bedprobealice has the following entity data: [0.5d, -59.3125d, 3.5d]",
+            "Test passed",
+            "Test passed",
+            "Teleported bedprobealice to 0.500000, -60.000000, 1.000000",
+            "Set minecraft:overworld to 23477 tick(s)",
+            "bedprobealice has the following entity data: [I; 0, -60, 3]",
+            "Teleported bedprobealice to 0.500000, -60.000000, 1.000000",
+            "Set minecraft:overworld to 23478 tick(s)",
+            "Found no elements matching sleeping_pos",
+            "The game is running normally",
+            "Set the weather to rain",
+            "The game is sprinting",
+            "The game is frozen",
+            "Teleported bedprobealice to 0.500000, -60.000000, 1.000000",
+            "Set minecraft:overworld to 12001 tick(s)",
+            "Found no elements matching sleeping_pos",
+            "Set minecraft:overworld to 12002 tick(s)",
+            "bedprobealice has the following entity data: [I; 0, -60, 3]",
+            "Teleported bedprobealice to 0.500000, -60.000000, 1.000000",
+            "Set minecraft:overworld to 12003 tick(s)",
+            "bedprobealice has the following entity data: [I; 0, -60, 3]",
+            "Teleported bedprobealice to 0.500000, -60.000000, 1.000000",
+            "Set minecraft:overworld to 23998 tick(s)",
+            "bedprobealice has the following entity data: [I; 0, -60, 3]",
+            "Teleported bedprobealice to 0.500000, -60.000000, 1.000000",
+            "Set minecraft:overworld to 23999 tick(s)",
+            "Found no elements matching sleeping_pos",
+            "The game is running normally",
+            "Set the weather to rain and thunder",
+            "The game is sprinting",
+            "The game is frozen",
+            "Teleported bedprobealice to 0.500000, -60.000000, 1.000000",
+            "Set minecraft:overworld to 0 tick(s)",
+            "bedprobealice has the following entity data: [I; 0, -60, 3]",
+            "Teleported bedprobealice to 0.500000, -60.000000, 1.000000",
+            "Set minecraft:overworld to 6000 tick(s)",
+            "bedprobealice has the following entity data: [I; 0, -60, 3]",
+            "Teleported bedprobealice to 0.500000, -60.000000, 1.000000",
+            "Set minecraft:overworld to 12000 tick(s)",
+            "bedprobealice has the following entity data: [I; 0, -60, 3]",
+            "Teleported bedprobealice to 0.500000, -60.000000, 1.000000",
+            "Set minecraft:overworld to 18000 tick(s)",
+            "bedprobealice has the following entity data: [I; 0, -60, 3]",
+            "The game is running normally",
+            "Set the weather to clear",
+            "The game is sprinting",
+            "The game is frozen",
+            "Set minecraft:overworld to 14000 tick(s)"
+          ]
+        }
+      },
+      "sounds": [],
+      "entity_data": [
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "sleeping"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(Some(BlockPos(IVec3(0, -60, 3))))"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "standing"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(None)"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "sleeping"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(Some(BlockPos(IVec3(0, -60, 3))))"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "standing"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(None)"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "sleeping"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(Some(BlockPos(IVec3(0, -60, 3))))"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "standing"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(None)"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "sleeping"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(Some(BlockPos(IVec3(0, -60, 3))))"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "standing"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(None)"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "sleeping"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(Some(BlockPos(IVec3(0, -60, 3))))"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "standing"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(None)"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "sleeping"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(Some(BlockPos(IVec3(0, -60, 3))))"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "standing"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(None)"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "sleeping"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(Some(BlockPos(IVec3(0, -60, 3))))"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "standing"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(None)"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "sleeping"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(Some(BlockPos(IVec3(0, -60, 3))))"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "standing"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(None)"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "sleeping"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(Some(BlockPos(IVec3(0, -60, 3))))"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "standing"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(None)"
+            }
+          ]
+        }
+      ],
+      "health": [],
+      "damage_events": [],
+      "game_events": [
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.01
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.02
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.03
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.04
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.049999997
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.059999995
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.06999999
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.07999999
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.08999999
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.09999999
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.109999985
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.11999998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.12999998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.13999999
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.14999999
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.16
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.17
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.18
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.19000001
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.20000002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "begin_raining",
+          "param": 0.0
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.20000002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.0
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.21000002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.22000003
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.23000003
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.24000004
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.25000003
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.26000002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.27
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.28
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.29
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.29999998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.30999997
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.31999996
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.32999995
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.33999994
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.34999993
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.35999992
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.36999992
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.3799999
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.3899999
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.3999999
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.40999988
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.41999987
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.42999986
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.43999985
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.44999984
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.45999983
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.46999982
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.4799998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.4899998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.4999998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.5099998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.5199998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.5299998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.5399998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.5499998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.55999976
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.56999975
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.57999974
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.58999974
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.5999997
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.6099997
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.6199997
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.6299997
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.6399997
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.6499997
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.65999967
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.66999966
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.67999965
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.68999964
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.69999963
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.7099996
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.7199996
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.7299996
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.7399996
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.7499996
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.7599996
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.76999956
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.77999955
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.78999954
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.79999954
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.8099995
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.8199995
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.8299995
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.8399995
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.8499995
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.8599995
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.86999947
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.87999946
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.88999945
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.89999944
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.90999943
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.9199994
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.9299994
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.9399994
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.9499994
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.9599994
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.9699994
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.97999936
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.98999935
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.99999934
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 1.0
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.01
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.02
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.03
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.04
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.049999997
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.059999995
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.06999999
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.07999999
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.08999999
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.09999999
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.109999985
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.11999998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.12999998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.13999999
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.14999999
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.16
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.17
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.18
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.19000001
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.20000002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.21000002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.22000003
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.23000003
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.24000004
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.25000003
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.26000002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.27
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.28
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.29
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.29999998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.30999997
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.31999996
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.32999995
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.33999994
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.34999993
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.35999992
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.36999992
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.3799999
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.3899999
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.3999999
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.40999988
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.41999987
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.42999986
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.43999985
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.44999984
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.45999983
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.46999982
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.4799998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.4899998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.4999998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.5099998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.5199998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.5299998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.5399998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.5499998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.55999976
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.56999975
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.57999974
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.58999974
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.5999997
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.6099997
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.6199997
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.6299997
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.6399997
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.6499997
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.65999967
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.66999966
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.67999965
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.68999964
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.69999963
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.7099996
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.7199996
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.7299996
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.7399996
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.7499996
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.7599996
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.76999956
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.77999955
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.78999954
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.79999954
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.8099995
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.8199995
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.8299995
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.8399995
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.8499995
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.8599995
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.86999947
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.87999946
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.88999945
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.89999944
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.90999943
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.9199994
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.9299994
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.9399994
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.9499994
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.9599994
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.9699994
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.97999936
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.98999935
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.99999934
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 1.0
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.99
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.99
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.98
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.98
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.97
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.97
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.96000004
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.96000004
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.95000005
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.95000005
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.94000006
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.94000006
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.93000007
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.93000007
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.9200001
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.9200001
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.9100001
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.9100001
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.9000001
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.9000001
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.8900001
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.8900001
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.8800001
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.8800001
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.8700001
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.8700001
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.86000013
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.86000013
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.85000014
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.85000014
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.84000015
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.84000015
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.83000016
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.83000016
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.8200002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.8200002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.8100002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.8100002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.8000002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.8000002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.7900002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.7900002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.7800002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.7800002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.7700002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.7700002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.7600002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.7600002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.75000024
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.75000024
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.74000025
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.74000025
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.73000026
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.73000026
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.72000027
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.72000027
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.7100003
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.7100003
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.7000003
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.7000003
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.6900003
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.6900003
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.6800003
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.6800003
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.6700003
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.6700003
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.6600003
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.6600003
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.65000033
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.65000033
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.64000034
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.64000034
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.63000035
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.63000035
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.62000036
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.62000036
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.6100004
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.6100004
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.6000004
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.6000004
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.5900004
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.5900004
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.5800004
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.5800004
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.5700004
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.5700004
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.5600004
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.5600004
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.5500004
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.5500004
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.54000044
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.54000044
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.53000045
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.53000045
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.52000046
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.52000046
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.51000047
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.51000047
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.5000005
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.5000005
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.4900005
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.4900005
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.4800005
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.4800005
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.4700005
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.4700005
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.46000051
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.46000051
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.45000052
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.45000052
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.44000053
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.44000053
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.43000054
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.43000054
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.42000055
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.42000055
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.41000056
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.41000056
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.40000057
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.40000057
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.39000058
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.39000058
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.3800006
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.3800006
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.3700006
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.3700006
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.3600006
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.3600006
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.35000062
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.35000062
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.34000063
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.34000063
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.33000064
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.33000064
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.32000065
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.32000065
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.31000066
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.31000066
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.30000067
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.30000067
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.29000068
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.29000068
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.2800007
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.2800007
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.2700007
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.2700007
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.2600007
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.2600007
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.25000072
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.25000072
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.24000071
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.24000071
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.2300007
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.2300007
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.2200007
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.2200007
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.2100007
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.2100007
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.20000069
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.20000069
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.19000068
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.19000068
+        },
+        {
+          "client": "bedprobealice",
+          "event": "end_raining",
+          "param": 0.0
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.19000068
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.19000068
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.18000068
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.18000068
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.17000067
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.17000067
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.16000067
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.16000067
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.15000066
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.15000066
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.14000066
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.14000066
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.13000065
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.13000065
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.12000065
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.12000065
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.110000655
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.110000655
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.10000066
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.10000066
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.09000066
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.09000066
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.08000066
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.08000066
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.07000066
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.07000066
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.060000665
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.060000665
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.050000668
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.050000668
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.04000067
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.04000067
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.03000067
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.03000067
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.02000067
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.02000067
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.01000067
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.01000067
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 6.7055225e-7
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 6.7055225e-7
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.0
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.0
+        }
+      ]
+    },
+    {
+      "id": "obstruction_reach_and_monsters",
+      "observed": {
+        "sent": {
+          "disconnects": [],
+          "console_output": [
+            "Teleported bedprobealice to 3.500000, -60.000000, -0.500000",
+            "bedprobealice has the following entity data: [I; 0, -60, 3]",
+            "Teleported bedprobealice to 3.500000, -60.000000, 6.500000",
+            "bedprobealice has the following entity data: [I; 0, -60, 3]",
+            "Teleported bedprobealice to 3.600000, -60.000000, 3.500000",
+            "Found no elements matching sleeping_pos",
+            "Teleported bedprobealice to 0.500000, -60.000000, 4.200000",
+            "Changed the block at 0, -59, 2",
+            "Found no elements matching sleeping_pos",
+            "Changed the block at 0, -59, 2",
+            "Changed the block at 0, -59, 3",
+            "bedprobealice has the following entity data: [I; 0, -60, 3]",
+            "Changed the block at 0, -59, 3",
+            "The difficulty has been set to Normal",
+            "Teleported bedprobealice to 0.500000, -60.000000, 1.000000",
+            "Summoned new Zombie",
+            "bedprobealice has the following entity data: [I; 0, -60, 3]",
+            "Teleported Zombie to 0.500000, -200.000000, 0.500000",
+            "Killed Zombie",
+            "Teleported bedprobealice to 0.500000, -60.000000, 1.000000",
+            "Summoned new Zombie",
+            "Found no elements matching sleeping_pos",
+            "Teleported Zombie to 0.500000, -200.000000, 0.500000",
+            "Killed Zombie",
+            "Summoned new Zombie",
+            "bedprobealice has the following entity data: [I; 0, -60, 3]",
+            "Teleported Zombie to 0.500000, -200.000000, 0.500000",
+            "Killed Zombie",
+            "Teleported bedprobealice to 0.500000, -60.000000, 1.000000",
+            "Summoned new Zombie",
+            "Found no elements matching sleeping_pos",
+            "Set bedprobealice's game mode to Creative Mode",
+            "bedprobealice has the following entity data: [I; 0, -60, 3]",
+            "Teleported Zombie to 0.500000, -200.000000, 0.500000",
+            "Killed Zombie",
+            "Set bedprobealice's game mode to Survival Mode",
+            "The difficulty has been set to Peaceful"
+          ]
+        }
+      },
+      "sounds": [],
+      "entity_data": [
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "sleeping"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(Some(BlockPos(IVec3(0, -60, 3))))"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "standing"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(None)"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "sleeping"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(Some(BlockPos(IVec3(0, -60, 3))))"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "standing"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(None)"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "sleeping"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(Some(BlockPos(IVec3(0, -60, 3))))"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "standing"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(None)"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:zombie",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 20.0
+            },
+            {
+              "index": 15,
+              "kind": "byte",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:zombie",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 20.0
+            },
+            {
+              "index": 15,
+              "kind": "byte",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "sleeping"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(Some(BlockPos(IVec3(0, -60, 3))))"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:item",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "slot",
+              "value": {
+                "item": "minecraft:rotten_flesh",
+                "count": 2
+              }
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:zombie",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "dying"
+            },
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "standing"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(None)"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:item",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "slot",
+              "value": {
+                "item": "minecraft:rotten_flesh",
+                "count": 2
+              }
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:zombie",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 20.0
+            },
+            {
+              "index": 15,
+              "kind": "byte",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:zombie",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 20.0
+            },
+            {
+              "index": 15,
+              "kind": "byte",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:zombie",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 20.0
+            },
+            {
+              "index": 15,
+              "kind": "byte",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:zombie",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "dying"
+            },
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:zombie",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 20.0
+            },
+            {
+              "index": 15,
+              "kind": "byte",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "sleeping"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(Some(BlockPos(IVec3(0, -60, 3))))"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "standing"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(None)"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:zombie",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "dying"
+            },
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:zombie",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 20.0
+            },
+            {
+              "index": 15,
+              "kind": "byte",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:zombie",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 20.0
+            },
+            {
+              "index": 15,
+              "kind": "byte",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "sleeping"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(Some(BlockPos(IVec3(0, -60, 3))))"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:item",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "slot",
+              "value": {
+                "item": "minecraft:rotten_flesh",
+                "count": 2
+              }
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:zombie",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "dying"
+            },
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "standing"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(None)"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:item",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "slot",
+              "value": {
+                "item": "minecraft:rotten_flesh",
+                "count": 2
+              }
+            }
+          ]
+        }
+      ],
+      "health": [],
+      "damage_events": [
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:zombie",
+          "damage_type": 19
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:zombie",
+          "damage_type": 19
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:zombie",
+          "damage_type": 19
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:zombie",
+          "damage_type": 19
+        }
+      ],
+      "game_events": [
+        {
+          "client": "bedprobealice",
+          "event": "change_game_mode",
+          "param": 1.0
+        },
+        {
+          "client": "bedprobealice",
+          "event": "change_game_mode",
+          "param": 0.0
+        }
+      ]
+    },
+    {
+      "id": "sleep_timer_straw_bed_and_break_wake",
+      "observed": {
+        "sent": {
+          "disconnects": [],
+          "console_output": [
+            "Teleported bedprobealice to -2.500000, -60.000000, 1.000000",
+            "bedprobealice has the following entity data: [I; -3, -60, 3]",
+            "bedprobealice has the following entity data: [-2.5d, -59.625d, 3.5d]",
+            "bedprobealice has the following entity data: 3s",
+            "Test passed",
+            "Test passed",
+            "Teleported bedprobealice to 0.500000, -60.000000, 1.000000",
+            "bedprobealice has the following entity data: 3s",
+            "The game is running normally",
+            "The game is sprinting",
+            "bedprobealice has the following entity data: 26s",
+            "Changed the block at 0, -60, 2",
+            "The game is sprinting",
+            "Found no elements matching sleeping_pos",
+            "Test passed",
+            "The game is frozen",
+            "Changed the block at 0, -60, 2",
+            "Changed the block at 0, -60, 3"
+          ]
+        }
+      },
+      "sounds": [
+        {
+          "client": "bedprobealice",
+          "sound": "minecraft:block.straw_bed.break_leave",
+          "source": 4,
+          "position": [
+            -20,
+            -476,
+            28
+          ],
+          "volume": 1.0,
+          "pitch": 1.0,
+          "seed": 2184598768782205090
+        }
+      ],
+      "entity_data": [
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "sleeping"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(Some(BlockPos(IVec3(-3, -60, 3))))"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "standing"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(None)"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "sleeping"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(Some(BlockPos(IVec3(0, -60, 3))))"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:item",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "slot",
+              "value": {
+                "item": "minecraft:red_bed",
+                "count": 1
+              }
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:item",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "slot",
+              "value": {
+                "item": "minecraft:red_bed",
+                "count": 1
+              }
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "standing"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(None)"
+            }
+          ]
+        }
+      ],
+      "health": [],
+      "damage_events": [],
+      "game_events": []
+    },
+    {
+      "id": "join_bob",
+      "observed": "joined",
+      "sounds": [],
+      "entity_data": [
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobebob",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 20.0
+            },
+            {
+              "index": 16,
+              "kind": "byte",
+              "value": 127
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobebob",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 20.0
+            },
+            {
+              "index": 16,
+              "kind": "byte",
+              "value": 127
+            }
+          ]
+        },
+        {
+          "client": "bedprobebob",
+          "subject": "bedprobebob",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 20.0
+            },
+            {
+              "index": 16,
+              "kind": "byte",
+              "value": 127
+            }
+          ]
+        },
+        {
+          "client": "bedprobebob",
+          "subject": "minecraft:item",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "slot",
+              "value": {
+                "item": "minecraft:red_bed",
+                "count": 1
+              }
+            }
+          ]
+        },
+        {
+          "client": "bedprobebob",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 9,
+              "kind": "float",
+              "value": 20.0
+            },
+            {
+              "index": 16,
+              "kind": "byte",
+              "value": 127
+            }
+          ]
+        }
+      ],
+      "health": [
+        {
+          "client": "bedprobebob",
+          "health": 20.0,
+          "food": 20,
+          "saturation": 5.0
+        }
+      ],
+      "damage_events": [],
+      "game_events": [
+        {
+          "client": "bedprobebob",
+          "event": "level_chunks_load_start",
+          "param": 0.0
+        }
+      ]
+    },
+    {
+      "id": "multiplayer_sleep_percentage_and_morning_skip",
+      "observed": {
+        "sent": {
+          "disconnects": [],
+          "console_output": [
+            "Game rule players_sleeping_percentage is now set to 100",
+            "Changed the block at 4, -60, 2",
+            "Changed the block at 4, -60, 3",
+            "Teleported bedprobealice to 0.500000, -60.000000, 1.000000",
+            "Teleported bedprobebob to 4.500000, -60.000000, 1.000000",
+            "The game is running normally",
+            "Set the weather to rain",
+            "The game is sprinting",
+            "Set minecraft:overworld to 14000 tick(s)",
+            "Found no elements matching sleeping_pos",
+            "The game is sprinting",
+            "bedprobealice has the following entity data: 100s",
+            "Timeline minecraft:day is at 14121 tick(s)",
+            "bedprobebob has the following entity data: [I; 4, -60, 3]",
+            "The game is sprinting",
+            "Found no elements matching sleeping_pos",
+            "Found no elements matching sleeping_pos",
+            "Test passed",
+            "Test passed",
+            "Timeline minecraft:day is at 18 tick(s)",
+            "Teleported bedprobealice to 0.500000, -60.000000, 1.000000",
+            "Teleported bedprobebob to 4.500000, -60.000000, 1.000000",
+            "Game rule players_sleeping_percentage is now set to 50",
+            "Set minecraft:overworld to 14000 tick(s)",
+            "The game is sprinting",
+            "Found no elements matching sleeping_pos",
+            "Timeline minecraft:day is at 19 tick(s)",
+            "Teleported bedprobealice to 0.500000, -60.000000, 1.000000",
+            "Game rule players_sleeping_percentage is now set to 0",
+            "Set minecraft:overworld to 14000 tick(s)",
+            "The game is sprinting",
+            "Found no elements matching sleeping_pos",
+            "Timeline minecraft:day is at 19 tick(s)"
+          ]
+        }
+      },
+      "sounds": [],
+      "entity_data": [
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "sleeping"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(Some(BlockPos(IVec3(0, -60, 3))))"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobebob",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "sleeping"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(Some(BlockPos(IVec3(4, -60, 3))))"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobebob",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "standing"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(None)"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "standing"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(None)"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "sleeping"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(Some(BlockPos(IVec3(0, -60, 3))))"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "standing"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(None)"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "sleeping"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(Some(BlockPos(IVec3(0, -60, 3))))"
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "standing"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(None)"
+            }
+          ]
+        },
+        {
+          "client": "bedprobebob",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "sleeping"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(Some(BlockPos(IVec3(0, -60, 3))))"
+            }
+          ]
+        },
+        {
+          "client": "bedprobebob",
+          "subject": "bedprobebob",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "sleeping"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(Some(BlockPos(IVec3(4, -60, 3))))"
+            }
+          ]
+        },
+        {
+          "client": "bedprobebob",
+          "subject": "bedprobebob",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "standing"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(None)"
+            }
+          ]
+        },
+        {
+          "client": "bedprobebob",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "standing"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(None)"
+            }
+          ]
+        },
+        {
+          "client": "bedprobebob",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "sleeping"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(Some(BlockPos(IVec3(0, -60, 3))))"
+            }
+          ]
+        },
+        {
+          "client": "bedprobebob",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "standing"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(None)"
+            }
+          ]
+        },
+        {
+          "client": "bedprobebob",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "sleeping"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(Some(BlockPos(IVec3(0, -60, 3))))"
+            }
+          ]
+        },
+        {
+          "client": "bedprobebob",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 6,
+              "kind": "pose",
+              "value": "standing"
+            },
+            {
+              "index": 14,
+              "kind": "other",
+              "value": "OptionalBlockPos(None)"
+            }
+          ]
+        }
+      ],
+      "health": [],
+      "damage_events": [],
+      "game_events": [
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.01
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.02
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.03
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.04
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.049999997
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.059999995
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.06999999
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.07999999
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.08999999
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.09999999
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.109999985
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.11999998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.12999998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.13999999
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.14999999
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.16
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.17
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.18
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.19000001
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.20000002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "begin_raining",
+          "param": 0.0
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.20000002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.0
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.21000002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.22000003
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.23000003
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.24000004
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.25000003
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.26000002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.27
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.28
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.29
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.29999998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.30999997
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.31999996
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.32999995
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.33999994
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.34999993
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.35999992
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.36999992
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.3799999
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.3899999
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.3999999
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.40999988
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.41999987
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.42999986
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.43999985
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.44999984
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.45999983
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.46999982
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.4799998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.4899998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.4999998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.5099998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.5199998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.5299998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.5399998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.5499998
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.55999976
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.56999975
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.57999974
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.58999974
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.5999997
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.6099997
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.6199997
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.6299997
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.6399997
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.6499997
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.65999967
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.66999966
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.67999965
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.68999964
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.69999963
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.7099996
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.7199996
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.7299996
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.7399996
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.7499996
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.7599996
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.76999956
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.77999955
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.78999954
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.79999954
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.8099995
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.8199995
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.8299995
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.8399995
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.8499995
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.8599995
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.86999947
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.87999946
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.88999945
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.89999944
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.90999943
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.9199994
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.9299994
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.9399994
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.9499994
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.9599994
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.9699994
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.97999936
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.98999935
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.99999934
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 1.0
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.99
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.98
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.97
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.96000004
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.95000005
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.94000006
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.93000007
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.9200001
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.9100001
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.9000001
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.8900001
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.8800001
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.8700001
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.86000013
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.85000014
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.84000015
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.83000016
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.8200002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.8100002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.8000002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.7900002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.7800002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.7700002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.7600002
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.75000024
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.74000025
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.73000026
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.72000027
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.7100003
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.7000003
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.6900003
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.6800003
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.6700003
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.6600003
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.65000033
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.64000034
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.63000035
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.62000036
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.6100004
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.6000004
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.5900004
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.5800004
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.5700004
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.5600004
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.5500004
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.54000044
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.53000045
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.52000046
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.51000047
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.5000005
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.4900005
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.4800005
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.4700005
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.46000051
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.45000052
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.44000053
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.43000054
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.42000055
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.41000056
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.40000057
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.39000058
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.3800006
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.3700006
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.3600006
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.35000062
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.34000063
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.33000064
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.32000065
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.31000066
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.30000067
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.29000068
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.2800007
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.2700007
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.2600007
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.25000072
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.24000071
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.2300007
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.2200007
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.2100007
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.20000069
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.19000068
+        },
+        {
+          "client": "bedprobealice",
+          "event": "end_raining",
+          "param": 0.0
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.19000068
+        },
+        {
+          "client": "bedprobealice",
+          "event": "thunder_level_change",
+          "param": 0.0
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.18000068
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.17000067
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.16000067
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.15000066
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.14000066
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.13000065
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.12000065
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.110000655
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.10000066
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.09000066
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.08000066
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.07000066
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.060000665
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.050000668
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.04000067
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.03000067
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.02000067
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.01000067
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 6.7055225e-7
+        },
+        {
+          "client": "bedprobealice",
+          "event": "rain_level_change",
+          "param": 0.0
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.01
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.02
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.03
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.04
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.049999997
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.059999995
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.06999999
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.07999999
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.08999999
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.09999999
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.109999985
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.11999998
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.12999998
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.13999999
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.14999999
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.16
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.17
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.18
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.19000001
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.20000002
+        },
+        {
+          "client": "bedprobebob",
+          "event": "begin_raining",
+          "param": 0.0
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.20000002
+        },
+        {
+          "client": "bedprobebob",
+          "event": "thunder_level_change",
+          "param": 0.0
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.21000002
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.22000003
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.23000003
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.24000004
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.25000003
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.26000002
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.27
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.28
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.29
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.29999998
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.30999997
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.31999996
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.32999995
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.33999994
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.34999993
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.35999992
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.36999992
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.3799999
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.3899999
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.3999999
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.40999988
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.41999987
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.42999986
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.43999985
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.44999984
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.45999983
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.46999982
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.4799998
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.4899998
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.4999998
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.5099998
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.5199998
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.5299998
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.5399998
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.5499998
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.55999976
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.56999975
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.57999974
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.58999974
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.5999997
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.6099997
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.6199997
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.6299997
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.6399997
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.6499997
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.65999967
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.66999966
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.67999965
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.68999964
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.69999963
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.7099996
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.7199996
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.7299996
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.7399996
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.7499996
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.7599996
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.76999956
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.77999955
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.78999954
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.79999954
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.8099995
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.8199995
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.8299995
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.8399995
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.8499995
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.8599995
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.86999947
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.87999946
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.88999945
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.89999944
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.90999943
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.9199994
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.9299994
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.9399994
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.9499994
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.9599994
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.9699994
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.97999936
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.98999935
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.99999934
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 1.0
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.99
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.98
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.97
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.96000004
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.95000005
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.94000006
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.93000007
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.9200001
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.9100001
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.9000001
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.8900001
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.8800001
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.8700001
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.86000013
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.85000014
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.84000015
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.83000016
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.8200002
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.8100002
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.8000002
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.7900002
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.7800002
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.7700002
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.7600002
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.75000024
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.74000025
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.73000026
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.72000027
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.7100003
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.7000003
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.6900003
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.6800003
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.6700003
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.6600003
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.65000033
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.64000034
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.63000035
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.62000036
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.6100004
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.6000004
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.5900004
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.5800004
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.5700004
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.5600004
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.5500004
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.54000044
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.53000045
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.52000046
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.51000047
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.5000005
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.4900005
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.4800005
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.4700005
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.46000051
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.45000052
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.44000053
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.43000054
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.42000055
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.41000056
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.40000057
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.39000058
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.3800006
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.3700006
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.3600006
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.35000062
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.34000063
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.33000064
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.32000065
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.31000066
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.30000067
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.29000068
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.2800007
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.2700007
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.2600007
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.25000072
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.24000071
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.2300007
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.2200007
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.2100007
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.20000069
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.19000068
+        },
+        {
+          "client": "bedprobebob",
+          "event": "end_raining",
+          "param": 0.0
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.19000068
+        },
+        {
+          "client": "bedprobebob",
+          "event": "thunder_level_change",
+          "param": 0.0
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.18000068
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.17000067
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.16000067
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.15000066
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.14000066
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.13000065
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.12000065
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.110000655
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.10000066
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.09000066
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.08000066
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.07000066
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.060000665
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.050000668
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.04000067
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.03000067
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.02000067
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.01000067
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 6.7055225e-7
+        },
+        {
+          "client": "bedprobebob",
+          "event": "rain_level_change",
+          "param": 0.0
+        }
+      ]
+    },
+    {
+      "id": "leave_bob",
+      "observed": "left",
+      "sounds": [],
+      "entity_data": [],
+      "health": [],
+      "damage_events": [],
+      "game_events": []
+    },
+    {
+      "id": "nether_and_end_explosions",
+      "observed": {
+        "sent": {
+          "disconnects": [],
+          "console_output": [
+            "The difficulty has been set to Normal",
+            "Applied 1 effect(s) to bedprobealice",
+            "Applied 1 effect(s) to bedprobealice",
+            "Marked 4 chunks in minecraft:the_nether from [-1, -1] to [0, 0] to be force loaded",
+            "Successfully filled 81 block(s)",
+            "Successfully filled 405 block(s)",
+            "Changed the block at 0, 64, 2",
+            "Changed the block at 0, 64, 3",
+            "bedprobealice has made the advancement [We Need to Go Deeper]",
+            "Teleported bedprobealice to 0.500000, 64.000000, 1.500000",
+            "The game is sprinting",
+            "bedprobealice has the following entity data: [0.5d, 64.0d, 1.5d]",
+            "bedprobealice has the following entity data: 0",
+            "Test passed",
+            "Test passed",
+            "Successfully filled 25 block(s)",
+            "bedprobealice has the following entity data: 20.0f",
+            "bedprobealice has the following entity data: 13.158806f",
+            "Successfully filled 1601 block(s)",
+            "Unmarked 4 chunks in minecraft:the_nether from [-1, -1] to [0, 0] for force loading",
+            "Removed every effect from bedprobealice",
+            "Applied 1 effect(s) to bedprobealice",
+            "Applied 1 effect(s) to bedprobealice",
+            "Applied 1 effect(s) to bedprobealice",
+            "Marked 2 chunks in minecraft:the_end from [6, -1] to [6, 0] to be force loaded",
+            "Successfully filled 81 block(s)",
+            "No blocks were filled",
+            "Changed the block at 100, 70, 2",
+            "Changed the block at 100, 70, 3",
+            "bedprobealice has made the advancement [The End?]",
+            "Teleported bedprobealice to 100.500000, 70.000000, 1.500000",
+            "The game is sprinting",
+            "bedprobealice has the following entity data: [100.5d, 70.0d, 1.5d]",
+            "Test passed",
+            "Test passed",
+            "Test passed",
+            "Successfully filled 24 block(s)",
+            "bedprobealice has the following entity data: 20.0f",
+            "bedprobealice has the following entity data: 13.158806f",
+            "Successfully filled 81 block(s)",
+            "Unmarked 2 chunks in minecraft:the_end from [6, -1] to [6, 0] for force loading",
+            "The difficulty has been set to Peaceful",
+            "Teleported bedprobealice to 0.500000, -60.000000, 1.500000",
+            "The game is frozen"
+          ]
+        }
+      },
+      "sounds": [],
+      "entity_data": [
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 11,
+              "kind": "boolean",
+              "value": true
+            },
+            {
+              "index": 17,
+              "kind": "float",
+              "value": 64.0
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:item",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "slot",
+              "value": {
+                "item": "minecraft:netherrack",
+                "count": 16
+              }
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:item",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "slot",
+              "value": {
+                "item": "minecraft:netherrack",
+                "count": 16
+              }
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:item",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "slot",
+              "value": {
+                "item": "minecraft:netherrack",
+                "count": 16
+              }
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:item",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "slot",
+              "value": {
+                "item": "minecraft:netherrack",
+                "count": 16
+              }
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:item",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "slot",
+              "value": {
+                "item": "minecraft:netherrack",
+                "count": 1
+              }
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:item",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "slot",
+              "value": {
+                "item": "minecraft:netherrack",
+                "count": 1
+              }
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:item",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "slot",
+              "value": {
+                "item": "minecraft:netherrack",
+                "count": 16
+              }
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:item",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "slot",
+              "value": {
+                "item": "minecraft:netherrack",
+                "count": 16
+              }
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:item",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "slot",
+              "value": {
+                "item": "minecraft:netherrack",
+                "count": 16
+              }
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:item",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "slot",
+              "value": {
+                "item": "minecraft:netherrack",
+                "count": 16
+              }
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 17,
+              "kind": "float",
+              "value": 13.158806
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:item",
+          "entries": [
+            {
+              "index": 0,
+              "kind": "byte",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "minecraft:item",
+          "entries": [
+            {
+              "index": 8,
+              "kind": "slot",
+              "value": {
+                "item": "minecraft:crimson_roots",
+                "count": 1
+              }
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 17,
+              "kind": "float",
+              "value": 64.0
+            }
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "entries": [
+            {
+              "index": 17,
+              "kind": "float",
+              "value": 13.158806
+            }
+          ]
+        }
+      ],
+      "health": [
+        {
+          "client": "bedprobealice",
+          "health": 20.0,
+          "food": 20,
+          "saturation": 5.0
+        },
+        {
+          "client": "bedprobealice",
+          "health": 20.0,
+          "food": 20,
+          "saturation": 5.0
+        },
+        {
+          "client": "bedprobealice",
+          "health": 20.0,
+          "food": 20,
+          "saturation": 5.0
+        }
+      ],
+      "damage_events": [
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "damage_type": 1,
+          "source_position": [
+            0.5,
+            64.5,
+            3.5
+          ]
+        },
+        {
+          "client": "bedprobealice",
+          "subject": "bedprobealice",
+          "damage_type": 1,
+          "source_position": [
+            100.5,
+            70.5,
+            3.5
+          ]
+        }
+      ],
+      "game_events": [
+        {
+          "client": "bedprobealice",
+          "event": "level_chunks_load_start",
+          "param": 0.0
+        },
+        {
+          "client": "bedprobealice",
+          "event": "level_chunks_load_start",
+          "param": 0.0
+        },
+        {
+          "client": "bedprobealice",
+          "event": "level_chunks_load_start",
+          "param": 0.0
+        }
+      ],
+      "checkpoints": [
+        {
+          "packet": {
+            "client": "bedprobealice",
+            "packet": {
+              "player_position": {
+                "block_center": [
+                  0,
+                  64,
+                  1
+                ]
+              }
+            }
+          }
+        },
+        {
+          "packet": {
+            "client": "bedprobealice",
+            "packet": {
+              "player_position": {
+                "block_center": [
+                  100,
+                  70,
+                  1
+                ]
+              }
+            }
+          }
+        },
+        {
+          "packet": {
+            "client": "bedprobealice",
+            "packet": {
+              "player_position": {
+                "block_center": [
+                  0,
+                  -60,
+                  1
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "leave_alice",
+      "observed": "left",
+      "sounds": [],
+      "entity_data": [],
+      "health": [],
+      "damage_events": [],
+      "game_events": []
+    }
+  ]
+}

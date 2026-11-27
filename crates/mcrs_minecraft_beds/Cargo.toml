@@ -1,0 +1,20 @@
+[package]
+name = "mcrs_minecraft_beds"
+description = "Pure no_std two-part bed geometry, sleep eligibility, dimension bed rules, and multiplayer night-skip logic"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+doctest = false
+
+[lints]
+workspace = true
+
+[dependencies]
+libm.workspace = true
+mcrs_minecraft_pose.workspace = true
+mcrs_voxel.workspace = true
+
+[dev-dependencies]
+mcrs_test_alloc.workspace = true
